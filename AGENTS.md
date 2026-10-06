@@ -32,3 +32,7 @@ No automated framework or coverage threshold was found. Validate affected mods o
 ## Commit & Pull Request Guidelines
 
 Git history is unavailable here, so no existing commit convention can be established. Use concise imperative messages, such as `Fix sandbox configuration initialization`. Keep each change focused. Pull requests should describe affected paths, expected behavior, and manual validation; link relevant issues and include screenshots for visual changes.
+
+## Branching & Delivery
+
+Use `dev` for ongoing research, tooling, and implementation. Reserve `main` for validated stable releases; merge reviewed and tested milestones from `dev` when ready. The user authorizes regular commits and pushes to the configured private `origin`. Commit coherent changes, document evidence and validation in `docs/progress.md`, and push development milestones to `origin/dev`. Keep game files, downloaded tools, and generated analysis out of commits. Do not force-push or rewrite shared history as part of routine work. If filesystem or network restrictions block Git operations, preserve the working changes and report the actual blocker.

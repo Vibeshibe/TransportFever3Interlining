@@ -35,6 +35,55 @@
   with network access, then follow cross-references to `OnModifyPathfinding`
   and the vehicle-arrival / passenger-queue diagnostic strings.
 
+## 2026-10-06 — Relocated workspace and supplied Ghidra
+
+- Confirmed the active project is now
+  `/home/vibeshibe/Documents/Projects/code/TPF3Interlining` and the game symlink
+  still resolves to `/home/vibeshibe/Games/Transport Fever 3`.
+- Added `AI/Tasks/` and `AI/Context/`, each with a tracked README describing
+  its purpose and linking to existing research and progress notes.
+- Found the user-supplied extracted distribution at
+  `tools/downloads/ghidra_12.1.3_PUBLIC`. Local properties identify version
+  12.1.3 PUBLIC, revision `8b4c91d4d5bd1549622bfbade0df199585b98365`.
+- Added `tools/ghidra_headless.py` to launch that copy with project-local
+  settings/cache. Ran `rtk proxy python3 tools/ghidra_headless.py`: Java 21
+  started Ghidra and displayed analyzer usage (expected status 1 without project
+  arguments). This validates startup, not binary import or decompilation.
+- No archive checksum verification was possible because the original ZIP was
+  not supplied. MCP is still optional and uninstalled.
+- Updated setup instructions to remove the completed relocation step.
+- Validation: AI directory files exist, the game executable is reachable, the
+  launcher parses successfully, and `git diff --check` passed.
+- Commit blocked: this session mounts `.git` read-only. `git add` failed while
+  creating `.git/index.lock` with `Read-only file system`. Changes are saved in
+  the working tree but remain unstaged and uncommitted.
+
+## 2026-10-06 — Private origin and branch policy
+
+- User configured the private `origin` and authorized pushes during development.
+- Adopted `dev` for development and `main` for validated stable releases, with
+  the policy recorded in `AGENTS.md`, README, and AI context.
+- Inspected local refs: `main` and cached `origin/main` point to `734a10e`.
+- `rtk git switch -c dev` failed creating `.git/refs/heads/dev.lock` because
+  `.git` is mounted read-only. The active branch remains `main`.
+- A noninteractive `git ls-remote --heads origin` check failed with
+  `Could not resolve host: git.local.shibabox.eu`. Remote state was not verified.
+- No new branch, commit, or push completed. Pending changes remain in the
+  working tree; setup documentation includes the commands to finish the work.
+
+## 2026-10-06 — Sandbox escalation available; authentication pending
+
+- Session permissions now allow reviewed execution outside the sandbox.
+- Successfully created and switched to `dev` from `734a10e` using that route.
+- The remote check now reaches the HTTPS Git server. It fails with
+  `could not read Username ... terminal prompts disabled`, replacing the earlier
+  DNS failure. No Git credential helper is configured in the current environment.
+- Updated setup and context documents to reflect the resolved sandbox blockers
+  and the remaining authentication requirement. Prepared the AI directories,
+  Ghidra launcher, and workflow documentation for a development commit.
+- Existing Ghidra startup and executable-inspection checks remain applicable;
+  this milestone makes no changes to game behavior.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

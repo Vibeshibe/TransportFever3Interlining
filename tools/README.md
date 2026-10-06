@@ -16,26 +16,29 @@ Use `--exe /path/to/TransportFever3.exe` to inspect another build.
 
 ## Ghidra
 
-Installation is pending: downloads failed because this session cannot resolve
-GitHub. Ghidra MCP is also not installed or connected.
+The user supplied an extracted Ghidra 12.1.3 PUBLIC distribution in
+`tools/downloads/ghidra_12.1.3_PUBLIC`. Its local application properties report
+revision `8b4c91d4d5bd1549622bfbade0df199585b98365` and JDK 21 minimum.
+The original ZIP was not supplied, so its published archive checksum has not
+been verified against this extracted copy. Ghidra MCP remains uninstalled.
 
 Use [Ghidra 12.1.3's official release](https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_12.1.3_build)
 as a pinned starting version. Its [application properties](https://github.com/NationalSecurityAgency/ghidra/blob/Ghidra_12.1.3_build/Ghidra/application.properties)
-specify JDK 21 minimum, which is available locally. The following installation
-commands are prepared for a network-enabled shell; they have not completed here:
+specify JDK 21 minimum, which is available locally. Launch the supplied copy with:
 
 ```sh
-rtk proxy mkdir -p tools/downloads tools/vendor
-rtk proxy curl --fail --location --connect-timeout 15 --output tools/downloads/ghidra_12.1.3_PUBLIC_20260817.zip https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.3_build/ghidra_12.1.3_PUBLIC_20260817.zip
-rtk proxy sha256sum --check tools/ghidra.sha256
-rtk proxy unzip -q tools/downloads/ghidra_12.1.3_PUBLIC_20260817.zip -d tools/vendor
-rtk proxy tools/vendor/ghidra_12.1.3_PUBLIC/support/analyzeHeadless
+rtk proxy python3 tools/ghidra_headless.py
 ```
 
-Only extract if the checksum check succeeds. The final command should print
-headless usage and establish that Ghidra starts. Downloaded tools remain outside
-Git. In the GUI, create a non-shared project under `analysis/` and import
+With no arguments, this prints headless usage and exits with status 1 because
+no project arguments were supplied; this startup check passed. The wrapper forwards arguments
+and keeps settings/cache in ignored `tools/runtime/` directories. Downloaded
+tools remain outside Git. In the GUI, create a non-shared project under `analysis/` and import
 `game/installation/TransportFever3.exe`. Record analysis settings and version.
+
+If downloading a fresh copy later, use the official release ZIP named
+`ghidra_12.1.3_PUBLIC_20260817.zip`; save it in `tools/downloads/` and verify it
+with `rtk proxy sha256sum --check tools/ghidra.sha256` before extraction.
 
 ## Optional Ghidra MCP
 

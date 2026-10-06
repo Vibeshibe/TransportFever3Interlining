@@ -1,0 +1,22 @@
+# Context
+
+Store concise handoff notes, confirmed constraints, and architecture decisions
+here. Include evidence and distinguish static inference from runtime findings.
+Link to existing documentation instead of duplicating detailed research.
+
+## Project orientation
+
+- Goal: let passengers use suitable overlapping services, with varied preferences
+  and journey-duration-sensitive tradeoffs between waiting and comfort.
+- Repository: `/home/vibeshibe/Documents/Projects/code/TPF3Interlining`.
+- Game reference: `game/installation`, an ignored symlink to the live game.
+- Initial assessment: [interlining research](../../docs/interlining-research.md).
+- Setup and tool status: [workspace setup](../../docs/setup.md) and
+  [research tools](../../tools/README.md).
+- Work history: [progress log](../../docs/progress.md).
+- Branch policy: research and implementation on `dev`, validated stable releases
+  on `main`. The user authorizes regular commits and pushes to private `origin`.
+  `dev` now exists. Permission-enabled commands can write Git metadata and reach
+  the server; publishing awaits HTTPS credentials. See the current setup status.
+- No working patch or in-game validation exists yet. Commit coherent milestones
+  and record their evidence and remaining uncertainties.
