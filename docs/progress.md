@@ -84,6 +84,16 @@
 - Existing Ghidra startup and executable-inspection checks remain applicable;
   this milestone makes no changes to game behavior.
 
+## 2026-10-06 — Desktop credential helper configured
+
+- Committed the pending workspace setup on `dev` as `8187d97`.
+- Detected `/usr/lib/git-core/git-credential-libsecret` and configured it for
+  this repository with `git config --local credential.helper libsecret`.
+- Retried the remote query through permission-enabled execution. Credentials
+  remain unavailable: Git reports that it cannot read a username with terminal
+  prompts disabled. The user must authenticate once in their desktop terminal.
+- No password or token was requested through chat or stored in repository files.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
