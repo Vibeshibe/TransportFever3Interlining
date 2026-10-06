@@ -1,0 +1,11 @@
+# Local game installation and generated analysis databases
+/game/installation
+/analysis/*
+!/analysis/README.md
+# Downloaded tools, archives, runtime state, and environments
+/tools/vendor/
+/tools/downloads/
+/tools/runtime/
+/tools/.venv/
+__pycache__/
+*.pyc
