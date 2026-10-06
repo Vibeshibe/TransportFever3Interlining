@@ -1,6 +1,6 @@
 # 002 — Reproduce and record baseline behavior
 
-- Status: In progress — user is building the sandbox save
+- Status: In progress — save preserved; behavioral observations pending
 - Owner: User builds and runs the save; assistant defines observations and diagnostics
 - Dependencies: None; diagnostics may depend on task 003
 
@@ -25,7 +25,18 @@ outside tracked files.
 
 ## Validation and open questions
 
-No baseline observations have been supplied yet. User observations are adequate
+The user created `TPF3Interlining_baseline`; its actual filename is
+`TPF3Interlining_Baseline.sav`. They report lines S1, S2, and S3 sharing three
+stops before branching in different directions. Exact stop names, platforms,
+vehicle settings, and individual boarding observations remain to be recorded.
+
+A separate local snapshot was copied into ignored
+`analysis/baselines/c228e860e25a/` and verified against the original with SHA-256:
+`c228e860e25a4cc11804e1b3c750793077b5022ea62b41bf568fc7b2f946389c`.
+The source was not modified. See [the handoff](../../docs/test-save.md) for details.
+Preservation is complete; use a further working copy for experimental runs.
+
+No baseline boarding observations have been supplied yet. User observations are adequate
 to start; instrumentation should supplement them where the visible UI cannot
 explain a decision. Determine which stop/platform and route details are visible
 before requesting extra data. Measure repeated cases rather than promising an

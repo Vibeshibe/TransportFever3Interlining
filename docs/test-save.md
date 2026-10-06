@@ -1,8 +1,26 @@
 # Baseline test-save handoff
 
-The user is preparing this save for [task 002](../AI/Tasks/002-baseline-save.md).
+The user supplied this save for [task 002](../AI/Tasks/002-baseline-save.md).
 The assistant will use observations and, when possible, diagnostics to compare
 baseline and modified behavior. No baseline result has been recorded yet.
+
+## Received baseline
+
+- User's save label: `TPF3Interlining_baseline`.
+- Actual filename: `TPF3Interlining_Baseline.sav`.
+- Reported topology: S1, S2, and S3 share three stops, then split in different
+  directions. This is user-reported; no in-game inspection has been performed.
+- Preserved local copy:
+  `analysis/baselines/c228e860e25a/TPF3Interlining_Baseline.sav`.
+- Size: 76,126,628 bytes.
+- SHA-256: `c228e860e25a4cc11804e1b3c750793077b5022ea62b41bf568fc7b2f946389c`.
+- Local `manifest.json` alongside the copy records the original save path,
+  source modification time, hash, and handoff details. Both files are Git-ignored.
+
+The snapshot hash matches the source, which was not modified. Keep this snapshot
+as the baseline and use a separate working copy for experiments. Game build,
+mods, stop/platform details, vehicle settings, and boarding examples still need
+to be recorded; finding the file does not validate its in-game behavior.
 
 ## Initial scenario
 

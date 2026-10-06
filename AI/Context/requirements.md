@@ -15,8 +15,9 @@ after correctness is established. This is a plan, not proven engine behavior.
 
 ## Collaboration
 
-The user is building a sandbox save reproducing the three-line shared-trunk
-example and will provide in-game observations and testing. That is sufficient
+The user supplied `TPF3Interlining_baseline`, with S1, S2, and S3 reportedly
+sharing three stops before branching, and will provide in-game observations
+and testing. A local baseline copy has been preserved. That collaboration is sufficient
 for early runtime collaboration. The assistant handles static inspection,
 diagnostics, implementation, and test procedures. Add instrumentation where UI
 observations leave important questions unanswered.
@@ -43,4 +44,4 @@ validated stable releases. Game files and saves remain outside tracked files.
 
 Current authorization for this milestone: establish the task plan (001).
 No new decompilation or behavior implementation is part of step 1. Task 003 is
-ready for a subsequent investigation; the user is independently working on 002.
+ready for a subsequent investigation; task 002 now awaits behavioral observations.

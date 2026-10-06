@@ -119,6 +119,21 @@
 - Next technical work: task 003. Baseline observations and runtime validation
   remain pending the user's save; static inspection can proceed independently.
 
+## 2026-10-06 — Baseline save received and preserved
+
+- User supplied `TPF3Interlining_baseline`, reporting S1, S2, and S3 sharing
+  three stops before branching in different directions.
+- Located `TPF3Interlining_Baseline.sav` in the game's local save directory
+  within its Heroic prefix. Copied it to ignored
+  `analysis/baselines/c228e860e25a/` with a local provenance manifest.
+- Verified source/copy SHA-256 equality:
+  `c228e860e25a4cc11804e1b3c750793077b5022ea62b41bf568fc7b2f946389c`
+  (76,126,628 bytes). Source size and modification time remained unchanged
+  during the copy; the original save was not edited.
+- Updated the task board, handoff, and context. Task 002 remains in progress:
+  exact stop/platform details, vehicle settings, and boarding observations are
+  still unverified. No game launch or engine-behavior change was performed.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -16,8 +16,10 @@ Link to existing documentation instead of duplicating detailed research.
 - Work history: [progress log](../../docs/progress.md).
 - Agreed behavior, collaboration, and extender requirements:
   [requirements](requirements.md).
-- Active work and dependencies: [task board](../Tasks/README.md). Step 1 is the
-  planning milestone; the user is building the baseline save for task 002.
+- Active work and dependencies: [task board](../Tasks/README.md). Step 1 is
+  complete. The user's baseline save for task 002 has been preserved locally;
+  S1, S2, and S3 reportedly share three stops before branching. Boarding
+  observations remain pending; see [the handoff](../../docs/test-save.md).
 - Branch policy: research and implementation on `dev`, validated stable releases
   on `main`. The user authorizes regular commits and pushes to private `origin`.
   `dev` tracks `origin/dev`. Permission-enabled commands can write Git metadata
