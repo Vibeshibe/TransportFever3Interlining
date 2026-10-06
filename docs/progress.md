@@ -94,6 +94,14 @@
   prompts disabled. The user must authenticate once in their desktop terminal.
 - No password or token was requested through chat or stored in repository files.
 
+## 2026-10-06 — Authenticated remote verified
+
+- User completed terminal authentication and pushed `dev`.
+- A permission-enabled, noninteractive `git ls-remote --heads origin main dev`
+  succeeded: remote `dev` is `2414d3d`, and remote `main` remains `734a10e`.
+- Confirmed a clean local working tree and upstream tracking of `origin/dev`.
+- Updated setup and AI context to record that authenticated remote access works.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

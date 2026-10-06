@@ -16,7 +16,7 @@ Link to existing documentation instead of duplicating detailed research.
 - Work history: [progress log](../../docs/progress.md).
 - Branch policy: research and implementation on `dev`, validated stable releases
   on `main`. The user authorizes regular commits and pushes to private `origin`.
-  `dev` now exists. Permission-enabled commands can write Git metadata and reach
-  the server; publishing awaits HTTPS credentials. See the current setup status.
+  `dev` tracks `origin/dev`. Permission-enabled commands can write Git metadata
+  and authenticate to the server through the configured `libsecret` helper.
 - No working patch or in-game validation exists yet. Commit coherent milestones
   and record their evidence and remaining uncertainties.

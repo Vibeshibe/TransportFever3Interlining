@@ -39,16 +39,17 @@ authorized ongoing commits and pushes to `origin`.
 The active development branch is `dev`, created from `main` at `734a10e`.
 Permission-enabled execution resolved the sandbox's Git-write and network
 restrictions. The HTTPS remote is reachable. This repository now uses the
-already-installed `libsecret` credential helper, but the desktop credential
-store does not yet supply credentials for a successful noninteractive request.
+already-installed `libsecret` credential helper. The user authenticated through
+their desktop terminal, and a subsequent noninteractive remote query succeeded.
+`dev` tracks `origin/dev`; routine development commits can now be pushed.
 
-Once HTTPS authentication is available, publish the development branch with:
+Publish development commits with:
 
 ```sh
 rtk git push -u origin dev
 ```
 
-Run the push from a regular desktop terminal and enter the Git server username
-and password or access token when prompted. Unlock the desktop keyring if asked;
-the configured helper can then store credentials for subsequent Git commands.
+If credentials expire, run the push from a regular desktop terminal and enter
+the Git server username and password or access token when prompted. Unlock the
+desktop keyring if asked.
 Do not put credentials in repository files, remote URLs, or the chat.
