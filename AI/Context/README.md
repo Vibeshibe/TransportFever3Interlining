@@ -14,6 +14,10 @@ Link to existing documentation instead of duplicating detailed research.
 - Setup and tool status: [workspace setup](../../docs/setup.md) and
   [research tools](../../tools/README.md).
 - Work history: [progress log](../../docs/progress.md).
+- Agreed behavior, collaboration, and extender requirements:
+  [requirements](requirements.md).
+- Active work and dependencies: [task board](../Tasks/README.md). Step 1 is the
+  planning milestone; the user is building the baseline save for task 002.
 - Branch policy: research and implementation on `dev`, validated stable releases
   on `main`. The user authorizes regular commits and pushes to private `origin`.
   `dev` tracks `origin/dev`. Permission-enabled commands can write Git metadata

@@ -102,6 +102,23 @@
 - Confirmed a clean local working tree and upstream tracking of `origin/dev`.
 - Updated setup and AI context to record that authenticated remote access works.
 
+## 2026-10-06 — Step 1: tracked investigation plan
+
+- Established eight tasks with owners, dependencies, acceptance criteria,
+  deliverables, and validation requirements. Task 001 (planning) is complete.
+- Task 002 records that the user is building the baseline sandbox save and will
+  provide in-game testing. Added a save handoff and observation template.
+- Task 003 is ready for the next assistant investigation. Native boarding and
+  shared-extender work are conditional on a demonstrated scripting API gap.
+- Recorded the user's requirements for suitable-service boarding, varied
+  preferences, and a reusable, readable extender with explicit multi-mod
+  ordering and conflict semantics if native extension is necessary.
+- Validation: eight task records checked for required fields and acceptance
+  checklists; 32 local links resolved across 18 Markdown files;
+  `git diff --check` passed. No binary analysis or gameplay changes performed.
+- Next technical work: task 003. Baseline observations and runtime validation
+  remain pending the user's save; static inspection can proceed independently.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

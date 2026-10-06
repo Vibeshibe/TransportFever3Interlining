@@ -18,6 +18,8 @@ No working game modification exists yet.
 Start with [the research findings](docs/interlining-research.md) and
 [the setup guide](docs/setup.md). Record findings and validation in
 [the progress log](docs/progress.md), and commit each coherent milestone.
+The [task board](AI/Tasks/README.md) tracks ownership and acceptance criteria;
+the [test-save guide](docs/test-save.md) describes the baseline handoff.
 
 ## Working conventions
 
