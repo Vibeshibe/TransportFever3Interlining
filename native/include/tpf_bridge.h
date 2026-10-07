@@ -8,9 +8,12 @@ extern "C" {
 
 #define TFX_ABI_VERSION 1u
 #define TFX_QUERY_ABI_VERSION 2u
+#define TFX_VEHICLE_ABI_VERSION 3u
 #define TFX_CAP_TERMINAL_OBSERVATION 1u
 #define TFX_CAP_PASSENGER_ROUTE_QUERIES 2u
+#define TFX_CAP_VEHICLE_QUERIES 4u
 #define TFX_WAITING_PAGE_SIZE 16u
+#define TFX_STOP_VEHICLES_SIZE 16u
 #define TFX_HAS_TERMINAL_PLACE 1u
 #define TFX_CLIENT_ID_SIZE 64u
 #define TFX_MAX_CLIENTS 32u
@@ -83,6 +86,33 @@ typedef struct tfx_api_v2 {
     tfx_status (*read_line_stop)(tfx_context, int32_t line, int32_t stop, tfx_line_stop *out);
     tfx_status (*scan_waiting_people)(tfx_context, int32_t first_entity, tfx_waiting_page *out);
 } tfx_api_v2;
+
+/* Engine index of vehicles considered for loading at this line stop. A full
+ * copy is required: more than 16 vehicles returns TFX_LIMIT_REACHED. */
+typedef struct tfx_stop_vehicles {
+    uint32_t struct_size, count;
+    int32_t line, stop_index;
+    int32_t vehicles[TFX_STOP_VEHICLES_SIZE];
+} tfx_stop_vehicles;
+
+/* Snapshot BEFORE terminal selection. Seats can be assigned by the original
+ * Update after this callback. This is not a boarding eligibility decision. */
+typedef struct tfx_vehicle {
+    uint32_t struct_size;
+    int32_t vehicle, line, stop_index;
+    int32_t state, load_state; /* Build-specific enum values. */
+    int32_t arrival_station_index, arrival_terminal; /* Index in station GROUP, not entity. */
+    uint32_t arrival_locked, user_stopped;
+    uint32_t passenger_capacity, passengers_onboard, passengers_reserved, passenger_places_left;
+    uint32_t next_passenger_load_seconds_bits; /* Finite IEEE-754 float; may be negative. */
+    uint32_t reserved;
+} tfx_vehicle;
+
+typedef struct tfx_api_v3 {
+    tfx_api_v2 v2;
+    tfx_status (*read_stop_vehicles)(tfx_context, int32_t line, int32_t stop, tfx_stop_vehicles *out);
+    tfx_status (*read_vehicle)(tfx_context, int32_t vehicle, tfx_vehicle *out);
+} tfx_api_v3;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

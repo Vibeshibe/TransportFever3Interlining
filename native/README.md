@@ -1,7 +1,7 @@
 # Shared native bridge — experimental read-only pilot
 
 The bridge provides one centrally owned terminal-update interception and a small
-versioned C API and copied passenger/line-stop queries. **It cannot change
+versioned C API and copied passenger/line-stop/vehicle queries. **It cannot change
 passenger routes or components.** The Lua
 policy in `src/interlining/` remains separate and is not connected to this DLL.
 This is a development loader, not an automatically installed game mod.
@@ -59,10 +59,15 @@ two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.2 also registers the bounded `research.passenger-route-observer` client.
+Version 0.3 registers the bounded `research.passenger-route-observer` client.
 It scans at most 1,024 entity masks per invocation and logs at most 24 passenger
 samples and their boarding/alighting stops. It stops scanning after eight scan
 or waiting-read failures. All its data access goes through the public API.
+Its vehicle sampler cycles through the disposable baseline's S1/S2/S3 entity IDs
+`98278`, `97742`, `97743` and their stops, logging at most 48 changed snapshots or
+eight errors. These save-specific inputs live only in the research consumer;
+the SDK accepts caller-supplied IDs. Repeated snapshots are suppressed for logging
+only, never reused as eligibility evidence across worlds.
 
 ## Client contract
 
@@ -121,6 +126,33 @@ unloading eligibility. Alternative terminals are reported only as present/absent
 Queries may describe assigned passengers and multi-stop legs; policy must still
 reject unsupported cases. No result authorizes mutation.
 
+## Vehicle queries (ABI 3)
+
+Initialize `tfx_api_v3 api = {.v2.base.struct_size = sizeof(api)}` and request
+`tfx_get_api(TFX_VEHICLE_ABI_VERSION, &api.v2.base)`. ABI 1/2 retain their layouts
+and capability values. ABI 3 adds `TFX_CAP_VEHICLE_QUERIES`:
+
+| Operation | Copied result |
+| --- | --- |
+| `read_stop_vehicles(context, line, stop, out)` | Engine loading index, up to 16 vehicle IDs; larger results fail with `TFX_LIMIT_REACHED`, never silently truncate |
+| `read_vehicle(context, vehicle, out)` | Line/stop, raw state/loading enum, selected arrival station index/terminal and lock flag, user-stop flag, passenger capacity, onboard/reserved counts, remaining places and loading timer |
+
+Arrival station is an **index within the stop's station group**, not a station
+entity ID. The selected arrival terminal can differ from the configured terminal.
+These fields still do not establish access from a passenger's waiting edge.
+Raw enum values are build-specific; clients must not treat a nonzero state as
+permission to board. Loading timers may be negative; NaN/infinity are rejected.
+
+Remaining places subtract onboard passengers and passengers already assigned in
+the terminal system's reverse index. Freight assignments do not count as people.
+Stale assignments, duplicate entries, unreadable/malformed tables or occupancy
+above capacity fail the query. Empty valid indexes give zero counts. Tables are
+bounded to 4,095 slots and reservation sets to 1,024 entries, within the existing
+shared read budget. Results describe the instant **before** original selection;
+new reservations can be added immediately afterward. No seat is reserved by a
+read. Actual platform access, unloading and journey continuation remain required
+before any interlining mutation.
+
 ## Interception and compatibility
 
 Pinned executable SHA-256:
@@ -145,10 +177,14 @@ limits, and duplicate IDs. The slot/assembly test checks ownership refusal,
 restored page protection, integer/float/stack arguments, original return value,
 and exactly one original call. Query tests cover both storage layouts, malformed
 and absent records, disabled loading, non-finite fractions, scan pagination,
-budgets, output preservation, and ABI 2 context/thread rules. These tests do not prove arbitrary native-client
+budgets, output preservation, ABI 2/3 context/thread rules, vehicle capacities,
+mixed passenger/freight reservations, index corruption and overflow refusal.
+These tests do not prove arbitrary native-client
 safety, cross-line migration, save compatibility, or third-party mod support.
 See [the query capture](../docs/native-query-validation-2026-10-07.md) for runtime
-evidence and the unresolved Proton stop-loader stall.
+evidence and the unresolved Proton stop-loader stall. See
+[vehicle capture](../docs/native-vehicle-validation-2026-10-07.md) for ABI 3 results
+and the remaining live nonzero-reservation/platform-access checks.
 
 Implementation references: Microsoft's [x64 calling convention](https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention),
 [atomic pointer exchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchangepointer),

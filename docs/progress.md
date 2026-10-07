@@ -390,6 +390,30 @@
   then full candidate validation before the single-passenger write experiment.
   Maximum-load fractions and configured terminals alone are not eligibility.
 
+## 2026-10-07 — Add copied vehicle capacity and boarding-reservation queries
+
+- Added ABI 3 with loading-index vehicle lists and copied vehicle snapshots:
+  capacity, onboard/reserved counts, remaining places, selected arrival terminal,
+  decision lock, raw state/loading values and passenger loading timer. ABI 1/2
+  remain compatible. All operations use current-callback copies and existing
+  budgets; failed or oversized queries preserve output and never truncate.
+- Traced engine occupancy and assignment indexes. Reservations include waiting
+  passengers already assigned a vehicle. Arrival station is a station-group
+  index, not an entity ID; this distinction is explicit in the SDK.
+- Validation: warning-clean cross-build, new reservation/corruption/ABI fixtures
+  and existing bridge/query tests passed. User restarted/resumed a disposable
+  baseline. Capture completed 400 callbacks with 10 snapshots across five
+  S1/S2/S3 vehicles, 15 passenger records, 30 stop records, no sampled query
+  errors and zero rejected boundaries. Observer auto-disabled; no stop-loader
+  or debugger required. [Evidence](native-vehicle-validation-2026-10-07.md)
+  records hashes, native layouts, examples and limitations.
+- Every live reservation sample was zero; nonzero reservations are fixture-tested,
+  not yet independently confirmed live. Actual passenger platform access remains
+  unimplemented. No passenger mutation, installed probe change or save write.
+- Corrected the outdated version banner after capture in a separate final build;
+  retained the loaded DLL and original log unchanged. Next: finish waiting-edge
+  terminal membership and nonzero-reservation validation, then candidate checks.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

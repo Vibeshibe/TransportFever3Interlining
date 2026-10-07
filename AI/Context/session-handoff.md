@@ -18,6 +18,52 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Bridge 0.3 adds ABI 3 `read_stop_vehicles` and `read_vehicle`, with capacity,
+onboard passengers, assigned boarding reservations, remaining places, raw state,
+loading timer, selected arrival terminal and locked/user-stopped flags. ABI 1/2
+remain compatible. See [vehicle evidence](../../docs/native-vehicle-validation-2026-10-07.md)
+for layouts, tests and hashes. Selected `arrival_station_index` is an index in the
+station group, **not an entity ID**. No platform-access or mutation API yet.
+
+Build `analysis/native-bridge/build-v3/` was loaded successfully into the user's
+restarted disposable save, Windows PID 312. Log `tpf-bridge-312-26298912.log`:
+400 accepted callbacks, thread 592, alternating worlds `0x37dc2200`/`0x37dc2ec0`,
+10 vehicle snapshots across five S1/S2/S3 vehicles, 15 passenger records and 30
+stop records; no sampled query errors or boundary rejections. Auto-disabled;
+no debugger or optional stop-loader was used. User was told they can pause.
+Restart before loading a revised DLL. Do not assume the process is still alive.
+
+All sampled vehicles had capacity 40 and zero reservations. Onboard changes were
+observed. Nonzero/mixed/stale reservation tests passed fixtures but still need
+live independent validation. Both native suites passed; final source rebuilt in
+`build-v3-final/` after correcting the outdated version log string (loaded v3
+still prints 0.2/ABI1,2). No query/hook implementation changed after capture.
+
+The test consumer cycles through baseline line IDs 98278/97742/97743 and their
+stops; SDK queries remain generic. Keep this save-specific research consumer
+separate from future interlining policy. Remaining places are pre-selection
+snapshots, never seat reservations.
+
+**Next:** finish actual waiting-edge terminal membership and nonzero-reservation
+runtime validation, then full candidate checks and the engine-owned one-passenger
+experiment. No further generic boarding trace is needed.
+
+Platform lookup traced through Lua binding: string `0x14373fdb8` in registration
+`0x140f27a80` -> binder `0x140eae4c0` -> closure builder `0x140ee5fb0` -> thunk
+`0x140f02e00` -> invocation `0x140ef92b0` -> native getter **`0x140b41050`**.
+The invocation obtains a StationSystem pointer from returned engine context
+`+0x158`; native getter reads StationSystem dynamic pointer `+0x38`, then edge-key
+map `+0x70` (key 8 bytes, lookup `0x14093e4e0`, entry stride `0x20`, vector at
+entry `+8`). Return vector entries appear 8 bytes. Verify their field meanings,
+waiting-place EdgeId layout and a **current-world** route to this system before
+implementing the reader. Do not blindly reuse the scripting engine context.
+Exports `platform-bindings.txt`, `platform-callable.txt`, `platform-dispatch.txt`,
+`platform-method.txt`, `platform-invoke.txt`, `platform-native.txt` retain the chain.
+Vehicle exports `vehicle-readers.txt` and `platform-readers.txt` establish the
+other layouts; the evidence doc lists native addresses and offsets.
+
+### Earlier passenger/route implementation
+
 Bridge 0.2 now implements and runtime-verifies copied waiting-person and line-stop
 queries. See [query validation](../../docs/native-query-validation-2026-10-07.md).
 ABI 2 adds `read_waiting_leg`, `read_line_stop`, `scan_waiting_people`; ABI 1 remains
@@ -44,13 +90,9 @@ ptrace permissions. Stop-stall cause is unresolved; wrap future Wine loader call
 in `rtk proxy timeout 45 ...` because its internal timeout covers remote-thread
 waits, not Wine startup/all APIs. User can pause/close; restart before a new DLL.
 
-**Next:** implement arriving-vehicle/capacity/reservation and actual platform
-compatibility queries. Configured stops and maximum-load fractions are already
-available but insufficient. Then finish candidate revalidation and implement the
-one-passenger engine-owned replacement. The sampled person `114323` has S3 stops
-1→4, so it does not meet the current adjacent-only offline policy. Keep the original
-Test 2 same-terminal adjacent S1/S3 case as the reference; do not switch to an
-ineligible multi-stop passenger merely because the scanner found one.
+The earlier sampled person `114323` has S3 stops 1→4, so it does not meet the
+current adjacent-only offline policy. Keep the original Test 2 same-terminal
+adjacent S1/S3 case as the reference.
 
 ### Earlier bridge implementation
 
@@ -139,8 +181,8 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Finish live vehicle capacity/reservations and actual platform compatibility
-   queries; waiting-leg and configured route snapshots are implemented. Then
+1. Finish actual platform compatibility and independently validate a nonzero
+   live reservation. ABI 3 vehicle queries are implemented; see latest evidence. Then
    implement one-passenger mutation after candidate validation is complete.
    The dedicated scope must finish before original selection starts; inserting
    into the engine's later commit scope would invalidate prior selections.

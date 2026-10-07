@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: In progress — ABI 2 passenger/route queries runtime verified
+- Status: In progress — ABI 3 vehicle queries captured; platform access pending
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -46,8 +46,13 @@ snapshots, plus bounded scans. Both native suites pass. The in-game capture logg
 [validation](../../docs/native-query-validation-2026-10-07.md). Observer disabled
 automatically; a later optional stop-loader stall is documented and cleaned up.
 
-Next finish vehicle capacity/reservations and actual platform compatibility
-queries, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
+ABI 3 adds loading-index vehicle lists and copied capacity/onboard/reservation/
+selected-terminal fields. The live capture recorded five vehicles without errors;
+all sampled reservations were zero. Nonzero/mixed/stale reservations passed
+fixtures. See [vehicle validation](../../docs/native-vehicle-validation-2026-10-07.md).
+
+Next finish actual passenger platform access and independently validate nonzero
+reservations live, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
 still governs mutation, indexing and replication requirements.
 
 Implementation history: `git log -- native AI/Tasks/005-shared-extender.md`.

@@ -112,6 +112,7 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     memcpy(&bits, &delta, sizeof(bits));
     tfx_reader reader;
     tfx_reader_init(&reader, (uint64_t)(uintptr_t)world, (uint64_t)(uintptr_t)image, copy_memory, NULL);
+    reader.terminal_system = (uint64_t)(uintptr_t)system;
     tfx_status status = tfx_dispatch_with_reader(bits, &reader);
     if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
@@ -134,7 +135,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.2.0; read-only queries; limit=400; ABI=1,2\n");
+    log_line("TPF shared bridge 0.3.0; read-only queries; limit=400; ABI=1,2,3\n");
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);

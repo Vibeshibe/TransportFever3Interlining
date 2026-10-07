@@ -2,9 +2,9 @@
 #include "queries.h"
 
 /* Offsets/strides are pinned to the backend executable fingerprint. */
-enum { WAITING, PERSON, LINE, GROUP, PLACE, TYPE_COUNT };
-static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8};
-static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c};
+enum { WAITING, PERSON, LINE, GROUP, PLACE, VEHICLE, TYPE_COUNT };
+static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0};
+static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c, 0x1e8};
 typedef struct { uint64_t begin, end, capacity; } vector;
 typedef struct { uint64_t control, slots, size, capacity; } type_table;
 #define TRY(expression) do { tfx_status status_ = (expression); if (status_ != TFX_OK) return status_; } while (0)
@@ -65,7 +65,10 @@ static tfx_status begin_query(tfx_reader *r) {
     }
     if (occupied != table.size) return TFX_INVALID_STATE;
     for (unsigned t = 0; t < TYPE_COUNT; ++t) {
-        if (r->types[t] == -1) return TFX_QUERY_UNAVAILABLE;
+        if (r->types[t] == -1) {
+            if (t == VEHICLE) continue; /* ABI2 queries do not require this type. */
+            return TFX_QUERY_UNAVAILABLE;
+        }
         for (unsigned other = 0; other < t; ++other)
             if (r->types[t] == r->types[other]) return TFX_INVALID_STATE;
     }
@@ -80,6 +83,7 @@ static tfx_status entity_vector(tfx_reader *r, vector *rows) {
 
 static tfx_status component(tfx_reader *r, int32_t entity, unsigned type, void *out, size_t bytes) {
     if (entity < 0 || type >= TYPE_COUNT || bytes > strides[type]) return TFX_INVALID_ARGUMENT;
+    if (r->types[type] < 0) return TFX_QUERY_UNAVAILABLE;
     vector rows, entries, storage;
     TRY(entity_vector(r, &rows));
     if ((uint32_t)entity >= (rows.end - rows.begin) / 24) return TFX_NOT_FOUND;
@@ -212,6 +216,157 @@ tfx_status tfx_query_scan(tfx_reader *r, int32_t first_entity, tfx_waiting_page 
         result.persons[result.count++] = entity;
         if (result.count == TFX_WAITING_PAGE_SIZE) break;
     }
+    *out = result;
+    return TFX_OK;
+}
+
+/* Bounded Swiss-table copies. Scan occupied slots instead of calling engine
+ * accessors: several nominal getters can detach copy-on-write storage. */
+static tfx_status table_copy(tfx_reader *r, uint64_t address, uint32_t stride,
+                             type_table *table, unsigned char controls[4096]) {
+    TRY(read_bytes(r, address, table, sizeof(*table)));
+    if (table->size > table->capacity || table->capacity > 4095 ||
+        (table->capacity & (table->capacity + 1))) return TFX_INVALID_STATE;
+    if (!table->capacity) return TFX_OK;
+    if (!table->control || !table->slots ||
+        table->slots > UINT64_MAX - table->capacity * stride) return TFX_INVALID_STATE;
+    TRY(read_bytes(r, table->control, controls, (size_t)table->capacity));
+    uint64_t occupied = 0;
+    for (uint64_t i = 0; i < table->capacity; ++i) occupied += !(controls[i] & 0x80);
+    return occupied == table->size ? TFX_OK : TFX_INVALID_STATE;
+}
+
+static tfx_status map_value(tfx_reader *r, uint64_t address, uint32_t stride,
+                            const void *key, size_t key_size, uint64_t *value) {
+    type_table table;
+    unsigned char controls[4096];
+    TRY(table_copy(r, address, stride, &table, controls));
+    uint64_t found = 0;
+    for (uint64_t i = 0; i < table.capacity; ++i) {
+        if (controls[i] & 0x80) continue;
+        unsigned char candidate[8];
+        uint64_t slot = table.slots + i * stride;
+        TRY(read_bytes(r, slot, candidate, key_size));
+        if (memcmp(candidate, key, key_size)) continue;
+        if (found) return TFX_INVALID_STATE;
+        found = slot + 8;
+    }
+    if (!found) return TFX_NOT_FOUND;
+    *value = found;
+    return TFX_OK;
+}
+
+static tfx_status pointer_at(tfx_reader *r, uint64_t base, uint32_t offset, uint64_t *value) {
+    if (!base || base > UINT64_MAX - offset - 8) return TFX_INVALID_STATE;
+    TRY(read_bytes(r, base + offset, value, 8));
+    return *value && *value <= UINT64_MAX - 0x200 ? TFX_OK : TFX_INVALID_STATE;
+}
+
+tfx_status tfx_query_stop_vehicles(tfx_reader *r, int32_t line, int32_t stop, tfx_stop_vehicles *out) {
+    if (!out || out->struct_size != sizeof(*out) || line < 0 || stop < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    if (!r->terminal_system) return TFX_QUERY_UNAVAILABLE;
+    vector stops;
+    TRY(component(r, line, LINE, &stops, sizeof(stops)));
+    if (!valid_vector(stops, 0x90, 4096)) return TFX_INVALID_STATE;
+    if ((uint32_t)stop >= (stops.end - stops.begin) / 0x90) return TFX_NOT_FOUND;
+    uint64_t system, dynamic, value;
+    TRY(pointer_at(r, r->terminal_system, 0x28, &system));
+    TRY(pointer_at(r, system, 0x1b0, &dynamic));
+    int32_t key[2] = {line, stop};
+    tfx_status status = map_value(r, dynamic + 0x90, 0x20, key, sizeof(key), &value);
+    tfx_stop_vehicles result = {.struct_size = sizeof(result), .line = line, .stop_index = stop};
+    if (status == TFX_NOT_FOUND) { *out = result; return TFX_OK; }
+    if (status != TFX_OK) return status;
+    vector vehicles;
+    TRY(read_bytes(r, value, &vehicles, sizeof(vehicles)));
+    if (!valid_vector(vehicles, 4, ENTITY_LIMIT)) return TFX_INVALID_STATE;
+    uint64_t count = (vehicles.end - vehicles.begin) / 4;
+    if (count > TFX_STOP_VEHICLES_SIZE) return TFX_LIMIT_REACHED;
+    result.count = (uint32_t)count;
+    if (count) TRY(read_bytes(r, vehicles.begin, result.vehicles, (size_t)count * 4));
+    for (uint32_t i = 0; i < result.count; ++i) {
+        if (result.vehicles[i] < 0) return TFX_INVALID_STATE;
+        for (uint32_t j = 0; j < i; ++j)
+            if (result.vehicles[i] == result.vehicles[j]) return TFX_INVALID_STATE;
+    }
+    *out = result;
+    return TFX_OK;
+}
+
+static tfx_status reserved_passengers(tfx_reader *r, int32_t vehicle, uint32_t *count) {
+    uint64_t dynamic, value;
+    TRY(pointer_at(r, r->terminal_system, 0x78, &dynamic));
+    tfx_status status = map_value(r, dynamic + 0x90, 0x38, &vehicle, 4, &value);
+    *count = 0;
+    if (status == TFX_NOT_FOUND) return TFX_OK;
+    if (status != TFX_OK) return status;
+    type_table set;
+    unsigned char controls[4096];
+    TRY(table_copy(r, value, 4, &set, controls));
+    if (set.size > 1024) return TFX_LIMIT_REACHED;
+    int32_t seen[1024];
+    uint32_t seen_count = 0;
+    for (uint64_t i = 0; i < set.capacity; ++i) {
+        if (controls[i] & 0x80) continue;
+        int32_t entity;
+        TRY(read_bytes(r, set.slots + i * 4, &entity, 4));
+        if (entity < 0) return TFX_INVALID_STATE;
+        for (uint32_t j = 0; j < seen_count; ++j)
+            if (seen[j] == entity) return TFX_INVALID_STATE;
+        seen[seen_count++] = entity;
+        unsigned char waiting[32];
+        TRY(component(r, entity, WAITING, waiting, sizeof(waiting)));
+        if (i32(waiting + 24) != vehicle) return TFX_INVALID_STATE;
+        /* This index also contains freight. Only SimPerson contributes to
+         * passenger occupancy; its cargo type must be zero. */
+        int32_t cargo_type;
+        status = component(r, entity, PERSON, &cargo_type, 4);
+        if (status == TFX_NOT_FOUND) continue;
+        if (status != TFX_OK) return status;
+        if (cargo_type != 0) return TFX_INVALID_STATE;
+        ++*count;
+    }
+    return TFX_OK;
+}
+
+tfx_status tfx_query_vehicle(tfx_reader *r, int32_t vehicle, tfx_vehicle *out) {
+    if (!out || out->struct_size != sizeof(*out) || vehicle < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    if (!r->terminal_system) return TFX_QUERY_UNAVAILABLE;
+    unsigned char data[0x160];
+    TRY(component(r, vehicle, VEHICLE, data, sizeof(data)));
+    tfx_vehicle result = {.struct_size = sizeof(result), .vehicle = vehicle,
+        .line = i32(data + 0xb8), .stop_index = i32(data + 0xbc),
+        .state = i32(data + 0xa8), .load_state = i32(data + 0x138),
+        .arrival_station_index = i32(data + 0xc0), .arrival_terminal = i32(data + 0xc4),
+        .arrival_locked = data[0xc8], .user_stopped = data[0xac]};
+    if (result.line < -1 || result.stop_index < -1 || result.arrival_station_index < -1 ||
+        result.arrival_terminal < -1 || result.arrival_locked > 1 || result.user_stopped > 1)
+        return TFX_INVALID_STATE;
+    vector capacities, timers;
+    memcpy(&capacities, data + 0x70, sizeof(capacities));
+    memcpy(&timers, data + 0x148, sizeof(timers));
+    if (!valid_vector(capacities, 4, 128) || capacities.begin == capacities.end ||
+        !valid_vector(timers, 4, 128) || timers.begin == timers.end) return TFX_INVALID_STATE;
+    TRY(read_bytes(r, capacities.begin, &result.passenger_capacity, 4));
+    TRY(read_bytes(r, timers.begin, &result.next_passenger_load_seconds_bits, 4));
+    if (result.passenger_capacity > INT32_MAX ||
+        (result.next_passenger_load_seconds_bits & 0x7f800000u) == 0x7f800000u) return TFX_INVALID_STATE;
+    uint64_t system, dynamic, value;
+    TRY(pointer_at(r, r->terminal_system, 0x30, &system));
+    TRY(pointer_at(r, system, 0x78, &dynamic));
+    tfx_status status = map_value(r, dynamic + 0x60, 0x20, &vehicle, 4, &value);
+    if (status == TFX_OK) {
+        vector counts;
+        TRY(read_bytes(r, value, &counts, sizeof(counts)));
+        if (!valid_vector(counts, 4, 128) || counts.begin == counts.end) return TFX_INVALID_STATE;
+        TRY(read_bytes(r, counts.begin, &result.passengers_onboard, 4));
+    } else if (status != TFX_NOT_FOUND) return status;
+    TRY(reserved_passengers(r, vehicle, &result.passengers_reserved));
+    uint64_t used = (uint64_t)result.passengers_onboard + result.passengers_reserved;
+    if (used > result.passenger_capacity) return TFX_INVALID_STATE;
+    result.passenger_places_left = result.passenger_capacity - (uint32_t)used;
     *out = result;
     return TFX_OK;
 }

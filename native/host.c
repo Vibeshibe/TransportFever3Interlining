@@ -103,20 +103,43 @@ static tfx_status scan_waiting_people(tfx_context context, int32_t first_entity,
     return status;
 }
 
+static tfx_status read_stop_vehicles(tfx_context context, int32_t line, int32_t stop, tfx_stop_vehicles *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_stop_vehicles(current_reader, line, stop, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
+static tfx_status read_vehicle(tfx_context context, int32_t vehicle, tfx_vehicle *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_vehicle(current_reader, vehicle, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version != TFX_ABI_VERSION && version != TFX_QUERY_ABI_VERSION) return TFX_ABI_MISMATCH;
-    size_t size = version == TFX_ABI_VERSION ? sizeof(*out) : sizeof(tfx_api_v2);
+    if (version < TFX_ABI_VERSION || version > TFX_VEHICLE_ABI_VERSION) return TFX_ABI_MISMATCH;
+    size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
+        version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) : sizeof(tfx_api_v3);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
-    if (version == TFX_QUERY_ABI_VERSION) {
-        out->struct_size = sizeof(tfx_api_v2);
-        out->abi_version = TFX_QUERY_ABI_VERSION;
+    if (version >= TFX_QUERY_ABI_VERSION) {
+        out->struct_size = (uint32_t)size;
+        out->abi_version = version;
         out->capabilities |= TFX_CAP_PASSENGER_ROUTE_QUERIES;
         tfx_api_v2 *v2 = (tfx_api_v2 *)out;
         v2->read_waiting_leg = read_waiting_leg;
         v2->read_line_stop = read_line_stop;
         v2->scan_waiting_people = scan_waiting_people;
+    }
+    if (version == TFX_VEHICLE_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_VEHICLE_QUERIES;
+        tfx_api_v3 *v3 = (tfx_api_v3 *)out;
+        v3->read_stop_vehicles = read_stop_vehicles;
+        v3->read_vehicle = read_vehicle;
     }
     return TFX_OK;
 }
