@@ -23,6 +23,10 @@ static unsigned char index_controls[4][7], vehicle_slots[7][32], onboard_slots[7
 static int32_t assigned_ids[7], vehicle_ids[17];
 static uint32_t capacity, occupied, next_load;
 static tfx_api_v3 v3 = {.v2.base.struct_size = sizeof(v3)};
+static tfx_api_v4 v4 = {.v3.v2.base.struct_size = sizeof(v4)};
+static unsigned char station_system[0x80], station_dynamic[0xb0], platform_slots[7][32], platform_controls[7];
+static uint64_t system_ptrs[3];
+static tfx_platform platform_values[17];
 
 static uint64_t address(const void *p) { return (uint64_t)(uintptr_t)p; }
 static void put32(void *p, uint32_t v) { memcpy(p, &v, 4); }
@@ -183,6 +187,79 @@ static void vehicle_tests(void) {
     CHECK(tfx_query_vehicle(&r, 4, &v) == TFX_QUERY_UNAVAILABLE);
 }
 
+static void platform_fixture(void) {
+    fixture();
+    memset(station_system, 0, sizeof(station_system));
+    memset(station_dynamic, 0, sizeof(station_dynamic));
+    memset(platform_slots, 0, sizeof(platform_slots));
+    memset(platform_controls, 0x80, sizeof(platform_controls));
+    put64(station_system, image + 0x3706600);
+    put64(station_system + 0x38, address(station_dynamic));
+    system_ptrs[0] = address(station_system);
+    vector_at(world + 0x30, system_ptrs, 8);
+    platform_controls[0] = 0;
+    table_at(station_dynamic + 0x70, platform_controls, platform_slots, 1, 7);
+    put32(data[4], 90); put32(data[4] + 4, 5); put32(data[4] + 8, 2);
+    put32(platform_slots[0], 90); put32(platform_slots[0] + 4, 5);
+    platform_values[0] = (tfx_platform){99, 2}; platform_values[1] = (tfx_platform){99, 3};
+    vector_at(platform_slots[0] + 8, platform_values, 16);
+}
+
+static void platform_tests(void) {
+    platform_fixture(); tfx_reader r = reader();
+    tfx_person_platforms p = {.struct_size = sizeof(p)};
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_OK && p.count == 2);
+    CHECK(p.person == 1 && p.edge_entity == 90 && p.edge_index == 5 && p.place == 2);
+    CHECK(p.platforms[0].station_entity == 99 && p.platforms[1].terminal == 3);
+    tfx_person_platforms unchanged = p;
+    platform_values[1] = platform_values[0];
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE && !memcmp(&p, &unchanged, sizeof(p)));
+    platform_fixture(); r = reader();
+    put32(data[4] + 4, 6);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_OK && !p.count); /* unmapped edge, not same entity's other edge */
+    platform_fixture(); r = reader();
+    vector_at(rows[1], handles[1], 16);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_NOT_FOUND); /* no waiting place */
+    platform_fixture(); r = reader();
+    put32(data[4] + 8, UINT32_MAX);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE);
+    platform_fixture(); r = reader(); platform_values[0].terminal = -1;
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE);
+    platform_fixture(); r = reader();
+    vector_at(platform_slots[0] + 8, platform_values, sizeof(platform_values));
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_LIMIT_REACHED);
+    platform_fixture(); r = reader();
+    system_ptrs[1] = system_ptrs[0]; vector_at(world + 0x30, system_ptrs, 16);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE); /* ambiguous system ownership */
+    platform_fixture(); r = reader(); put64(station_system, image + 0x3702758);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_QUERY_UNAVAILABLE);
+    platform_fixture(); r = reader(); put64(world + 0x38, address(system_ptrs) + 1);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE);
+    platform_fixture(); r = reader(); unreadable = address(station_dynamic + 0x70);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_INVALID_STATE);
+    platform_fixture(); r = reader();
+    memcpy(data[4] + 31 * strides[4], data[4], strides[4]); handles[1][2][1] = 0x4000001f;
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_OK && p.count == 2);
+    platform_fixture(); r = reader();
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_OK && p.platforms[0].station_entity == 99);
+    /* A second world's StationSystem owns a different map for the same person. */
+    unsigned char world_b[sizeof(world)], system_b[sizeof(station_system)], dynamic_b[sizeof(station_dynamic)];
+    unsigned char slots_b[sizeof(platform_slots)];
+    tfx_platform values_b[1] = {{123, 7}};
+    memcpy(world_b, world, sizeof(world)); memcpy(system_b, station_system, sizeof(system_b));
+    memcpy(dynamic_b, station_dynamic, sizeof(dynamic_b)); memcpy(slots_b, platform_slots, sizeof(slots_b));
+    uint64_t systems_b[1] = {address(system_b)};
+    vector_at(world_b + 0x30, systems_b, sizeof(systems_b));
+    put64(system_b + 0x38, address(dynamic_b));
+    put64(dynamic_b + 0x78, address(slots_b)); vector_at(slots_b + 8, values_b, sizeof(values_b));
+    tfx_reader second;
+    tfx_reader_init(&second, address(world_b), image, copy_memory, NULL);
+    CHECK(tfx_query_platforms(&second, 1, &p) == TFX_OK && p.count == 1 && p.platforms[0].station_entity == 123);
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_OK && p.count == 2 && p.platforms[0].station_entity == 99);
+    r.reads_left = 0;
+    CHECK(tfx_query_platforms(&r, 1, &p) == TFX_QUERY_BUDGET_EXHAUSTED);
+}
+
 static DWORD WINAPI wrong_thread(void *unused) {
     (void)unused;
     tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
@@ -191,6 +268,8 @@ static DWORD WINAPI wrong_thread(void *unused) {
     tfx_stop_vehicles list = {.struct_size = sizeof(list)};
     CHECK(v3.read_vehicle(expired, 4, &v) == TFX_WRONG_THREAD);
     CHECK(v3.read_stop_vehicles(expired, 2, 0, &list) == TFX_WRONG_THREAD);
+    tfx_person_platforms p = {.struct_size = sizeof(p)};
+    CHECK(v4.read_person_platforms(expired, 1, &p) == TFX_WRONG_THREAD);
     return 0;
 }
 
@@ -200,6 +279,13 @@ static void vehicle_client(tfx_context context, void *unused) {
     tfx_stop_vehicles list = {.struct_size = sizeof(list)};
     CHECK(v3.read_vehicle(context, 4, &v) == TFX_OK && v.passenger_places_left == 7);
     CHECK(v3.read_stop_vehicles(context, 2, 0, &list) == TFX_OK && list.count == 1);
+    expired = context;
+}
+
+static void platform_client(tfx_context context, void *unused) {
+    (void)unused;
+    tfx_person_platforms p = {.struct_size = sizeof(p)};
+    CHECK(v4.read_person_platforms(context, 1, &p) == TFX_OK && p.count == 2);
     expired = context;
 }
 static void client(tfx_context context, void *unused) {
@@ -272,6 +358,7 @@ int main(void) {
     CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_QUERY_BUDGET_EXHAUSTED);
     CHECK(tfx_get_api(2, &api.base) == TFX_OK);
     CHECK(tfx_get_api(3, &v3.v2.base) == TFX_OK && v3.v2.base.capabilities == 7);
+    CHECK(tfx_get_api(4, &v4.v3.v2.base) == TFX_OK && v4.v3.v2.base.capabilities == 15);
     CHECK(api.base.abi_version == 2 && api.base.capabilities == 3);
     tfx_client c = {.struct_size = sizeof(c), .id = "tests.queries", .before_terminal_selection = client};
     CHECK(api.base.register_client(&c) == TFX_OK);
@@ -287,6 +374,14 @@ int main(void) {
     tfx_vehicle v = {.struct_size = sizeof(v)};
     CHECK(v3.read_vehicle(expired, 4, &v) == TFX_STALE_CONTEXT);
     CHECK(v3.v2.base.unregister_client(c.id) == TFX_OK);
+    platform_tests(); platform_fixture(); r = reader();
+    c.before_terminal_selection = platform_client;
+    CHECK(v4.v3.v2.base.register_client(&c) == TFX_OK);
+    CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    tfx_person_platforms p = {.struct_size = sizeof(p)};
+    CHECK(v4.read_person_platforms(expired, 1, &p) == TFX_STALE_CONTEXT);
+    CHECK(v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    puts("PASS: platform edge membership, distinct worlds, missing/ambiguous systems, malformed/oversized results, ABI4 guards.");
     puts("PASS: vehicle capacity/reservations, stop index, selected terminal, shared storage, malformed tables, ABI3 guards.");
     puts("PASS: passenger/route copies, contiguous/shared storage, malformed/missing data, budgets, scan, ABI2 lifetime/thread guards.");
     return 0;

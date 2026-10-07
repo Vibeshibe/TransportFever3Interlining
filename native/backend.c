@@ -12,7 +12,7 @@
 #define TERMINAL_UPDATE_RVA 0xb0db00u
 #define TERMINAL_VTABLE_RVA 0x3702758u
 #define TERMINAL_SLOT_RVA   0x37027b0u
-#define OBSERVATION_LIMIT 400
+#define OBSERVATION_LIMIT 1200
 static const unsigned char expected_hash[32] = {
     0x5e,0x72,0x0c,0xd7,0xfe,0xfd,0x68,0x8a,0x16,0x75,0xb6,0x1c,0x6e,0xec,0xaa,0xdf,
     0xd2,0x5c,0x17,0x1d,0xa9,0xe9,0xe9,0x38,0xaf,0x85,0xe5,0xef,0xae,0xbd,0x8a,0x35};
@@ -135,7 +135,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.3.0; read-only queries; limit=400; ABI=1,2,3\n");
+    log_line("TPF shared bridge 0.4.0; read-only queries; limit=1200; ABI=1,2,3,4\n");
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);

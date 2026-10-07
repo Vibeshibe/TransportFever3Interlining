@@ -370,3 +370,61 @@ tfx_status tfx_query_vehicle(tfx_reader *r, int32_t vehicle, tfx_vehicle *out) {
     *out = result;
     return TFX_OK;
 }
+
+static tfx_status find_station_system(tfx_reader *r) {
+    if (r->station_system) return TFX_OK; /* Cache only within this dispatch. */
+    vector systems;
+    TRY(read_bytes(r, r->world + 0x30, &systems, sizeof(systems)));
+    if (!valid_vector(systems, 8, 256)) return TFX_INVALID_STATE;
+    uint64_t pointers[256], found = 0;
+    size_t bytes = (size_t)(systems.end - systems.begin);
+    if (bytes) TRY(read_bytes(r, systems.begin, pointers, bytes));
+    for (size_t i = 0; i < bytes / 8; ++i) {
+        uint64_t vtable;
+        TRY(read_bytes(r, pointers[i], &vtable, 8));
+        /* RTTI .?AVStationSystem@ecs@@, validated against this executable. */
+        if (vtable != r->image + 0x3706600) continue;
+        if (found) return TFX_INVALID_STATE;
+        found = pointers[i];
+    }
+    if (!found) return TFX_QUERY_UNAVAILABLE;
+    r->station_system = found;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_platforms(tfx_reader *r, int32_t person, tfx_person_platforms *out) {
+    if (!out || out->struct_size != sizeof(*out) || person < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    int32_t cargo_type;
+    unsigned char waiting[32];
+    int32_t place[3];
+    TRY(component(r, person, PERSON, &cargo_type, 4));
+    if (cargo_type != 0) return TFX_INVALID_STATE;
+    TRY(component(r, person, WAITING, waiting, sizeof(waiting)));
+    TRY(component(r, person, PLACE, place, sizeof(place)));
+    if (place[0] < 0 || place[1] < 0 || place[2] < 0) return TFX_INVALID_STATE;
+    TRY(find_station_system(r));
+    uint64_t dynamic, value;
+    TRY(pointer_at(r, r->station_system, 0x38, &dynamic));
+    tfx_status status = map_value(r, dynamic + 0x70, 0x20, place, 8, &value);
+    tfx_person_platforms result = {.struct_size = sizeof(result), .person = person,
+        .edge_entity = place[0], .edge_index = place[1], .place = place[2]};
+    if (status == TFX_NOT_FOUND) { *out = result; return TFX_OK; }
+    if (status != TFX_OK) return status;
+    vector platforms;
+    TRY(read_bytes(r, value, &platforms, sizeof(platforms)));
+    if (!valid_vector(platforms, 8, 4096)) return TFX_INVALID_STATE;
+    uint64_t count = (platforms.end - platforms.begin) / 8;
+    if (count > TFX_PERSON_PLATFORMS_SIZE) return TFX_LIMIT_REACHED;
+    result.count = (uint32_t)count;
+    if (count) TRY(read_bytes(r, platforms.begin, result.platforms, (size_t)count * 8));
+    for (uint32_t i = 0; i < result.count; ++i) {
+        if (result.platforms[i].station_entity < 0 || result.platforms[i].terminal < 0)
+            return TFX_INVALID_STATE;
+        for (uint32_t j = 0; j < i; ++j)
+            if (!memcmp(&result.platforms[i], &result.platforms[j], sizeof(tfx_platform)))
+                return TFX_INVALID_STATE;
+    }
+    *out = result;
+    return TFX_OK;
+}

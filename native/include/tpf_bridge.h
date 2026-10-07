@@ -9,9 +9,12 @@ extern "C" {
 #define TFX_ABI_VERSION 1u
 #define TFX_QUERY_ABI_VERSION 2u
 #define TFX_VEHICLE_ABI_VERSION 3u
+#define TFX_PLATFORM_ABI_VERSION 4u
 #define TFX_CAP_TERMINAL_OBSERVATION 1u
 #define TFX_CAP_PASSENGER_ROUTE_QUERIES 2u
 #define TFX_CAP_VEHICLE_QUERIES 4u
+#define TFX_CAP_PLATFORM_QUERIES 8u
+#define TFX_PERSON_PLATFORMS_SIZE 16u
 #define TFX_WAITING_PAGE_SIZE 16u
 #define TFX_STOP_VEHICLES_SIZE 16u
 #define TFX_HAS_TERMINAL_PLACE 1u
@@ -113,6 +116,24 @@ typedef struct tfx_api_v3 {
     tfx_status (*read_stop_vehicles)(tfx_context, int32_t line, int32_t stop, tfx_stop_vehicles *out);
     tfx_status (*read_vehicle)(tfx_context, int32_t vehicle, tfx_vehicle *out);
 } tfx_api_v3;
+
+typedef struct tfx_platform {
+    int32_t station_entity, terminal; /* Station entity, unlike vehicle's station index. */
+} tfx_platform;
+
+/* Direct waiting-edge membership from this world's StationSystem. Empty means
+ * no direct edge membership, NOT permission to board. Node fallback, terminal
+ * loading flags and destination/unloading checks are separate requirements. */
+typedef struct tfx_person_platforms {
+    uint32_t struct_size, count;
+    int32_t person, edge_entity, edge_index, place;
+    tfx_platform platforms[TFX_PERSON_PLATFORMS_SIZE];
+} tfx_person_platforms;
+
+typedef struct tfx_api_v4 {
+    tfx_api_v3 v3;
+    tfx_status (*read_person_platforms)(tfx_context, int32_t person, tfx_person_platforms *out);
+} tfx_api_v4;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

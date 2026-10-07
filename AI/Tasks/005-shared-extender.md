@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: In progress — ABI 3 vehicle queries captured; platform access pending
+- Status: In progress — ABI 4 edge membership and nonzero reservations captured
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -51,8 +51,16 @@ selected-terminal fields. The live capture recorded five vehicles without errors
 all sampled reservations were zero. Nonzero/mixed/stale reservations passed
 fixtures. See [vehicle validation](../../docs/native-vehicle-validation-2026-10-07.md).
 
-Next finish actual passenger platform access and independently validate nonzero
-reservations live, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
+ABI 4 exposes copied direct passenger-edge membership, using StationSystem from
+the current callback world. Both suites passed, including two-world separation.
+The live capture completed 1,200 callbacks with nine platform records and a
+passenger assignment corroborating a nonzero vehicle reservation; see
+[platform evidence](../../docs/native-platform-validation-2026-10-07.md).
+Endpoint-node fallback remains unsupported; empty direct membership must reject
+an initial candidate.
+
+Next implement candidate validation with remaining terminal loading/unloading
+and journey checks, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
 still governs mutation, indexing and replication requirements.
 
 Implementation history: `git log -- native AI/Tasks/005-shared-extender.md`.

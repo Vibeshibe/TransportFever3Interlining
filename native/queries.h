@@ -7,7 +7,7 @@
  * copies or fail. No game functions are called; no pointers are returned to mods. */
 typedef int (*tfx_copy_memory)(void *user, uint64_t address, void *out, size_t size);
 typedef struct tfx_reader {
-    uint64_t world, image, terminal_system;
+    uint64_t world, image, terminal_system, station_system;
     tfx_copy_memory copy;
     void *user;
     uint32_t bytes_left, reads_left, queries_left;
@@ -21,4 +21,5 @@ tfx_status tfx_query_stop(tfx_reader *, int32_t line, int32_t stop, tfx_line_sto
 tfx_status tfx_query_scan(tfx_reader *, int32_t first_entity, tfx_waiting_page *out);
 tfx_status tfx_query_stop_vehicles(tfx_reader *, int32_t line, int32_t stop, tfx_stop_vehicles *out);
 tfx_status tfx_query_vehicle(tfx_reader *, int32_t vehicle, tfx_vehicle *out);
+tfx_status tfx_query_platforms(tfx_reader *, int32_t person, tfx_person_platforms *out);
 #endif

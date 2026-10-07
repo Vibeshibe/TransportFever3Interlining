@@ -18,6 +18,53 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Bridge **0.4 / ABI 4** now exposes `read_person_platforms`: copied direct edge
+membership as station-entity/terminal pairs, plus edge entity/index and place.
+ABI 1–3 remain compatible. **Platform membership and a nonzero reservation are
+now observed live**; do not repeat generic captures to establish those facts.
+See [platform/reservation evidence](../../docs/native-platform-validation-2026-10-07.md).
+
+The user restarted the disposable save. Loading `analysis/native-bridge/build-v4/`
+returned zero into Windows PID 308. Capture `tpf-bridge-308-27811482.log` completed
+1,200 callbacks, simulation thread 592, worlds `0x2cd5ea30` / `0x2cd5f6f0`.
+Nine platform snapshots, 15 Wimborne comparisons, 64 vehicle records across ten
+IDs, four nonzero-reservation vehicle samples, one assignment cross-check, no
+logged query errors and zero rejected boundaries. Observer auto-disabled; no
+GDB attachment or stop-loader. User was told they can pause/close. Restart before
+loading a revised DLL; do not overwrite the loaded artifact or assume its PID.
+
+At sequence 595, person **71583** was assigned to vehicle **97913**, S3 stops 4→5;
+vehicle API reported capacity 40, onboard 0, reserved 1, remaining 39. This
+corroborates that sampled reservation, not an exhaustive census. At Wimborne,
+S1 persons 98760/113752 and S3 person 114323 map to station 97948 terminal 1,
+while S2 person 75514 maps to terminal 2. S1/S3 share physical access; route and
+alighting compatibility still need current-callback validation.
+
+Current-world discovery: world `+0x30` vector of 8-byte system pointers (dispatcher
+`0x142bb8a50`); find unique StationSystem vtable RVA **0x3706600** (RTTI RVA
+0x3d972a0, locator VA 0x14390eee8). System `+0x38` dynamic object, map `+0x70`,
+8-byte edge keys, 32-byte entries, vector at entry `+8`, 8-byte station-entity /
+terminal pairs. `0x140b3fe60` insertion proves meanings and permits many terminals
+per edge; station-wide person edges map to every terminal. Place registration
+`0x14195ec60` proves edge at0/place at8, stride12. Exports `platform-system.txt`
+and `platform-place-layout.txt` supplement the prior binding chain below.
+
+Native helper **0x140952760** tries direct edge membership, then endpoint-node
+membership using **0x140b41150**. ABI 4 does not implement that fallback. Initial
+candidate validation can reject empty direct membership instead of guessing.
+Reader caps: system vector256, map4095 slots,16 returned pairs, existing shared
+64-query/8192-read/1MiB budgets. Tests passed, including two distinct worlds,
+shared storage, missing/ambiguous system, malformed data and ABI4 thread/token.
+
+**Next:** implement read-only candidate validation combining waiting leg, direct
+edge membership, actual locked vehicle platform, capacity/loading rules and
+adjacent destination/journey continuity. Add verified terminal loading/unloading
+flags and destination checks before enabling one-passenger engine-owned mutation.
+Keep native infrastructure separate from interlining policy. No mutation API,
+Lua bridge binding, passenger behavior change or stable release exists yet.
+
+### Earlier vehicle implementation
+
 Bridge 0.3 adds ABI 3 `read_stop_vehicles` and `read_vehicle`, with capacity,
 onboard passengers, assigned boarding reservations, remaining places, raw state,
 loading timer, selected arrival terminal and locked/user-stopped flags. ABI 1/2
@@ -181,8 +228,9 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Finish actual platform compatibility and independently validate a nonzero
-   live reservation. ABI 3 vehicle queries are implemented; see latest evidence. Then
+1. Implement the read-only candidate validator and remaining terminal/load/unload
+   and destination predicates. Direct platform membership and nonzero reservations
+   have live evidence; ABI 4 queries are implemented. Then
    implement one-passenger mutation after candidate validation is complete.
    The dedicated scope must finish before original selection starts; inserting
    into the engine's later commit scope would invalidate prior selections.

@@ -119,10 +119,19 @@ static tfx_status read_vehicle(tfx_context context, int32_t vehicle, tfx_vehicle
     return status;
 }
 
+static tfx_status read_person_platforms(tfx_context context, int32_t person, tfx_person_platforms *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_platforms(current_reader, person, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version < TFX_ABI_VERSION || version > TFX_VEHICLE_ABI_VERSION) return TFX_ABI_MISMATCH;
+    if (version < TFX_ABI_VERSION || version > TFX_PLATFORM_ABI_VERSION) return TFX_ABI_MISMATCH;
     size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
-        version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) : sizeof(tfx_api_v3);
+        version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) :
+        version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) : sizeof(tfx_api_v4);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
@@ -135,11 +144,15 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         v2->read_line_stop = read_line_stop;
         v2->scan_waiting_people = scan_waiting_people;
     }
-    if (version == TFX_VEHICLE_ABI_VERSION) {
+    if (version >= TFX_VEHICLE_ABI_VERSION) {
         out->capabilities |= TFX_CAP_VEHICLE_QUERIES;
         tfx_api_v3 *v3 = (tfx_api_v3 *)out;
         v3->read_stop_vehicles = read_stop_vehicles;
         v3->read_vehicle = read_vehicle;
+    }
+    if (version == TFX_PLATFORM_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_PLATFORM_QUERIES;
+        ((tfx_api_v4 *)out)->read_person_platforms = read_person_platforms;
     }
     return TFX_OK;
 }

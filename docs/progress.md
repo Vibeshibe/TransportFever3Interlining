@@ -414,6 +414,34 @@
   retained the loaded DLL and original log unchanged. Next: finish waiting-edge
   terminal membership and nonzero-reservation validation, then candidate checks.
 
+## 2026-10-07 — Validate direct platform membership and live reservations
+
+- Added ABI 4 copied passenger-edge/platform membership, preserving ABI 1–3.
+  Located StationSystem through the current world's system vector and verified
+  vtable identity, avoiding the scripting context's possible world mismatch.
+  Reader supports multiple memberships, explicit empty/missing/error results,
+  bounded maps and unchanged output on failure.
+- Traced StationSystem insertion and waiting-place registration. Confirmed that
+  platform pairs contain station entities, whereas vehicle arrival uses a station
+  index. The engine has an endpoint-node fallback; this API exposes direct edge
+  membership only, so empty results cannot authorize boarding.
+- Both native suites and warning-clean cross-build passed. New tests distinguish
+  two worlds with identical person/edge IDs but different terminal memberships,
+  and cover malformed/missing/duplicate/oversized data and ABI 4 guards.
+- User restarted/resumed a disposable baseline. The revised bounded consumer
+  completed 1,200 callbacks: nine platform snapshots, 15 shared-platform line
+  comparisons, 64 vehicle snapshots across ten IDs, four nonzero-reservation
+  samples and one assigned-passenger cross-check. No logged query errors or
+  rejected boundaries. Auto-disabled without debugger or stop-loader.
+- Live example: person 71583 was assigned to vehicle 97913 at sequence 595;
+  separate vehicle read reported capacity 40, onboard 0, reserved 1, remaining 39.
+  Wimborne S1/S3 waiting edges map to terminal 1; S2 maps to terminal 2.
+  [Evidence and hashes](native-platform-validation-2026-10-07.md).
+- Next: read-only candidate validation including terminal load/unload flags,
+  locked actual arrival and adjacent journey continuity, then the bounded
+  engine-owned replacement experiment. No passenger mutation or behavior fix
+  is active; installed Lua probe and game/save files remain unchanged.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -1,7 +1,7 @@
 # Shared native bridge — experimental read-only pilot
 
 The bridge provides one centrally owned terminal-update interception and a small
-versioned C API and copied passenger/line-stop/vehicle queries. **It cannot change
+versioned C API and copied passenger/line-stop/vehicle/platform queries. **It cannot change
 passenger routes or components.** The Lua
 policy in `src/interlining/` remains separate and is not connected to this DLL.
 This is a development loader, not an automatically installed game mod.
@@ -53,21 +53,26 @@ loader times out, do not infer the target operation failed or unload its DLL.
 
 The bridge writes `tpf-bridge-WINDOWS_PID-UPTIME.log` beside the DLL. Start returns
 zero only after verifying the executable, live entry bytes, table layout, and
-hook ownership. Run the simulation to collect up to 400 accepted invocations;
+hook ownership. Run the simulation to collect up to 1,200 accepted invocations;
 the first eight and final invocation are logged. This is not a game-tick count:
 two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.3 registers the bounded `research.passenger-route-observer` client.
-It scans at most 1,024 entity masks per invocation and logs at most 24 passenger
-samples and their boarding/alighting stops. It stops scanning after eight scan
-or waiting-read failures. All its data access goes through the public API.
-Its vehicle sampler cycles through the disposable baseline's S1/S2/S3 entity IDs
-`98278`, `97742`, `97743` and their stops, logging at most 48 changed snapshots or
-eight errors. These save-specific inputs live only in the research consumer;
-the SDK accepts caller-supplied IDs. Repeated snapshots are suppressed for logging
-only, never reused as eligibility evidence across worlds.
+Version 0.4 registers the bounded `research.passenger-route-observer` client.
+It scans at most 1,024 masks per callback, remembers up to 32 candidate person IDs
+and 16 vehicle IDs, then re-reads up to eight people and four vehicles per callback.
+Two person-edge membership reads per callback provide up to 48 changed platform
+snapshots. Vehicle logging is bounded to 64 ordinary records, plus a shared
+24-record allowance for assignments/nonzero reservations. Eight query errors
+stop the consumer; missing former waiting records are expected after boarding.
+
+Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
+`97742`, `97743` and their stops. At Wimborne (group `97291`) the consumer compares
+edge membership with each line's configured stop 1. These are save-specific
+research inputs, not SDK defaults or an eligibility policy. Cached IDs are always
+re-read. Snapshot comparisons suppress logs only; they never authorize mutations
+or reuse engine pointers across worlds.
 
 ## Client contract
 
@@ -153,6 +158,32 @@ new reservations can be added immediately afterward. No seat is reserved by a
 read. Actual platform access, unloading and journey continuation remain required
 before any interlining mutation.
 
+## Waiting-edge platform queries (ABI 4)
+
+Initialize `tfx_api_v4 api = {.v3.v2.base.struct_size = sizeof(api)}` and request
+`tfx_get_api(TFX_PLATFORM_ABI_VERSION, &api.v3.v2.base)`. ABI 4 adds
+`TFX_CAP_PLATFORM_QUERIES` and `read_person_platforms(context, person, out)`.
+ABI 1–3 retain their existing layouts and capability values.
+
+The result copies the waiting edge's entity/index, place index, and up to 16
+`{station_entity, terminal}` pairs from **this world's** StationSystem. Multiple
+pairs are valid: a waiting edge can serve several terminals. No direct mapping
+returns a successful empty list. A missing person/waiting/place component returns
+`TFX_NOT_FOUND`; missing StationSystem returns `TFX_QUERY_UNAVAILABLE`.
+Duplicate systems/pairs or malformed memory fail; more than 16 pairs returns
+`TFX_LIMIT_REACHED`. Failed queries leave output unchanged.
+
+The reader locates StationSystem in the current world's bounded system vector,
+checks its verified vtable identity and caches that pointer only for the current
+dispatch. It does not use the scripting engine's potentially different world.
+
+This exposes **direct edge membership**, not complete boarding eligibility.
+The engine also has an endpoint-node fallback when no edge membership exists;
+that fallback is not implemented here. An empty result must never authorize an
+alternative boarding. Resolve a vehicle's station-group index before comparing
+its selected terminal with these station-entity pairs; check its locked choice,
+terminal loading/unloading flags, route continuity and capacity separately.
+
 ## Interception and compatibility
 
 Pinned executable SHA-256:
@@ -177,14 +208,18 @@ limits, and duplicate IDs. The slot/assembly test checks ownership refusal,
 restored page protection, integer/float/stack arguments, original return value,
 and exactly one original call. Query tests cover both storage layouts, malformed
 and absent records, disabled loading, non-finite fractions, scan pagination,
-budgets, output preservation, ABI 2/3 context/thread rules, vehicle capacities,
+budgets, output preservation, ABI 2/3/4 context/thread rules, vehicle capacities,
 mixed passenger/freight reservations, index corruption and overflow refusal.
+Platform tests cover separate worlds, ambiguous/missing systems, shared storage,
+multiple terminals, absent edges and oversized/invalid results.
 These tests do not prove arbitrary native-client
 safety, cross-line migration, save compatibility, or third-party mod support.
 See [the query capture](../docs/native-query-validation-2026-10-07.md) for runtime
 evidence and the unresolved Proton stop-loader stall. See
 [vehicle capture](../docs/native-vehicle-validation-2026-10-07.md) for ABI 3 results
-and the remaining live nonzero-reservation/platform-access checks.
+and [platform/reservation capture](../docs/native-platform-validation-2026-10-07.md)
+for ABI 4 membership and a live nonzero-reservation cross-check. Full candidate
+eligibility and mutation remain unimplemented.
 
 Implementation references: Microsoft's [x64 calling convention](https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention),
 [atomic pointer exchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchangepointer),
