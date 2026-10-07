@@ -36,7 +36,7 @@ assert(messages[#messages]:find("count=100", 1, true))
 
 probe.handleEvent({}, state, "", "TransportVehicleSystem", "OnArriveAtStop",
 	{lineEntity = 12, vehicleEntity = 34, stopIndex = 2, lastStopIndex = 1})
-assert(messages[#messages]:find("line=12 vehicle=34 stop=2", 1, true))
+assert(messages[#messages - 1]:find("line=12 vehicle=34 stop=2", 1, true))
 probe.handleEvent({}, state, "", "SimPersonSystem", "OnStartedLineUsage", {entities = {{5, 12}}})
 assert(messages[#messages]:find("samplePerson=5 sampleLine=12", 1, true))
 probe.handleEvent({}, state, "", "SimPersonSystem", "OnCompletedLineUsage", {entities = {5}})
@@ -47,5 +47,5 @@ assert(state.saved.counts.OnModifyPathfinding == count)
 probe.handleEvent({}, state, "", "SimPersonSystem", "OnModifyPathfinding", nil)
 api.engine.getComponent = function() error("No game time") end
 probe.handleEvent({}, state, "", "TransportVehicleSystem", "OnArriveAtStop", {})
-assert(messages[#messages]:find("time=unavailable", 1, true))
+assert(messages[#messages - 1]:find("time=unavailable", 1, true))
 print("PASS: subscription initialization, nil returns, unchanged routing payload, bounded logging, event summaries, and missing game-time handling")

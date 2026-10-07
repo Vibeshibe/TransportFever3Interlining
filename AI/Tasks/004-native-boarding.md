@@ -1,6 +1,6 @@
 # 004 — Trace native boarding and state transitions
 
-- Status: Ready — scripting bridge lacks a boarding override; not started
+- Status: In progress — native queue/arrival functions located
 - Owner: Assistant
 - Dependencies: 003 identifies a capability missing from scripting
 
@@ -12,7 +12,7 @@ task skipped if existing scripting is sufficient.
 
 ## Acceptance criteria
 
-- [ ] Trace diagnostic-string references to actual candidate functions; separate
+- [x] Trace diagnostic-string references to actual candidate functions; separate
       string addresses from function addresses and confirm executable version.
 - [ ] Establish how line, direction, stop occurrence, platform access, capacity,
       loading rules, and onward journeys affect boarding eligibility.
@@ -29,7 +29,11 @@ Start with the anchors in [research notes](../../docs/interlining-research.md).
 The [scripting assessment](../../docs/scripting-hook-investigation.md) establishes
 that `OnModifyPathfinding` only exchanges town cost factors. This justifies
 tracing native boarding, without yet deciding to implement an extender.
-Diagnostic names are leads, not verified hook locations. No native intervention
-has been identified or validated yet; blockers and uncertainty must be recorded.
+Initial functions and call relationships are documented in the
+[native trace](../../docs/native-boarding-investigation.md). Terminal update
+uses a two-key vehicle lookup and cargo/loading checks. The done-waiting lead
+calls a private-driving helper, not an established transit-boarding transition.
+No safe native intervention is verified. Revision 2 diagnostics are installed
+to supply the missing waiting-state evidence on the next user run.
 
 Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/004-native-boarding.md`.

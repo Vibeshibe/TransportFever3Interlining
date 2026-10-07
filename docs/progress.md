@@ -187,6 +187,36 @@
   tallied, local Markdown links and `git diff --check` passed. Documentation-only
   milestone; no repeat of unrelated Lua or Ghidra checks required.
 
+## 2026-10-07 — Arrival diagnostics revision 2 and native boarding trace
+
+- User authorized continued implementation at the assistant's discretion.
+  Added read-only arrival snapshots with line/station names, configured/actual
+  terminals, passenger capacity and occupancy, load settings, and other lines'
+  waiting queues. Each sampled passenger includes planned line and alighting
+  station, enabling correlation that revision 1 could not provide.
+- Bounded traversal to 16 queues, 8 people per queue, and 32 people per arrival;
+  first 60 arrivals then every 100th. Native queries may return full lists.
+  Added error isolation and one-time counter reset on revision upgrade.
+- Validation: both Lua suites passed, covering index/cargo mapping, differing
+  platforms, stale entities, query errors, sampling limits, revision migration,
+  nil returns, and unchanged routing data. All Lua files passed syntax checks;
+  package manifest/resource and ZIP CRC checks passed.
+- Installed revision 2 in the existing custom probe mod after finding no running
+  game process and verifying both old files against repository revision 1.
+  Backups and hashes are in ignored `analysis/probe-install-backups/revision1-to-2/`.
+  Installed files were compared with source after replacement. New diagnostics
+  need a game run; no executable, shipped resource, or save was changed.
+- Located native terminal update, path-change notification, done-waiting, and
+  vehicle-arrival functions through diagnostic references and PE ranges.
+  Targeted Ghidra exports succeeded; [native trace](native-boarding-investigation.md)
+  records addresses and remaining uncertainty. The terminal update queries a
+  two-part vehicle key and checks cargo/loading data. The done-waiting path
+  reaches `SimPersonDrivingArriveAtEndOfPath`, so it is not established as a
+  transit boarding hook.
+- Task 004 is now active. Next: verify revision 2 snapshots and trace vehicle
+  selection through engine-owned state commits. No native extender or boarding
+  behavior change has been implemented. Documentation links and diff checks pass.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

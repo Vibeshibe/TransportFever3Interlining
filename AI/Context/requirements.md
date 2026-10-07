@@ -42,7 +42,7 @@ research is in [interlining-research.md](../../docs/interlining-research.md).
 Work on `dev`, commit and push coherent milestones, and reserve `main` for
 validated stable releases. Game files and saves remain outside tracked files.
 
-Current authorization: scripting-hook investigation (003), including targeted
-Ghidra analysis and passive diagnostics. On 2026-10-07 the user asked to resume
+Current authorization: the user asked to resume implementation at the assistant's
+discretion, covering diagnostics and continued native boarding investigation. On 2026-10-07 the user asked to resume
 and agreed to test the prepared probe. Task 002 has a first user-observed example and runtime logs; exact boarding
 eligibility remains unresolved. No native behavior patch has been implemented or validated.
