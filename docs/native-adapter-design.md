@@ -1,7 +1,8 @@
 # Native adapter: first intervention
 
-Status: implementation proposal backed by static analysis and read-only runtime
-observation. No mutation adapter or native extension is installed.
+Status: the [native bridge](../native/README.md) implements read-only interception
+of this entry boundary. The mutation adapter remains a proposal backed by static
+analysis and read-only runtime observation; no passenger writes are implemented.
 
 ## Selected boundary
 
@@ -66,8 +67,10 @@ expected state immediately before applying them.
 
 ## Remaining implementation gates
 
-The native bindings, loader/detour, live route/permission queries, and failure
-handling are not implemented. Same-line stop remapping demonstrates replacement;
+The native bridge now verifies the executable and live virtual table, replaces
+Update's slot, and forwards through an ABI-preserving assembly wrapper. Native
+mutation bindings, live route/permission queries, and write failure handling
+are not implemented. Same-line stop remapping demonstrates replacement;
 cross-line replacement still needs a disposable-save write test. Removal/addition
 is not an established rollback transaction: reject expected failures before the
 first removal, and do not promise recovery from an engine assertion or allocator

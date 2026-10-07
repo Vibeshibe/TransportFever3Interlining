@@ -331,6 +331,36 @@
   mutation disabled, then validate a one-passenger cross-line replacement. No
   installed mod, game binary, or save was modified by the assistant.
 
+## 2026-10-07 — Implement and validate the read-only native bridge
+
+- Implemented a shared C ABI with named clients, deterministic callback order,
+  copied observations, per-client expiring contexts, thread/reentrancy guards,
+  and bounded registration. Passenger policy remains separate; no mutation API
+  or Lua binding is exposed.
+- Identified the terminal virtual table and RTTI. Added full executable/live
+  checks and atomic expected-pointer slot replacement, per-process ownership,
+  original protection restoration, and an assembly forwarding wrapper with
+  Windows unwind metadata. No engine instructions are relocated.
+- Added an explicit DLL loader, stop control, bounded 400-call observer, and
+  documented process-lifetime pinning. No proxy DLL, game-file replacement or
+  automatic startup is installed. The original engine call runs after observation
+  or rejection. Downloaded/verified a local pinned LLVM-MinGW toolchain and added
+  a reproducible build helper; binaries/toolchain remain ignored.
+- Validation: warning-clean Windows cross-build; isolated Wine tests passed
+  two-client ordering and invalid access, protected slot ownership, arguments,
+  original return and exactly-once forwarding. Production DLL refused the
+  unsupported fixture after remote load. Build helper/syntax checks passed.
+- Loaded into the existing disposable game using its matching Proton runtime.
+  The user unpaused; the bridge accepted 400 calls and auto-disabled observation.
+  Samples show one simulation thread, alternating worlds and zero rejected
+  boundaries/dispatch errors. Explicit stop returned zero. See
+  [full evidence](native-bridge-validation-2026-10-07.md) for artifact hashes and
+  validation limits. No passenger, queue, save or installed probe was changed.
+- Next: expose copied live waiting-leg/route/capacity queries, validate a single
+  candidate, then implement the engine-owned replacement experiment. Native
+  clients remain trusted code, and arbitrary callback failures are not contained.
+  No interlining behavior fix or stable release is claimed.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

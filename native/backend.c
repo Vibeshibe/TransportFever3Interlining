@@ -1,0 +1,166 @@
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <bcrypt.h>
+#include <stdio.h>
+#include <string.h>
+#include <wchar.h>
+#include "host.h"
+#include "slot.h"
+
+/* These bindings are private and pinned to a single research executable. */
+#define TERMINAL_UPDATE_RVA 0xb0db00u
+#define TERMINAL_VTABLE_RVA 0x3702758u
+#define TERMINAL_SLOT_RVA   0x37027b0u
+#define OBSERVATION_LIMIT 400
+static const unsigned char expected_hash[32] = {
+    0x5e,0x72,0x0c,0xd7,0xfe,0xfd,0x68,0x8a,0x16,0x75,0xb6,0x1c,0x6e,0xec,0xaa,0xdf,
+    0xd2,0x5c,0x17,0x1d,0xa9,0xe9,0xe9,0x38,0xaf,0x85,0xe5,0xef,0xae,0xbd,0x8a,0x35};
+static const unsigned char entry_bytes[16] = {
+    0x48,0x8b,0xc4,0x53,0x56,0x57,0x41,0x54,0x41,0x55,0x41,0x56,0x41,0x57,0x48,0x81};
+/* Publish before installing the slot; never clear while the DLL is loaded. */
+void *tfx_original;
+extern void tfx_terminal_entry(void);
+static unsigned char *image;
+static volatile LONG start_state, enabled, simulation_thread, observed, rejected;
+static HANDLE ownership, log_file = INVALID_HANDLE_VALUE;
+
+static void log_line(const char *message) {
+    DWORD written;
+    if (log_file != INVALID_HANDLE_VALUE)
+        WriteFile(log_file, message, (DWORD)strlen(message), &written, NULL);
+}
+
+static int open_log(HMODULE self) {
+    wchar_t path[32768];
+    DWORD length = GetModuleFileNameW(self, path, 32768);
+    if (!length || length >= 32600) return 0;
+    wchar_t *slash = wcsrchr(path, L'\\');
+    if (!slash) return 0;
+    swprintf(slash + 1, 160, L"tpf-bridge-%lu-%llu.log", GetCurrentProcessId(), GetTickCount64());
+    log_file = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW,
+                          FILE_ATTRIBUTE_NORMAL, NULL);
+    return log_file != INVALID_HANDLE_VALUE;
+}
+
+static int supported_file(void) {
+    wchar_t path[32768];
+    DWORD n = GetModuleFileNameW(NULL, path, 32768);
+    if (!n || n >= 32768) return 0;
+    HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (file == INVALID_HANDLE_VALUE) return 0;
+    BCRYPT_ALG_HANDLE algorithm = NULL;
+    BCRYPT_HASH_HANDLE hash = NULL;
+    unsigned char digest[32], buffer[65536];
+    int ok = 0;
+    if (BCryptOpenAlgorithmProvider(&algorithm, BCRYPT_SHA256_ALGORITHM, NULL, 0) < 0 ||
+        BCryptCreateHash(algorithm, &hash, NULL, 0, NULL, 0, 0) < 0) goto done;
+    for (;;) {
+        DWORD got;
+        if (!ReadFile(file, buffer, sizeof(buffer), &got, NULL)) goto done;
+        if (!got) break;
+        if (BCryptHashData(hash, buffer, got, 0) < 0) goto done;
+    }
+    if (BCryptFinishHash(hash, digest, sizeof(digest), 0) >= 0)
+        ok = !memcmp(digest, expected_hash, sizeof(digest));
+done:
+    if (hash) BCryptDestroyHash(hash);
+    if (algorithm) BCryptCloseAlgorithmProvider(algorithm, 0);
+    CloseHandle(file);
+    return ok;
+}
+
+static int supported_memory(void) {
+    IMAGE_DOS_HEADER *dos = (IMAGE_DOS_HEADER *)image;
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE || dos->e_lfanew <= 0 || dos->e_lfanew > 4096) return 0;
+    IMAGE_NT_HEADERS64 *nt = (IMAGE_NT_HEADERS64 *)(image + dos->e_lfanew);
+    if (nt->Signature != IMAGE_NT_SIGNATURE || nt->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64 ||
+        nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC ||
+        nt->OptionalHeader.SizeOfImage < TERMINAL_SLOT_RVA + sizeof(void *)) return 0;
+    if (memcmp(image + TERMINAL_UPDATE_RVA, entry_bytes, sizeof(entry_bytes))) return 0;
+    /* Adjacent lifecycle entries establish the expected table layout. */
+    void **table = (void **)(image + TERMINAL_VTABLE_RVA);
+    return table[0] == image + 0xb0c570 && table[4] == image + 0xb0c8b0 &&
+           table[5] == image + 0xb0d030 && table[8] == image + 0xb0c730 &&
+           table[9] == image + 0xb0c7f0 && table[11] == image + TERMINAL_UPDATE_RVA;
+}
+
+/* Called by assembly with the original first four ABI arguments. */
+void tfx_observe(void *system, void *world, void *update_data, float delta) {
+    if (!InterlockedCompareExchange(&enabled, 0, 0)) return;
+    void *vtable = NULL, *window = NULL;
+    unsigned char nested = 0;
+    SIZE_T got;
+    if (!system || !world || update_data ||
+        !ReadProcessMemory(GetCurrentProcess(), system, &vtable, sizeof(vtable), &got) ||
+        vtable != image + TERMINAL_VTABLE_RVA ||
+        !ReadProcessMemory(GetCurrentProcess(), (unsigned char *)world + 0x1f0, &window, sizeof(window), &got) ||
+        !ReadProcessMemory(GetCurrentProcess(), (unsigned char *)world + 0x1f8, &nested, sizeof(nested), &got) ||
+        window || nested != 1) { InterlockedIncrement(&rejected); return; }
+    LONG thread = (LONG)GetCurrentThreadId();
+    LONG owner = InterlockedCompareExchange(&simulation_thread, thread, 0);
+    if (owner && owner != thread) { InterlockedIncrement(&rejected); return; }
+    LONG count = InterlockedIncrement(&observed);
+    if (count > OBSERVATION_LIMIT) return;
+    uint32_t bits;
+    memcpy(&bits, &delta, sizeof(bits));
+    tfx_status status = tfx_dispatch(bits);
+    if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
+        char line[256];
+        snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
+                 count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
+        log_line(line);
+    }
+    if (count == OBSERVATION_LIMIT) {
+        InterlockedExchange(&enabled, 0);
+        log_line("Capture complete; hook forwards only. Passenger mutation unavailable.\n");
+        FlushFileBuffers(log_file);
+    }
+}
+
+/* Explicit initialization OUTSIDE DllMain/loader lock. DLL remains pinned. */
+__declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
+    if (unused) return TFX_INVALID_ARGUMENT;
+    if (InterlockedCompareExchange(&start_state, 1, 0)) return TFX_BUSY;
+    HMODULE self;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
+        return TFX_SYSTEM_ERROR;
+    log_line("TPF shared bridge 0.1.0; read-only pilot; limit=400; ABI=1\n");
+    tfx_status status = TFX_UNSUPPORTED_BUILD;
+    if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
+    image = (unsigned char *)GetModuleHandleW(NULL);
+    status = TFX_HOOK_CONFLICT;
+    if (!supported_memory()) { log_line("Refused: live code/table does not match pinned build.\n"); goto fail; }
+    wchar_t name[96];
+    swprintf(name, 96, L"Local\\TPFSharedBridge-%lu", GetCurrentProcessId());
+    ownership = CreateMutexW(NULL, FALSE, name);
+    if (!ownership || GetLastError() == ERROR_ALREADY_EXISTS) {
+        log_line("Refused: another bridge owns this process, or ownership unavailable.\n"); goto fail;
+    }
+    status = TFX_SYSTEM_ERROR;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                          (LPCWSTR)&tfx_start, &self)) goto fail;
+    tfx_original = image + TERMINAL_UPDATE_RVA;
+    status = tfx_replace_slot((void **)(image + TERMINAL_SLOT_RVA), tfx_original, &tfx_terminal_entry);
+    if (status != TFX_OK) {
+        /* Keep ownership, module and original pointer alive: exchange may have
+         * succeeded before protection restoration failed. Forwarding stays safe. */
+        log_line("Refused: slot exchange/protection failure; observer disabled; DLL retained.\n");
+        return status;
+    }
+    log_line("Installed verified virtual slot; no engine instructions relocated.\n");
+    InterlockedExchange(&enabled, 1);
+    return TFX_OK;
+fail:
+    if (ownership) { CloseHandle(ownership); ownership = NULL; }
+    CloseHandle(log_file);
+    log_file = INVALID_HANDLE_VALUE;
+    return status;
+}
+
+/* Disables future observations; an already-running callback may finish. */
+__declspec(dllexport) DWORD WINAPI tfx_stop(void *unused) {
+    if (unused) return TFX_INVALID_ARGUMENT;
+    InterlockedExchange(&enabled, 0);
+    return TFX_OK;
+}

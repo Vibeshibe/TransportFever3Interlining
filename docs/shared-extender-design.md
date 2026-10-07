@@ -1,10 +1,12 @@
-# Shared native extension — draft
+# Shared native extension — implementation and remaining design
 
 The user requested a reusable, readable extension if native access is necessary.
 The scripting API cannot currently commit the required passenger change. The
 [selected boundary](native-adapter-design.md) provides an initial backend target;
-this document specifies ownership and compatibility before writing the loader.
-No extension or public API is implemented yet.
+this document specifies ownership and compatibility. The first
+[native bridge](../native/README.md) implements a read-only C ABI, explicit loader,
+and verified virtual-table interception. Passenger mutation and Lua bindings
+remain unimplemented.
 
 ## Ownership and clients
 
@@ -13,14 +15,18 @@ and modification scope. Mods register named clients and submit typed requests.
 Interlining is a client of that service, not the owner of the hook. Client code
 does not receive raw engine/component pointers, RTTI, or native function addresses.
 
-Expose a versioned C ABI with explicit structure sizes and fixed-width scalar
-fields. Keep any Lua/Teal bridge over the same service layer. Use readable names
+ABI 1 uses explicit structure sizes and fixed-width scalar fields. Its concrete
+operations are `register_client`, `unregister_client`, and `read_observation`.
+Keep any future Lua/Teal bridge over the same service layer. Use readable names
 such as `register_client`, `subscribe_before_terminal_selection`,
-`read_waiting_leg`, and `request_waiting_leg_change`; these names are proposals.
+`read_waiting_leg`, and `request_waiting_leg_change`; those additional names remain proposals.
 Callbacks receive a temporary context token valid only for their invocation.
 Copy returned snapshots; do not retain references into engine storage.
 
 ## Dispatch and conflicts
+
+The observer implements ordering and context/thread rules. Request staging and
+conflict outcomes below remain requirements for the future mutation capability.
 
 Publish callback order explicitly and keep it deterministic by client identifier.
 Reject duplicate identifiers and registration changes during dispatch. Stage
@@ -42,9 +48,12 @@ hook site and decline installation rather than overwrite another extension.
 One shared registry reduces conflicts between cooperating clients; it cannot
 guarantee compatibility with independent binary patches.
 
-The first capability is a bounded waiting-leg replacement with explicit expected
-state. Add further capabilities through versioned interfaces, without exposing
-generic memory writes. Loader choice, Windows x64 compiler/runtime dependencies,
-hook relocation, exception/unwind handling, and unload behavior require a separate
-implementation review. GDB remains an observation tool, not the distribution
-mechanism for the extension.
+The implemented first capability is read-only terminal-entry observation. The
+planned mutation capability is bounded waiting-leg replacement with explicit
+expected state. Add capabilities through versioned interfaces without exposing
+generic memory writes. The pilot uses LLVM-MinGW, an explicit Windows loader,
+atomic virtual-slot replacement, and an assembly wrapper with unwind metadata.
+No instructions are relocated. The DLL stays pinned until exit; disabling stops
+observations but leaves forwarding in place. Native callbacks must return
+normally; fault/hang containment is not provided. See the implementation README
+for lifecycle and failure rules. GDB remains a separate observation tool.

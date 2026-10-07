@@ -6,7 +6,8 @@ Task 003 remains active. Static analysis confirms the pathfinding hook exchanges
 only a town cost-factor map; it cannot itself commit alternate passenger
 boarding. [Full evidence](../../docs/scripting-hook-investigation.md) records
 the executable fingerprint, function addresses, and unresolved questions.
-Task 004 is active; task 005 has an architecture draft and awaits native implementation.
+Task 004 is active; task 005 now has an implemented and runtime-observed read-only
+native bridge. Passenger mutation remains unimplemented.
 
 The probe loaded and all four events fired in the user's first test. See
 [Test 1](../../docs/test-run-2026-10-07.md) for evidence, UTC/local time mapping,
@@ -16,6 +17,37 @@ Revision 1 runtime files matched the repository at
 `game/installation/mods/tpf3_interlining_probe_1/`. Originals were only read.
 
 ## Latest implementation
+
+The shared native bridge is implemented in `native/` and passed an in-game
+400-invocation read-only capture. See [validation](../../docs/native-bridge-validation-2026-10-07.md)
+and [build/API/loader guide](../../native/README.md). It replaces the terminal
+virtual slot at RVA `0x37027b0` (table `0x3702758`, offset `+0x58`) after full
+executable hash and live code/table checks. An assembly wrapper preserves input
+registers/stack and tail-jumps to original Update. No instruction relocation or
+engine mutation calls. ABI 1 has registration, unregistration and copied
+observations, with scoped tokens, deterministic order and 32-client limit.
+
+LLVM-MinGW 20250910 was downloaded, hash-verified and extracted into ignored
+`tools/vendor/`. `rtk proxy python3 tools/build_native_bridge.py` builds into
+`analysis/native-bridge/build/`; do not overwrite the DLL if still loaded.
+Isolated Windows tests passed, including two consumers, thread/token/limit guards,
+slot ownership/protection and original argument/return preservation. The loader
+test correctly rejected an unsupported fixture executable.
+
+The user's running disposable game was Linux PID 79540 / Windows PID 308, using
+GE-Proton11-5 and prefix `/home/vibeshibe/Games/Heroic/Prefixes/default/Transport Fever 3/pfx/`.
+Loading returned zero. After the user unpaused, 400 calls were accepted; sampled
+records show thread 592, two alternating worlds, and zero rejected boundaries or
+dispatch errors. Observation auto-disabled and explicit `--stop` returned zero.
+The game has no debugger attached. The DLL remains pinned, forwarding only,
+until game exit; no autoload, disk game changes or passenger changes. It is safe
+for the user to pause/close. The installed passive Lua probe is unchanged.
+
+**Next:** add copied live passenger/route queries through the bridge, then the
+one-passenger mutation adapter when validation gates are implemented. Do not
+repeat generic boarding or boundary captures. No behavior fix is active.
+
+### Earlier boundary evidence
 
 Terminal Update entry is now the selected intervention candidate. Two boundary
 captures on the reopened disposable save paired 280 complete calls. Entry and
@@ -27,9 +59,8 @@ See [the adapter design](../../docs/native-adapter-design.md) and
 
 The observer now has `boundary` mode with per-thread stack/world/phase checks.
 Eight decoder/correlation unit tests pass. Both captures detached and the game
-reported `TracerPid: 0`; no mutation or game-file changes occurred. Next implement
-the pinned native bindings and shared loader/interception with mutation disabled,
-then run the one-passenger replacement experiment. Cross-line writes remain
+reported `TracerPid: 0`; no mutation or game-file changes occurred. This informed
+the subsequent read-only bridge implementation above. Cross-line writes remain
 unverified; no interlining fix is active.
 
 Native runtime observation now succeeded with a new
@@ -73,12 +104,14 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Implement the selected pre-Update interception through a shared native host.
+1. Extend the implemented read-only host with copied live waiting-leg and route
+   queries, then implement one-passenger mutation after validation is complete.
    The dedicated scope must finish before original selection starts; inserting
    into the engine's later commit scope would invalidate prior selections.
-   Use the current callback's world and preserve the original ABI/call. Loader,
-   native bindings, live candidate validation and controlled mutation tests are
-   outstanding. Boundary observation and paired line-index callbacks are done;
+   Use the current callback's world and preserve the original ABI/call. Loader
+   and interception passed the pilot; mutation bindings, live candidate validation
+   and controlled mutation tests are outstanding. Boundary observation and paired
+   line-index callbacks are done;
    do not repeat generic boarding captures. The
    vehicle assignment is at `0x140b0f49f`; component-change callbacks
    `0x140b0c730`/`0x140b0c7f0` maintain only the vehicle index. Queue lifecycle
@@ -145,4 +178,5 @@ Research and implementation stay on `dev`; `main` remains for validated releases
 Find this milestone with `git log -- docs/scripting-hook-investigation.md`.
 Git metadata/network access may need reviewed escalation; authenticated pushes
 previously worked through the repo's `libsecret` helper. All shell commands use
-`rtk`. No MCP or native extender is installed.
+`rtk`. No Ghidra MCP is installed. The native bridge was loaded explicitly for
+this pilot and is not an installed/autoloading mod.

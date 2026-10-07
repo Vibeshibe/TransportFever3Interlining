@@ -12,15 +12,15 @@ technical findings in `AI/Context/` or `docs/` and link to them.
 | [002](002-baseline-save.md) | Reproduce and record baseline behavior | In progress: same-terminal reference captured | User; assistant supports observations | None |
 | [003](003-scripting-hook.md) | Establish scripting-hook capabilities | In progress: probe runtime verified | Assistant | 001; runtime probe uses 002 |
 | [004](004-native-boarding.md) | Trace native boarding and state transitions | In progress: entry boundary observed; write test pending | Assistant | 003 identifies an API gap |
-| [005](005-shared-extender.md) | Design a reusable native extension, if needed | In progress: architecture draft | Assistant | 004 supplies a bounded intervention candidate |
+| [005](005-shared-extender.md) | Build a reusable native extension | In progress: read-only native bridge implemented | Assistant | 004 supplies a bounded intervention candidate |
 | [006](006-interlining-prototype.md) | Implement and validate alternative boarding | In progress: offline candidate policy only | Assistant; user tests | 002, 003; 004–005 if needed |
 | [007](007-passenger-preferences.md) | Add varied journey-sensitive preferences | Pending | Assistant; user tests | 006 correctness established |
 | [008](008-stable-release.md) | Validate and promote a stable milestone | Pending | Assistant; user tests | 006; 007 if included in release |
 
 Task 002 has a logged same-terminal S1/S3 reference; full eligibility remains unresolved.
 Task 003's passive probe loaded and dispatched all four event types in Test 1. Task 004
-proceeds from the documented API gap. Task 005 now has an architecture draft
-based on the observed entry boundary; runtime mutation remains unverified.
+proceeds from the documented API gap. Task 005 now has a build-pinned native bridge
+and shared C interface; passenger mutation remains unimplemented.
 
 ## Tracking conventions
 

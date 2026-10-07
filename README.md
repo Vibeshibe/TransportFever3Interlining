@@ -2,7 +2,8 @@
 
 Research and development for passengers using overlapping Transport Fever 3
 services, including boarding the next suitable vehicle and varied preferences.
-No working game modification exists yet.
+A passive probe and experimental read-only native bridge exist. No interlining
+behavior fix is active yet.
 
 ## Layout
 
@@ -11,6 +12,7 @@ No working game modification exists yet.
 - `game/installation`: local symlink to the installed game (ignored by Git).
 - `docs/`: investigation notes, setup instructions, and progress log.
 - `tools/`: reproducible inspection and reverse-engineering helpers.
+- `native/`: shared native bridge, C interface, loader, and isolated Windows tests.
 - `analysis/`: local analysis projects and generated output (ignored by Git).
 - `AI/Tasks/`: actionable work and acceptance criteria.
 - `AI/Context/`: project orientation and durable handoff notes.
@@ -20,6 +22,7 @@ Start with [the research findings](docs/interlining-research.md) and
 [the progress log](docs/progress.md), and commit each coherent milestone.
 The [task board](AI/Tasks/README.md) tracks ownership and acceptance criteria;
 the [test-save guide](docs/test-save.md) describes the baseline handoff.
+See [the bridge guide](native/README.md) for native build, testing, and lifecycle.
 
 ## Working conventions
 
