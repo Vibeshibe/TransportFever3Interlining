@@ -11,9 +11,9 @@ technical findings in `AI/Context/` or `docs/` and link to them.
 | [001](001-project-plan.md) | Establish plan and requirements | Complete | Assistant | None |
 | [002](002-baseline-save.md) | Reproduce and record baseline behavior | In progress: same-terminal reference captured | User; assistant supports observations | None |
 | [003](003-scripting-hook.md) | Establish scripting-hook capabilities | In progress: probe runtime verified | Assistant | 001; runtime probe uses 002 |
-| [004](004-native-boarding.md) | Trace native boarding and state transitions | In progress: queue/arrival functions located | Assistant | 003 identifies an API gap |
+| [004](004-native-boarding.md) | Trace native boarding and state transitions | In progress: queue indexes and onboard transition traced | Assistant | 003 identifies an API gap |
 | [005](005-shared-extender.md) | Design a reusable native extension, if needed | Conditional; not started | Assistant | 004 verifies an intervention point |
-| [006](006-interlining-prototype.md) | Implement and validate alternative boarding | Pending | Assistant; user tests | 002, 003; 004–005 if needed |
+| [006](006-interlining-prototype.md) | Implement and validate alternative boarding | In progress: offline candidate policy only | Assistant; user tests | 002, 003; 004–005 if needed |
 | [007](007-passenger-preferences.md) | Add varied journey-sensitive preferences | Pending | Assistant; user tests | 006 correctness established |
 | [008](008-stable-release.md) | Validate and promote a stable milestone | Pending | Assistant; user tests | 006; 007 if included in release |
 

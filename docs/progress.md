@@ -242,6 +242,36 @@
   local Markdown links, and diff checks passed. Next: continue task 004's native
   selection/transition trace; another generic probe run is not needed yet.
 
+## 2026-10-07 — Trace boarding transitions and implement offline candidate policy
+
+- Followed the line/stop vehicle lookup through assignment. Confirmed the
+  `SimEntityAtTerminal` vehicle store at `0x140b0f49f` and its pre/post-change
+  notifications. Those callbacks update a vehicle index; separate lifecycle
+  callbacks maintain line/stop queues and arrival-time ordering.
+- Traced assigned-passenger and walking-arrival paths to `0x140b374c0`.
+  It carries line/boarding/alighting indices into onboard state and adds
+  `SimPersonAtVehicle` and `SimEntityAtVehicle`, confirmed through RTTI.
+  Seat selection was located; reservations, onward journeys, safe mutation
+  boundaries, and failure recovery remain unresolved. A widened vehicle list
+  or isolated line-field write would not coordinate this state.
+- Added `tools/native_references.py`, a read-only PE diagnostic-reference
+  helper. Candidates were checked in Ghidra/disassembly. Documented that PE
+  exception regions can be cold assertion fragments rather than function entries.
+  Raw exports remain ignored under `analysis/native-boarding/`.
+- Added pure Lua candidate policy under `src/interlining/`, separate from
+  engine bindings. It proposes only an adjacent, matching-terminal segment
+  with an unassigned passenger and observed capacity; incomplete or unsuitable
+  inputs keep the current journey. Every proposal requires native revalidation.
+  There is no service ranking, preference variation, reservation, or engine write.
+- Validation: `lua tests/test_candidate.lua` passed the reconstructed Test 2
+  S1/S3 case, 25 rejection controls, and input immutability checks. Both new Lua
+  files passed `luac -p`. Targeted Ghidra exports succeeded. Python syntax,
+  documentation links, and diff checks were checked before committing.
+- Updated the native trace, task board, and handoff. Installed probe remains
+  revision 2; no game binary, installed mod, or save was changed. No additional
+  user test is needed until runtime instrumentation or an adapter is ready.
+  Next: verify queue migration and the engine-owned callback boundary.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

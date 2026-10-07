@@ -17,6 +17,15 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Follow-up native analysis mapped line/stop vehicle selection, its exact vehicle
+assignment store, separate vehicle/queue indexes, and the common onboard
+transition. See [the trace](../../docs/native-boarding-investigation.md).
+`src/interlining/candidate.lua` now implements an offline-only proposal policy;
+`rtk proxy lua tests/test_candidate.lua` passes the reconstructed Test 2 case
+and 25 rejection controls. No runtime adapter or behavior-changing mod exists.
+Task 006 is in progress for this isolated policy; task 004 remains unresolved
+for engine mutation, and task 005 remains conditional.
+
 Revision 2 of the passive probe is implemented, tested offline, packaged, and
 installed in the existing mod directory. The game was not running during the
 update. Two changed files were checked against revision 1 and backed up in
@@ -35,7 +44,13 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Continue the native terminal queue/vehicle selection trace. Revision 2 works;
+1. Continue native queue migration and onward-journey ownership tracing. The
+   vehicle assignment is at `0x140b0f49f`; component-change callbacks
+   `0x140b0c730`/`0x140b0c7f0` maintain only the vehicle index. Queue lifecycle
+   callbacks are `0x140b0c8b0`/`0x140b0d030`. Common transition `0x140b374c0`
+   adds both onboard components, retaining passed line/stop values. Verify a
+   safe callback boundary, ABI, reservations and rollback before any writes.
+   Revision 2 works;
    another generic diagnostic run is not needed. Test2 logs/save are preserved
    in `analysis/test-runs/2026-10-07-test2/`.
 2. Use person `75625`, S1/S3 Wimborne stop 1 to Melksham stop 2, as the reference
@@ -55,6 +70,13 @@ Ghidra 12.1.3 project: `analysis/ghidra/TPF3Interlining`; raw evidence:
 `analysis/hook-investigation/`. Both are ignored. Whole-program analysis failed
 partially and timed out; targeted scripts work. Do not rerun import unnecessarily.
 Use [the export instructions](../../tools/ghidra/README.md).
+
+Native follow-up exports are under ignored `analysis/native-boarding/`, including
+`queue-maintenance.txt`, `queue-lifecycle.txt`, `boarding-transitions.txt`,
+`boarding-component-and-binding.txt`, and `terminal-update.asm`. The helper
+`tools/native_references.py` uses locally available `pefile` 2024.8.26 to find
+diagnostic LEA candidates. Exception regions may be cold fragments, not entries.
+Ghidra's approach-helper return type is wrong; do not copy inferred ABIs blindly.
 
 Callback bridge `0x140c390e0`, decoder `0x140c35f60`, dispatcher `0x140f43c40`,
 subscriber iteration `0x140aae550`. Registration `0x140b34a00` connects the

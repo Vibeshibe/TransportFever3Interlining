@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: Pending
+- Status: In progress — offline candidate policy only; engine adapter pending
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -29,9 +29,16 @@ decision rule before introducing preference variation.
 
 ## Validation and open questions
 
-No prototype exists. Use [the test-save guide](../../docs/test-save.md). Define
+An [offline candidate module](../../src/interlining/README.md) now accepts the
+recorded S1/S3 adjacent segment and rejects 25 unsuitable/invalid controls.
+It reads copied snapshots, explains rejection reasons, and requires native
+validation for every proposal. It does not rank services, reserve seats, or
+change boarding; no acceptance criterion above is complete yet.
+
+Use [the test-save guide](../../docs/test-save.md). Define
 performance limits using measured baseline behavior, and avoid full-network
 per-passenger recalculation every frame. Broader route replanning is a later
 extension if the bounded prototype establishes correctness.
 
-Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/006-interlining-prototype.md`.
+Implementation history: `git log -- src/interlining tests/test_candidate.lua`.
+Planning history: `git log -- AI/Tasks/006-interlining-prototype.md`.

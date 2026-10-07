@@ -14,6 +14,19 @@ string addresses; follow cross-references to locate candidate functions.
 It does not modify the executable or run it. Python's standard library suffices.
 Use `--exe /path/to/TransportFever3.exe` to inspect another build.
 
+For exact diagnostic strings, find candidate RIP-relative LEA references:
+
+```sh
+rtk proxy python3 tools/native_references.py \
+  'ecs::SimEntityAtTerminalSystem::Update' > analysis/native-references.json
+```
+
+This helper requires `pefile` (locally verified version `2024.8.26`). It records
+the executable hash, preferred addresses, and containing PE exception regions.
+It is a byte-pattern search, not a disassembler; confirm instruction boundaries
+and function entries in Ghidra. An exception region can be a cold assertion
+fragment. Other instruction forms are not covered. The executable is only read.
+
 ## Ghidra
 
 The user supplied an extracted Ghidra 12.1.3 PUBLIC distribution in
