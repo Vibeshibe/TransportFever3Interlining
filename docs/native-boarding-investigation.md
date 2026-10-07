@@ -72,4 +72,7 @@ Its new queries are based on shipped declarations and bundled GUI usage:
 `cargoTypeRep.getPassengerCargoTypeId`. The game uses zero-based stop/cargo IDs
 and one-based Lua arrays, corroborated by the station-group and vehicle GUI code.
 
+Revision 2's new queries passed the runtime check in
+[Test 2](test-run-2026-10-07-2.md). Use its S1/S3 Wimborne-to-Melksham case
+for the first same-terminal intervention; S2 uses a separate terminal.
 No engine hook, native extension, or boarding behavior change is implemented.

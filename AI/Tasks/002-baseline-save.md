@@ -1,6 +1,6 @@
 # 002 — Reproduce and record baseline behavior
 
-- Status: In progress — first observation recorded; eligibility details pending
+- Status: In progress — same-terminal reference case captured; broader controls pending
 - Owner: User builds and runs the save; assistant defines observations and diagnostics
 - Dependencies: None; diagnostics may depend on task 003
 
@@ -41,5 +41,12 @@ for S2 when S1 arrived heading to the same station. [Test 1](../../docs/test-run
 records the working probe, build/mod list, preserved log/save, and evidence
 limits. Specific platform access, seats, destination, and passenger identity
 remain unknown; the log cannot establish why that vehicle was ignored.
+
+Revision 2 captured a stronger reference in [Test 2](../../docs/test-run-2026-10-07-2.md):
+person `75625` remained queued for S1 as S3 arrived at the same Wimborne terminal
+with spare passenger capacity and loading enabled, and later started S1 usage.
+The earlier S3 vehicle served the planned alighting station, Melksham, next.
+S2 uses a different terminal and is a separate platform-transfer case. Vehicle
+model equality, full internal eligibility, and broader route controls remain open.
 
 Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/002-baseline-save.md`.

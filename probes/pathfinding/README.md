@@ -4,7 +4,8 @@ Experimental diagnostics for task 003. This is not an interlining fix. The
 handler leaves routing payloads untouched and returns `nil`; it writes only its
 own counters and logs. Offline checks pass. Revision 1 loaded and dispatched all
 four callbacks in [Test 1](../../docs/test-run-2026-10-07.md). Revision 2 adds
-arrival snapshots; it is installed but its new engine queries need a game run.
+arrival snapshots; its new queries worked without snapshot errors in
+[Test 2](../../docs/test-run-2026-10-07-2.md).
 
 ## Prepare and install
 

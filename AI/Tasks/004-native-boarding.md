@@ -33,7 +33,8 @@ Initial functions and call relationships are documented in the
 [native trace](../../docs/native-boarding-investigation.md). Terminal update
 uses a two-key vehicle lookup and cargo/loading checks. The done-waiting lead
 calls a private-driving helper, not an established transit-boarding transition.
-No safe native intervention is verified. Revision 2 diagnostics are installed
-to supply the missing waiting-state evidence on the next user run.
+No safe native intervention is verified. Revision 2 diagnostics supplied a same-terminal
+S1/S3 reference case in [Test 2](../../docs/test-run-2026-10-07-2.md). Use that
+case to investigate vehicle selection and eventual engine-owned transitions.
 
 Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/004-native-boarding.md`.

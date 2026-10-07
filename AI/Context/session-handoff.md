@@ -21,8 +21,8 @@ Revision 2 of the passive probe is implemented, tested offline, packaged, and
 installed in the existing mod directory. The game was not running during the
 update. Two changed files were checked against revision 1 and backed up in
 `analysis/probe-install-backups/revision1-to-2/` before replacement. No shipped
-resources, executable, or save files were changed. New arrival queries remain
-runtime-unverified; no interlining behavior fix is active.
+resources, executable, or save files were changed. New arrival queries are runtime-verified in
+[Test 2](../../docs/test-run-2026-10-07-2.md); no interlining behavior fix is active.
 
 The probe logs other lines' waiting queues at the same station group, line and
 station names, planned alighting stations, actual/configured terminals, and
@@ -35,12 +35,14 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Have the user run the installed revision 2 probe on a disposable copy; check
-   its revision marker and snapshots/errors in the known stdout path. Correlate
-   waiting people and arrivals; revision 1 could not identify the S1 refusal.
-2. Complete task 002's station/platform, available capacity, and journey details;
-   one user-observed example is now recorded. The preserved baseline hash begins
-   `c228e860e25a`.
+1. Continue the native terminal queue/vehicle selection trace. Revision 2 works;
+   another generic diagnostic run is not needed. Test2 logs/save are preserved
+   in `analysis/test-runs/2026-10-07-test2/`.
+2. Use person `75625`, S1/S3 Wimborne stop 1 to Melksham stop 2, as the reference
+   same-terminal case. S3 arrived at 14:19:53 with 37 spare places, person stayed
+   in the S1 queue, S1 arrived 14:21:47, and S1 line-use started 14:21:52.
+   S2 uses a different terminal. Preserve user-reported S2/time details separately
+   from the logged S3 case; see Test 2 for correlation limits.
 3. Finish task 003's cadence, result-ordering/error, and downstream-use questions.
    `OnStartedLineUsage` does not prove the person has boarded.
 4. For native investigation, trace engine-owned boarding and journey transitions;

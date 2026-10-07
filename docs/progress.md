@@ -217,6 +217,31 @@
   selection through engine-owned state commits. No native extender or boarding
   behavior change has been implemented. Documentation links and diff checks pass.
 
+## 2026-10-07 — Test 2 validates queue snapshots and captures a reference case
+
+- Collected the user's 14:19–14:26 test from the known Proton log path. Preserved
+  log, probe extract, Test2 save, and hashes under ignored
+  `analysis/test-runs/2026-10-07-test2/`; original files were only read.
+- Revision 2 produced 18 arrival snapshots, 79 queue snapshots, and 19 waiting
+  records without snapshot errors or limit messages. Mapped S1=`98278`,
+  S2=`97742`, S3=`97743`. Pathfinding again reached counter 800 with empty
+  town maps in all logged samples.
+- Identified person `75625` queued for S1 Wimborne-to-Melksham when S3 arrived
+  at the same terminal at 14:19:53 with capacity 40, occupancy 3, and loading
+  enabled. The same passenger remained queued when S1 arrived 14:21:47 and
+  started S1 usage at 14:21:52. The earlier S3 vehicle reached Melksham next.
+- Preserved the user's near-14:20 S2 observation separately: the nearest logged
+  Wimborne arrival is S3, and departure times are not logged. S2 is configured
+  at a different Wimborne terminal. A second person, `87485`, is a plausible
+  match for the near-14:25 S1 boarding report, with line-use start at 14:26:00.
+- Added [Test 2](test-run-2026-10-07-2.md) and updated the handoff/task board.
+  First intervention scenario: S1/S3 with matching boarding/alighting terminals;
+  retain S2 for later platform-transfer cases. Full engine eligibility remains
+  unproven; no boarding fix or new installation was performed this turn.
+- Validation: evidence hashes, exact selected event correlations, event counts,
+  local Markdown links, and diff checks passed. Next: continue task 004's native
+  selection/transition trace; another generic probe run is not needed yet.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

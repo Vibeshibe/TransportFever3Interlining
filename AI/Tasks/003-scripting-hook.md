@@ -45,6 +45,8 @@ intervals usually span two simulation updates in the early samples, with a
 longer interval also observed. Native producer identity, complete ordering/error
 semantics, and changes to existing journeys remain open.
 
-Next: correlate waiting-state eligibility with arrivals; continue task 004.
+Revision 2 snapshots worked in [Test 2](../../docs/test-run-2026-10-07-2.md),
+correlating passenger `75625` with an earlier same-terminal S3 and later S1.
+Next: continue task 004 from this concrete case.
 Extender implementation remains conditional.
 Milestone history: `git log -- AI/Tasks/003-scripting-hook.md`.

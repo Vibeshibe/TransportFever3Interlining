@@ -9,7 +9,7 @@ technical findings in `AI/Context/` or `docs/` and link to them.
 | ID | Task | Status | Owner | Dependencies |
 | --- | --- | --- | --- | --- |
 | [001](001-project-plan.md) | Establish plan and requirements | Complete | Assistant | None |
-| [002](002-baseline-save.md) | Reproduce and record baseline behavior | In progress: first observation; eligibility details pending | User; assistant supports observations | None |
+| [002](002-baseline-save.md) | Reproduce and record baseline behavior | In progress: same-terminal reference captured | User; assistant supports observations | None |
 | [003](003-scripting-hook.md) | Establish scripting-hook capabilities | In progress: probe runtime verified | Assistant | 001; runtime probe uses 002 |
 | [004](004-native-boarding.md) | Trace native boarding and state transitions | In progress: queue/arrival functions located | Assistant | 003 identifies an API gap |
 | [005](005-shared-extender.md) | Design a reusable native extension, if needed | Conditional; not started | Assistant | 004 verifies an intervention point |
@@ -17,7 +17,7 @@ technical findings in `AI/Context/` or `docs/` and link to them.
 | [007](007-passenger-preferences.md) | Add varied journey-sensitive preferences | Pending | Assistant; user tests | 006 correctness established |
 | [008](008-stable-release.md) | Validate and promote a stable milestone | Pending | Assistant; user tests | 006; 007 if included in release |
 
-Task 002 has a first user-observed example; exact eligibility remains unresolved.
+Task 002 has a logged same-terminal S1/S3 reference; full eligibility remains unresolved.
 Task 003's passive probe loaded and dispatched all four event types in Test 1. Task 004
 can proceed from the documented API gap. Task 005 remains conditional on finding
 a safe intervention; mark native-extension work skipped if scripting suffices.
