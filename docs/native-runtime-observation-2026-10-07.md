@@ -60,3 +60,36 @@ No performance conclusion can be drawn from debugger elapsed times.
 Next capture should target terminal-update boundaries and modification/replay
 context rather than the generic removal routine. Keep engine-world pointers
 scoped to each observed callback; both instances participate in simulation.
+
+## Follow-up: terminal update boundary
+
+The user reopened the disposable save (PID `79540`) and unpaused at normal speed
+after the observer was ready. A new `boundary` mode watches Update entry, the
+two commit-scope sites, and return. It validates per-thread phase order, stack
+identity, and world identity within each invocation.
+
+| Capture | Complete calls | Records | Duration from first recorded entry to last return |
+| --- | --- | --- | --- |
+| `runtime-boundary-01.jsonl` | 80 | 160 | 15.722 seconds |
+| `runtime-boundary-02.jsonl` | 200 | 400 | 39.623 seconds |
+
+Raw files remain under ignored `analysis/native-boarding/`. SHA-256 values:
+
+- Capture 1: `a4fc7c63d0b075d2b28feac226864164318b6bd42c96ddda0ce42fd0ca327ccc`.
+- Capture 2: `1c20790c07fb1474970e018a26c946e9841c1c65eb42e314f2a3b04d1336bcb9`.
+
+All 280 invocations ran on simulation thread `79901`, alternating worlds
+`0x2d75c520` and `0x2d75b860`. Every observed entry/return had a null
+`m_betweenChanges` pointer and nested/post flag one. R8 was zero and each return
+matched the entry stack. The caller return address resolves to `0x142bb8aec`,
+inside the engine's system dispatcher `0x142bb8a50`. No scope-open/close site
+was hit: these captures do not validate those interior probes at runtime.
+
+Both captures ended at their hit budgets and detached. `/proc/79540/status`
+reported `TracerPid: 0` afterwards. The first capture's initial 107.714 seconds
+were waiting for simulation to unpause and are excluded from the table.
+
+The selected proposal is a separate modification scope before the original
+Update starts gathering queue candidates. This avoids modifying already-selected
+assignment lists. See [the adapter design](native-adapter-design.md) for the
+operation sequence, verified index callbacks, and remaining write-test limits.

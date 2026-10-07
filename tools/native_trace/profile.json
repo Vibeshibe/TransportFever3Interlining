@@ -19,5 +19,23 @@
       "rva": "0x1710c0",
       "entry_bytes": "48895c241044884c242048894c240855"
     }
+  },
+  "boundary_points": {
+    "terminal_enter": {
+      "rva": "0xb0db00",
+      "entry_bytes": "488bc453565741544155415641574881"
+    },
+    "terminal_scope_open": {
+      "rva": "0xb0f40e",
+      "entry_bytes": "904c8bef488d3dd7b41d034c3bee0f84"
+    },
+    "terminal_scope_closed": {
+      "rva": "0xb0f5ef",
+      "entry_bytes": "488b84240001000048398424f8000000"
+    },
+    "terminal_exit": {
+      "rva": "0xb0f3ed",
+      "entry_bytes": "c3ff153c69b50290ff153569b502cc48"
+    }
   }
 }

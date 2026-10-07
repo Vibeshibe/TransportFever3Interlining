@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: Conditional — not started
+- Status: In progress — architecture draft; native implementation pending
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -31,5 +31,13 @@ universal solution to unrelated binary patches.
 This is an architectural requirement, not an implemented API. See
 [agreed requirements](../Context/requirements.md). Exact contracts depend on
 the engine findings; compatibility with third-party extenders remains unproven.
+
+The [shared-extension draft](../../docs/shared-extender-design.md) now defines
+single hook ownership, a proposed versioned C ABI, scoped callback contexts,
+deterministic clients and explicit request conflicts. The
+[adapter design](../../docs/native-adapter-design.md) selects a runtime-observed
+entry boundary. Next implement pinned bindings and loader/interception without
+mutation before enabling the one-passenger experiment. Draft names are not
+available APIs, and no acceptance criterion is complete from documentation alone.
 
 Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/005-shared-extender.md`.

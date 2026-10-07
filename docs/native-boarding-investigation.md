@@ -176,6 +176,23 @@ treat that generic name as a transit boarding interception point.
 
 ## Minimal intervention proposal
 
+The candidate insertion point is now **entry to terminal Update**, with a
+separate modification scope completed before calling the original function.
+Two boundary captures validated 280 complete calls with no active modification
+window at entry/return. The dispatcher passes each invocation's world; its
+identity alternates. See [the concrete adapter design](native-adapter-design.md).
+
+The existing commit scope starts only after candidate selection. Its constructor
+`0x142bbbba0` calls BeginModification; destructor `0x142bbc060` reaches
+EndModification. Post-construction and post-destruction sites are `0x140b0f40e`
+and `0x140b0f5ef`; neither fired in the boundary samples. Migrating queues there
+would be too late for the assignment list already collected.
+
+Person-system removal callback `0x140b2c450` reads the old terminal line and
+calls `0x140953820`, asserting exactly one line-index removal. Its addition
+counterpart calls `0x140951180`, asserting insertion. This closes the previously
+untraced removal side of that index; a cross-line write is still untested.
+
 The first case remains Test 2's S1/S3 Wimborne-to-Melksham adjacent segment,
 with matching boarding and alighting terminals. The
 [offline candidate module](../src/interlining/README.md) produces a proposal
@@ -193,9 +210,10 @@ engine access in a reusable extension and policy in the separate Lua module.
 
 ## Next steps and reproducibility
 
-Next observe terminal-update entry/exit relative to modification windows and
-replica replay, and finish cross-line index-removal/notification semantics.
-Select the writable world from that context, never from a cached pointer.
+Next implement the pinned native bindings and a shared extension that owns the
+selected entry interception. Validate it first without mutation, then perform
+the one-passenger cross-line replacement experiment. Select the writable world
+from each callback, never from a cached pointer.
 Do not infer thread safety from a log thread name or decompiler types.
 
 Example against the existing Ghidra project:
@@ -229,3 +247,6 @@ Further exports are `line-change-transitions.txt`, `queue-migration.txt`,
 `entity-notifications.txt`, `person-component-lifecycle.txt`,
 `engine-change-replay.txt`, and `engine-modification.txt`. The isolated export
 at `0x142bb4453` is a fragment; use complete replay entry `0x142bb4430`.
+Boundary follow-up exports: `terminal-scope.txt`, `person-index-removal.txt`, and
+`system-update-dispatch.txt`. The latter includes the dispatcher and paired
+line-index insertion/removal helpers.

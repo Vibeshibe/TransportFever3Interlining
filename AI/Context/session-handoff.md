@@ -6,7 +6,7 @@ Task 003 remains active. Static analysis confirms the pathfinding hook exchanges
 only a town cost-factor map; it cannot itself commit alternate passenger
 boarding. [Full evidence](../../docs/scripting-hook-investigation.md) records
 the executable fingerprint, function addresses, and unresolved questions.
-Task 004 is active; task 005 (shared extender) remains conditional.
+Task 004 is active; task 005 has an architecture draft and awaits native implementation.
 
 The probe loaded and all four events fired in the user's first test. See
 [Test 1](../../docs/test-run-2026-10-07.md) for evidence, UTC/local time mapping,
@@ -16,6 +16,21 @@ Revision 1 runtime files matched the repository at
 `game/installation/mods/tpf3_interlining_probe_1/`. Originals were only read.
 
 ## Latest implementation
+
+Terminal Update entry is now the selected intervention candidate. Two boundary
+captures on the reopened disposable save paired 280 complete calls. Entry and
+return always had no modification window and nested/post flag one; worlds
+alternated. No commit-scope interior site fired. Person-system line-index removal
+was also traced and asserts one removal, complementing the insertion callback.
+See [the adapter design](../../docs/native-adapter-design.md) and
+[shared-extension draft](../../docs/shared-extender-design.md).
+
+The observer now has `boundary` mode with per-thread stack/world/phase checks.
+Eight decoder/correlation unit tests pass. Both captures detached and the game
+reported `TracerPid: 0`; no mutation or game-file changes occurred. Next implement
+the pinned native bindings and shared loader/interception with mutation disabled,
+then run the one-passenger replacement experiment. Cross-line writes remain
+unverified; no interlining fix is active.
 
 Native runtime observation now succeeded with a new
 [GDB observer](../../tools/native_trace/README.md). It checks the pinned executable
@@ -38,7 +53,7 @@ transition. See [the trace](../../docs/native-boarding-investigation.md).
 `rtk proxy lua tests/test_candidate.lua` passes the reconstructed Test 2 case
 and 25 rejection controls. No runtime adapter or behavior-changing mod exists.
 Task 006 is in progress for this isolated policy; task 004 remains unresolved
-for engine mutation, and task 005 remains conditional.
+for engine mutation, and task 005 has a design draft.
 
 Revision 2 of the passive probe is implemented, tested offline, packaged, and
 installed in the existing mod directory. The game was not running during the
@@ -58,11 +73,13 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Target terminal-update entry/exit relative to engine modification and replica
-   replay with a narrower observer. Capture 2's generic remove breakpoint consumed
-   5,001 hits in about 11 seconds for only nine relevant records. Decode layouts
-   passed four unit tests and live observation. Do not reuse saved world pointers:
-   both instances participate in updates. The
+1. Implement the selected pre-Update interception through a shared native host.
+   The dedicated scope must finish before original selection starts; inserting
+   into the engine's later commit scope would invalidate prior selections.
+   Use the current callback's world and preserve the original ABI/call. Loader,
+   native bindings, live candidate validation and controlled mutation tests are
+   outstanding. Boundary observation and paired line-index callbacks are done;
+   do not repeat generic boarding captures. The
    vehicle assignment is at `0x140b0f49f`; component-change callbacks
    `0x140b0c730`/`0x140b0c7f0` maintain only the vehicle index. Queue lifecycle
    callbacks are `0x140b0c8b0`/`0x140b0d030`. Common transition `0x140b374c0`
@@ -104,6 +121,14 @@ EndModification `0x142bb4d90`, Post `0x142bb6ea0`, Replicate `0x142bb78f0`,
 replay `0x142bb4430`. `0x142bb4453` is only a replay fragment.
 Live captures: ignored `analysis/native-boarding/runtime-trace-01.jsonl` (paused,
 empty), `runtime-trace-02.jsonl` (successful), and `runtime-threads.txt`.
+New captures: `runtime-boundary-01.jsonl` (80 calls) and
+`runtime-boundary-02.jsonl` (200 calls); details/hashes in the runtime evidence doc.
+New exports: `terminal-scope.txt`, `person-index-removal.txt`, and
+`system-update-dispatch.txt`. Dispatcher `0x142bb8a50` calls Update through vtable
+slot `+0x58` (return `0x142bb8aec`). Scoped wrapper `0x142bbbba0` opens changes;
+`0x142bbc060` closes them. Terminal interior sites `0x140b0f40e`/`0x140b0f5ef`
+are not runtime-validated. Person-index removal callback `0x140b2c450` calls
+`0x140953820`; insertion `0x140951180` is its counterpart.
 GDB attachment worked under reviewed shell escalation without system ptrace
 configuration changes. The Proton process is named `Main Thread`, so identify
 it by executable command line, not a process-name search for TransportFever.

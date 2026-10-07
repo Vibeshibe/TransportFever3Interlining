@@ -301,6 +301,36 @@
 - Next: narrow observation to terminal-update/modification boundaries and finish
   cross-line index-removal semantics before implementing the mutation adapter.
 
+## 2026-10-07 — Select the pre-Update boundary and draft the shared extension
+
+- Traced terminal Update's scoped commit: selection precedes BeginModification,
+  and EndModification drains posted work before returning. This rules out queue
+  migration inside the already-selected assignment batch. Verified the system
+  dispatcher and person-system line-index removal/insertion callbacks.
+- Added `boundary` mode to the native observer: Update entry, commit-scope open,
+  scope close, and return. Correlates per thread/stack and rejects inconsistent
+  phase/world data; contexts expire at return. Existing boarding mode is retained.
+- User reopened a disposable save and unpaused after attachment. Two captures
+  paired 80 and 200 complete calls on the simulation thread, alternating two
+  worlds. All entry/return samples had a null modification window and nested/post
+  flag one. No scope-open/close breakpoint fired; those interior sites remain
+  unvalidated. Both captures detached; the game reported no attached debugger.
+- Selected Update entry as the candidate: validate a single waiting leg, perform
+  engine remove/re-add inside a separate modification scope, close it, then call
+  original Update once. This is a concrete proposal, not a validated write path.
+  [Adapter design](native-adapter-design.md) records bindings, index obligations,
+  revalidation, preserved state, and remaining implementation gates.
+- Drafted [shared-extension ownership and API rules](shared-extender-design.md):
+  centralized hooks, versioned C ABI, temporary contexts, deterministic clients,
+  and explicit request conflicts. Task 005 now tracks design work; no extension
+  or proposed API is implemented yet.
+- Validation: eight Python decoder/correlation tests passed, GDB loaded the new
+  command mode, live build/site checks passed, and entry/return captures succeeded.
+  Targeted Ghidra exports completed. Raw captures/exports remain ignored.
+- Next: implement pinned native bindings and the shared loader/interception with
+  mutation disabled, then validate a one-passenger cross-line replacement. No
+  installed mod, game binary, or save was modified by the assistant.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -47,3 +47,24 @@ Python's standard library; byte decoders have standalone tests:
 ```sh
 rtk proxy python3 -m unittest discover -s tests -p 'test_native_trace_decode.py'
 ```
+
+## Terminal-update boundary capture
+
+Use `interlining-trace EXE OUTPUT 160 boundary` to select four sites: terminal
+Update entry, immediately after opening its commit scope, immediately after
+closing that scope, and the return instruction. These include interior sites;
+their fingerprints and stack offsets are specific to the pinned build.
+
+The observer pairs calls by thread and entry stack, validates phase order and
+world identity within each call, and discards the context at return. Attaching
+mid-call skips that partial call. A capture may end at its budget mid-call;
+the final `end` record is not evidence that the original call failed.
+
+The first runtime captures covered 280 complete calls with only entry/return
+records; no assignment scope was reached in those samples. Do not report the
+two interior sites as runtime-validated. A full scope takes four hits; a call
+that skips it takes two. Run both decoder and correlation tests with:
+
+```sh
+rtk proxy python3 -m unittest discover -s tests -p 'test_native_trace_*.py'
+```

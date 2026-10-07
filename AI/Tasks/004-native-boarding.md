@@ -1,6 +1,6 @@
 # 004 — Trace native boarding and state transitions
 
-- Status: In progress — ordinary boarding runtime-observed; cross-line migration pending
+- Status: In progress — entry boundary selected and observed; cross-line write test pending
 - Owner: Assistant
 - Dependencies: 003 identifies a capability missing from scripting
 
@@ -19,7 +19,7 @@ task skipped if existing scripting is sufficient.
 - [ ] Identify how queue membership, passenger state, manifests, and seat
       allocation are updated together through engine transitions.
 - [ ] Investigate thread ownership, callback timing, invalidation, and object lifetime.
-- [ ] Define a minimal interception proposal with original-behavior fallback.
+- [x] Define a minimal interception proposal with original-behavior fallback.
 - [ ] Verify the candidate through runtime observation on a disposable save
       before calling it a supported implementation point.
 
@@ -55,6 +55,15 @@ matching operations in two engine instances; see
 Runtime observation validates those arguments and flags, not arbitrary writes.
 Next target: terminal-update boundaries relative to modification and replication;
 complete line-index removal semantics before selecting a cross-line insertion.
+
+That follow-up is now complete: 280 paired Update calls observed the same
+empty-window entry/return conditions, with alternating worlds. Person-system
+line-index removal and insertion helpers were traced. The
+[adapter proposal](../../docs/native-adapter-design.md) selects Update entry,
+with a separate modification scope finished before original candidate selection.
+No write-capable hook has been validated; the runtime acceptance item remains
+open until a controlled reassignment succeeds. Native bindings/extension work
+can proceed against this bounded candidate.
 
 Research/tooling history: `git log -- tools/native_trace docs/native-boarding-investigation.md`.
 Planning history: `git log -- AI/Tasks/004-native-boarding.md`.

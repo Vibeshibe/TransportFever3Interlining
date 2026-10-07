@@ -1,6 +1,6 @@
-"""Source in GDB, then run interlining-trace EXE OUTPUT [MAX_HITS].
+"""Source in GDB; interlining-trace EXE OUTPUT [MAX_HITS] [boarding|boundary].
 
-Observes function entries with hardware execution breakpoints. Does not write
+Observes validated execution sites with hardware breakpoints. Does not write
 passenger memory or call engine functions. Continuing resumes the attached game.
 """
 import hashlib
@@ -15,6 +15,7 @@ import gdb
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from decode import boarding_arguments, onboard, waiting
+from boundary import TerminalFrames
 
 
 def read(address, size):
@@ -48,7 +49,7 @@ def module_base(exe):
 
 
 class Trace:
-    def __init__(self, output, base, profile, max_hits):
+    def __init__(self, output, base, profile, max_hits, mode='boarding'):
         self.output = output
         self.base = base
         self.profile = profile
@@ -58,6 +59,8 @@ class Trace:
         self.started = time.monotonic()
         self.first_hit = None
         self.reason = "debugger_stop"
+        self.mode = mode
+        self.frames = TerminalFrames()
 
     def emit(self, event, **values):
         self.output.write(json.dumps({"event": event, "elapsed": time.monotonic() - self.started,
@@ -72,6 +75,8 @@ class Trace:
         if self.hits > self.max_hits or self.records >= 400 or now - self.first_hit > 120:
             self.reason = "observation_limit"
             return True
+        if self.mode == 'boundary':
+            return self.sample_boundary(name)
         if name == 'component_remove' and reg('r8') != self.base + int(self.profile['terminal_type_rva'], 16):
             return False
         if name == 'boarding_transition':
@@ -91,6 +96,25 @@ class Trace:
         self.emit(name, **values)
         return False
 
+    def sample_boundary(self, name):
+        thread = tuple(gdb.selected_thread().ptid)
+        if name == 'terminal_enter':
+            if reg('r8') != 0:
+                raise ValueError('Unexpected terminal-update user data')
+            frame = self.frames.enter(thread, reg('rsp'), reg('rdx'),
+                                      struct.unpack('<Q', read(reg('rsp'), 8))[0])
+        elif name == 'terminal_exit':
+            frame = self.frames.advance(thread, name, stack=reg('rsp'))
+        else:
+            world = struct.unpack('<Q', read(reg('rsp') + 0x58, 8))[0]
+            frame = self.frames.advance(thread, name, world=world)
+        if frame is not None:
+            self.records += 1
+            self.emit(name, update=frame['update'], world=hex(frame['world']),
+                      gate=gate(frame['world']), thread=list(thread),
+                      caller=hex(frame['caller']), site=hex(reg('rip')))
+        return False
+
 
 class Point(gdb.Breakpoint):
     def __init__(self, name, address, trace):
@@ -108,19 +132,23 @@ class Point(gdb.Breakpoint):
 
 
 class Command(gdb.Command):
-    """Observe native component transitions: interlining-trace EXE OUTPUT [MAX_HITS]."""
+    """interlining-trace EXE OUTPUT [MAX_HITS] [boarding|boundary]"""
     def __init__(self):
         super().__init__('interlining-trace', gdb.COMMAND_USER)
 
     def invoke(self, argument, from_tty):
         args = gdb.string_to_argv(argument)
-        if len(args) not in (2, 3):
-            raise gdb.GdbError('Usage: interlining-trace EXE OUTPUT [MAX_HITS]')
+        if len(args) not in (2, 3, 4):
+            raise gdb.GdbError('Usage: interlining-trace EXE OUTPUT [MAX_HITS] [boarding|boundary]')
         exe = Path(args[0]).resolve(strict=True)
-        limit = int(args[2]) if len(args) == 3 else 5000
+        limit = int(args[2]) if len(args) >= 3 else 5000
+        mode = args[3] if len(args) == 4 else 'boarding'
+        if mode not in ('boarding', 'boundary'):
+            raise gdb.GdbError('Unknown observation mode')
         if not 1 <= limit <= 10000:
             raise gdb.GdbError('MAX_HITS must be between 1 and 10000')
         profile = json.loads((HERE / 'profile.json').read_text())
+        selected_points = profile['points' if mode == 'boarding' else 'boundary_points']
         if hashlib.sha256(exe.read_bytes()).hexdigest() != profile['sha256']:
             raise gdb.GdbError('Unsupported executable hash; refusing breakpoints')
         if gdb.parameter('non-stop'):
@@ -128,17 +156,17 @@ class Command(gdb.Command):
         if gdb.breakpoints():
             raise gdb.GdbError('Use a fresh debugger with no existing breakpoints')
         base = module_base(exe)
-        for name, point in profile['points'].items():
+        for name, point in selected_points.items():
             signature = bytes.fromhex(point['entry_bytes'])
             if read(base + int(point['rva'], 16), len(signature)) != signature:
                 raise gdb.GdbError(f'Runtime entry bytes differ at {name}; refusing breakpoints')
         points = []
         with Path(args[1]).open('x') as output:
-            trace = Trace(output, base, profile, limit)
+            trace = Trace(output, base, profile, limit, mode)
             trace.emit('start', sha256=profile['sha256'], base=hex(base), pid=gdb.selected_inferior().pid,
-                       max_hits=limit, max_records=400, max_seconds_from_first_hit=120)
+                       mode=mode, max_hits=limit, max_records=400, max_seconds_from_first_hit=120)
             try:
-                for name, point in profile['points'].items():
+                for name, point in selected_points.items():
                     points.append(Point(name, base + int(point['rva'], 16), trace))
                 gdb.write('Native observer ready; resumes the process, not the paused simulation.\n')
                 gdb.execute('continue')
