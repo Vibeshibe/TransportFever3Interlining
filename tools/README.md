@@ -29,6 +29,10 @@ fragment. Other instruction forms are not covered. The executable is only read.
 
 ## Ghidra
 
+For runtime observation under Proton, use the
+[bounded native GDB observer](native_trace/README.md). Its pinned build and ABI
+were exercised on the disposable save; it does not implement reassignment.
+
 The user supplied an extracted Ghidra 12.1.3 PUBLIC distribution in
 `tools/downloads/ghidra_12.1.3_PUBLIC`. Its local application properties report
 revision `8b4c91d4d5bd1549622bfbade0df199585b98365` and JDK 21 minimum.

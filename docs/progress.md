@@ -272,6 +272,35 @@
   user test is needed until runtime instrumentation or an adapter is ready.
   Next: verify queue migration and the engine-owned callback boundary.
 
+## 2026-10-07 — Verify ordinary boarding with native runtime observation
+
+- Found the engine's same-line stop-remapping branch in `NoteLineChanged`:
+  remove/re-add `SimEntityAtTerminal`, preserving arrival-time bytes and vehicle.
+  Added evidence for the person-system line index and destination-driven onward
+  path construction. Cross-line reassignment remains untested.
+- Identified BeginModification, EndModification, Post, and Replicate. Component
+  mutation requires an existing modification window; Post additionally requires
+  the nested/post flag. Replica replay repeats component operations in another
+  engine instance. Do not bypass these checks or cache one world as authoritative.
+- Implemented a bounded GDB observer with four hardware breakpoints, executable
+  hash/live signature validation, relocation support, copied-byte decoders,
+  thread/caller/mutation-flag logging, and automatic breakpoint cleanup.
+  It uses no engine calls or passenger-state writes and installs no game files.
+- The user loaded and paused a disposable save. Initial capture was empty while
+  paused; interrupted and detached cleanly. Changed the observation timer to
+  start at the first hit. Reattached after the user unpaused at normal speed.
+- Capture 2 logged nine relevant records: person `71583`, S3 segment 3→4,
+  vehicle `97914`; waiting, approach, and onboard entries matched static layouts.
+  All records came from simulation thread `75558`. Two engine instances and
+  replica call sites were observed. Capture stopped after 5,001 breakpoint hits
+  in about 11 seconds and detached. See [evidence](native-runtime-observation-2026-10-07.md).
+- Validation: four decoder unit tests passed, GDB loaded the command, source/live
+  executable checks passed, and native observation succeeded. Targeted Ghidra
+  exports completed. Updated research, task board, and handoff. No behavior fix
+  is active; the offline policy and installed passive probe are unchanged.
+- Next: narrow observation to terminal-update/modification boundaries and finish
+  cross-line index-removal semantics before implementing the mutation adapter.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

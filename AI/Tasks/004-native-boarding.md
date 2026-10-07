@@ -1,6 +1,6 @@
 # 004 — Trace native boarding and state transitions
 
-- Status: In progress — queue indexes and onboard transition statically traced
+- Status: In progress — ordinary boarding runtime-observed; cross-line migration pending
 - Owner: Assistant
 - Dependencies: 003 identifies a capability missing from scripting
 
@@ -46,4 +46,15 @@ seat allocation and failure recovery before a write-capable adapter. The minimal
 proposal in the trace is not yet a verified interception point. Task 006's pure
 policy can be tested independently, but does not fulfill native acceptance.
 
-Related implementation commits: none yet. Planning history: `git log -- AI/Tasks/004-native-boarding.md`.
+Follow-up found `NoteLineChanged` removing/re-adding terminal components for
+same-line stop remapping while preserving arrival time. Identified the engine's
+modification windows, posted callbacks, and replica replay. A bounded hardware
+breakpoint observer captured ordinary S3 boarding on the simulation thread and
+matching operations in two engine instances; see
+[runtime evidence](../../docs/native-runtime-observation-2026-10-07.md).
+Runtime observation validates those arguments and flags, not arbitrary writes.
+Next target: terminal-update boundaries relative to modification and replication;
+complete line-index removal semantics before selecting a cross-line insertion.
+
+Research/tooling history: `git log -- tools/native_trace docs/native-boarding-investigation.md`.
+Planning history: `git log -- AI/Tasks/004-native-boarding.md`.

@@ -17,6 +17,20 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Native runtime observation now succeeded with a new
+[GDB observer](../../tools/native_trace/README.md). It checks the pinned executable
+and live code, uses hardware breakpoints, and logs copied component/stack data.
+The user unpaused a disposable save. Capture 2 recorded person `71583` waiting
+for S3, approaching vehicle `97914`, and entering the ordinary onboard transition.
+All nine records ran on simulation thread `75558`, with two engine worlds and
+replica replay call sites. The debugger detached; no engine calls or state writes
+were made. See [evidence](../../docs/native-runtime-observation-2026-10-07.md).
+
+Static follow-up found same-line stop remapping uses remove/re-add, preserving
+arrival time. Engine mutation requires an active modification window. `Post`
+requires an additional flag; it is not a general cross-thread dispatcher.
+Cross-line migration and a write-capable insertion point remain unverified.
+
 Follow-up native analysis mapped line/stop vehicle selection, its exact vehicle
 assignment store, separate vehicle/queue indexes, and the common onboard
 transition. See [the trace](../../docs/native-boarding-investigation.md).
@@ -44,11 +58,16 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Continue native queue migration and onward-journey ownership tracing. The
+1. Target terminal-update entry/exit relative to engine modification and replica
+   replay with a narrower observer. Capture 2's generic remove breakpoint consumed
+   5,001 hits in about 11 seconds for only nine relevant records. Decode layouts
+   passed four unit tests and live observation. Do not reuse saved world pointers:
+   both instances participate in updates. The
    vehicle assignment is at `0x140b0f49f`; component-change callbacks
    `0x140b0c730`/`0x140b0c7f0` maintain only the vehicle index. Queue lifecycle
    callbacks are `0x140b0c8b0`/`0x140b0d030`. Common transition `0x140b374c0`
-   adds both onboard components, retaining passed line/stop values. Verify a
+   conditionally adds the seat component and independently adds the journey's
+   onboard component, retaining passed line/stop values. Verify a
    safe callback boundary, ABI, reservations and rollback before any writes.
    Revision 2 works;
    another generic diagnostic run is not needed. Test2 logs/save are preserved
@@ -77,6 +96,17 @@ Native follow-up exports are under ignored `analysis/native-boarding/`, includin
 `tools/native_references.py` uses locally available `pefile` 2024.8.26 to find
 diagnostic LEA candidates. Exception regions may be cold fragments, not entries.
 Ghidra's approach-helper return type is wrong; do not copy inferred ABIs blindly.
+
+Latest exports: `line-change-transitions.txt` (`0x140b307b0`, same-line remap),
+`queue-migration.txt`, `person-component-lifecycle.txt`, `entity-notifications.txt`,
+and `engine-modification.txt`. Engine addresses: BeginModification `0x142bb4640`,
+EndModification `0x142bb4d90`, Post `0x142bb6ea0`, Replicate `0x142bb78f0`,
+replay `0x142bb4430`. `0x142bb4453` is only a replay fragment.
+Live captures: ignored `analysis/native-boarding/runtime-trace-01.jsonl` (paused,
+empty), `runtime-trace-02.jsonl` (successful), and `runtime-threads.txt`.
+GDB attachment worked under reviewed shell escalation without system ptrace
+configuration changes. The Proton process is named `Main Thread`, so identify
+it by executable command line, not a process-name search for TransportFever.
 
 Callback bridge `0x140c390e0`, decoder `0x140c35f60`, dispatcher `0x140f43c40`,
 subscriber iteration `0x140aae550`. Registration `0x140b34a00` connects the

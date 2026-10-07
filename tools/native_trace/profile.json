@@ -1,0 +1,23 @@
+{
+  "sha256": "5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efaebd8a35",
+  "image_base": "0x140000000",
+  "terminal_type_rva": "0x3cea8f0",
+  "points": {
+    "waiting_add": {
+      "rva": "0xb21cd0",
+      "entry_bytes": "48895c241044884c2420555657415441"
+    },
+    "component_remove": {
+      "rva": "0x2bb7320",
+      "entry_bytes": "48895c241048896c2420565741564881"
+    },
+    "boarding_transition": {
+      "rva": "0xb374c0",
+      "entry_bytes": "488bc455535657415441554156415748"
+    },
+    "onboard_add": {
+      "rva": "0x1710c0",
+      "entry_bytes": "48895c241044884c242048894c240855"
+    }
+  }
+}

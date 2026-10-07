@@ -3,7 +3,8 @@
 Task 004 is active. These are static findings for executable SHA-256
 `5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efaebd8a35`.
 Addresses are preferred virtual addresses with image base `0x140000000`.
-None is a runtime-validated patch site.
+The observer has runtime-validated selected call arguments and mutation flags;
+none is yet a validated behavior-changing patch site.
 
 ## Located functions
 
@@ -76,7 +77,8 @@ boarding/alighting indices alongside the selected vehicle. Simply broadening
 the vehicle lookup could create an old-line/new-vehicle combination.
 
 The shared transition updates person timing, calls seat-selection helper
-`0x140b1c9f0`, and adds both `SimPersonAtVehicle` and `SimEntityAtVehicle` through
+`0x140b1c9f0`, and adds `SimPersonAtVehicle` when a valid seat pair is returned.
+It adds `SimEntityAtVehicle` independently of that seat-success branch through
 engine component registration. RTTI addresses are `0x143cea9c8` and
 `0x143cea960`, respectively. The seat helper gathers available slot pairs and
 selects one, or returns a pair of `-1` values; exact seat ownership and later
@@ -87,15 +89,85 @@ established as a valid boarding operation.
 Special vehicle sentinel values `-1`, `-2`, and `-3` take distinct branches.
 Do not treat all negative values as ordinary unassigned waiting passengers.
 
+## Existing stop-remapping mechanism
+
+`SimPersonSystem::NoteLineChanged` at `0x140b307b0` provides an engine-owned
+example. It maps old stop occurrences to new indices and validates the mapped
+stops. In its successful waiting-state branch, disassembly at `0x140b3113d`
+copies the line, replacement stop indices, original arrival-time bytes, and
+vehicle into a temporary component. It removes the old component through
+`0x142bb7320` at `0x140b31168`, then adds the replacement through `0x140b21cd0`
+at `0x140b3117e`, with notification/storage flags enabled.
+
+This establishes a removal/re-addition pattern for **stop remapping on the same
+line**. Cross-line reassignment and rollback are not established by that example.
+The add helper copies 32 bytes, updates the component mask/version, and notifies
+systems. `SimPersonSystem::ComponentAddedToEntity` at `0x140b2bcb0` also indexes
+terminal passengers by line through `0x140951180`; queue indexes are not the only
+dependents. Its index storage uses a copy-on-write helper at `0x140b39cf0`.
+
+Onward travel remains destination-driven in the inspected alighting path:
+`0x140b25e30` reads `SimPerson.targetOrAtEntity` (native `+0x50`), resolves the
+onboard line/stop location, builds destination inputs through `0x140952920`,
+and calls `0x140b378e0` to construct the next path state. Invalid-destination
+branches use cleanup/fallback. This is evidence against assuming the waiting
+component contains a complete fixed itinerary; transfer correctness still needs
+an actual reassignment test.
+
+## Modification windows and replication
+
+Diagnostic strings identify `0x142bb4870` as
+`ecs::Engine::CheckAddComponentPreconditions`. It requires `m_betweenChanges`
+at engine `+0x1f0` to exist. During a notification it additionally requires
+`m_allowPostAndNestedChangesHack` at `+0x1f8`; the notification flag is at
+`m_betweenChanges + 0x50`. Removal performs the same checks. These assertions
+do not license changing either flag or mutating from an arbitrary thread.
+
+| Entry | Static role |
+| --- | --- |
+| `0x142bb4640` | `BeginModification`; requires no existing modification window |
+| `0x142bb4d90` | `EndModification`; drains posted callables before completing changes |
+| `0x142bb6ea0` | `Post`; requires an existing window and the nested/post flag |
+| `0x142bb4430` | Replays recorded entity/component operations into another engine |
+| `0x142bb78f0` | `Replicate`; calls the replay helper |
+
+`Post` is not a general cross-thread scheduler. It stores native C++ callable
+objects, whose ABI/lifetime must not be guessed. Replica replay includes begin,
+end, add, remove, and change operations. The live trace contains removal return
+address `0x142bb455e` and onboard-add return address `0x142bb44fe` inside this
+replay helper. Never persist a world pointer as a universal authoritative world
+or classify repeated passenger IDs in different worlds as duplication.
+
+## First native runtime observation
+
+The [GDB observer](../tools/native_trace/README.md) passed live executable/hash
+checks under Proton and captured person `71583` on S3 (`97743`), segment 3→4,
+vehicle `97914`. Waiting state, approach-state replacement, the common boarding
+entry, and onboard-component addition matched the static ABI. The observation
+used hardware execution breakpoints and no engine calls or passenger-state writes.
+
+All nine logged transition records ran on Linux simulation thread `75558` in
+process `74799`. Two engine-world pointers appeared, with replay call sites
+explaining the second-world operations. Every record had a non-null modification
+window and notification flag zero; direct transitions had the nested/post flag
+one, while observed replay removals/onboard addition had zero.
+
+This validates the observer and an ordinary S3 boarding path, not interlining,
+stop-edit migration, or a write-capable hook. The generic remove breakpoint
+reached 5,001 total hits after roughly 11 seconds; only nine concerned the traced
+transitions. Debugger overhead invalidates performance/timing comparisons.
+See [runtime evidence](native-runtime-observation-2026-10-07.md).
+
 ## Remaining uncertainties
 
 The vehicle-arrival handler updates timing/loading fields before invoking a
 signal near its end. Its full relationship to the Lua arrival event and ordering
 relative to terminal queue processing remain unverified.
 
-Thread ownership, a safe queue-mutation boundary, object lifetimes, callback
-ordering, onward-journey consistency, seat reservation, and failure recovery
-are unresolved. Ghidra has incomplete analysis and imperfect signatures; for
+The observed transitions run on the simulation thread, but a safe interception
+boundary, world ownership across ticks, object lifetimes, callback ordering,
+cross-line onward travel, seat reservation, and failure recovery remain unresolved.
+Ghidra has incomplete analysis and imperfect signatures; for
 example the approach helper is inferred as void although its caller tests AL.
 No function signature or address here is sufficient for installing a hook.
 
@@ -114,14 +186,16 @@ A future adapter must revalidate the passenger, route revisions, stop occurrence
 load/unload permissions, capacity/reservations, and onward journey at an
 engine-owned boundary. Then it must migrate the whole waiting state while
 preserving queue age and allow normal selection/boarding to proceed. Removal
-and re-addition are a candidate mechanism, not yet a verified transaction.
+and re-addition match the engine's same-line stop-remapping mechanism; applying
+them across lines is not yet a verified transaction.
 Failure must retain the original state without partial index changes. Keep
 engine access in a reusable extension and policy in the separate Lua module.
 
 ## Next steps and reproducibility
 
-Next trace queue migration and onward-journey ownership, identify a safe callback
-boundary, then validate it with read-only runtime instrumentation before writes.
+Next observe terminal-update entry/exit relative to modification windows and
+replica replay, and finish cross-line index-removal/notification semantics.
+Select the writable world from that context, never from a cached pointer.
 Do not infer thread safety from a log thread name or decompiler types.
 
 Example against the existing Ghidra project:
@@ -151,3 +225,7 @@ No engine hook, native extension, or boarding behavior change is implemented.
 Raw follow-up exports include `queue-maintenance.txt`, `queue-lifecycle.txt`,
 `boarding-transitions.txt`, `boarding-component-and-binding.txt`, and
 `terminal-update.asm` in the ignored evidence directory.
+Further exports are `line-change-transitions.txt`, `queue-migration.txt`,
+`entity-notifications.txt`, `person-component-lifecycle.txt`,
+`engine-change-replay.txt`, and `engine-modification.txt`. The isolated export
+at `0x142bb4453` is a fragment; use complete replay entry `0x142bb4430`.
