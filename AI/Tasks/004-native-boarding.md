@@ -1,6 +1,6 @@
 # 004 — Trace native boarding and state transitions
 
-- Status: Conditional — not started
+- Status: Ready — scripting bridge lacks a boarding override; not started
 - Owner: Assistant
 - Dependencies: 003 identifies a capability missing from scripting
 
@@ -26,6 +26,9 @@ task skipped if existing scripting is sufficient.
 ## Validation and open questions
 
 Start with the anchors in [research notes](../../docs/interlining-research.md).
+The [scripting assessment](../../docs/scripting-hook-investigation.md) establishes
+that `OnModifyPathfinding` only exchanges town cost factors. This justifies
+tracing native boarding, without yet deciding to implement an extender.
 Diagnostic names are leads, not verified hook locations. No native intervention
 has been identified or validated yet; blockers and uncertainty must be recorded.
 

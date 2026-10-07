@@ -1,0 +1,13 @@
+{
+    "dependencies": null,
+    "incompatibilities": null,
+    "modId": "tpf3_interlining_probe_1",
+    "options": null,
+    "params": null,
+    "postRunScript": {"fileName": ""},
+    "preRunScript": {"fileName": ""},
+    "runScript": {"fileName": ""},
+    "revision": 1,
+    "severityAdd": "None",
+    "severityRemove": "None"
+}

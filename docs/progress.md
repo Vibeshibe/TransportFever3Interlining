@@ -134,6 +134,36 @@
   exact stop/platform details, vehicle settings, and boarding observations are
   still unverified. No game launch or engine-behavior change was performed.
 
+## 2026-10-06–07 — Scripting bridge and passive runtime probe
+
+- Resumed with the previous session's uncommitted probe/export scripts intact.
+  Recorded a durable [assessment](scripting-hook-investigation.md) and
+  [handoff](../AI/Context/session-handoff.md).
+- Imported the fingerprinted executable into Ghidra 12.1.3. Whole-program
+  analysis hit an entry-point error and 240-second timeout; targeted exports
+  succeeded using PE function boundaries. Raw evidence stays ignored.
+- Traced `OnModifyPathfinding` through its native bridge and return decoder:
+  only `town2lineCostFactor` is exchanged. This is insufficient for committing
+  alternative boarding. Subscriber ordering, cadence, and full error semantics
+  remain unverified; no blanket claim that every scripting approach is exhausted.
+- Added reusable Ghidra export scripts and reproduction commands. A follow-up
+  targeted run exported `0x140b35820` and `0x140f40f80`; it did not establish
+  signal timing or a safe native intervention point.
+- Prepared a passive Lua probe for pathfinding, vehicle arrivals, and line-use
+  notifications. It leaves input payloads untouched, returns nil, stores only
+  its own counters, and samples logs. Shipped script comments distinguish
+  line-use start from actual boarding.
+- Added a packaging command and disposable-save procedure. Generated ignored
+  `analysis/packages/tpf3_interlining_probe_1.zip` with five runtime files.
+  User agreed to run the probe; no installation, activation, or game test has
+  been performed by the assistant.
+- Validation: `rtk proxy lua probes/pathfinding/test_probe.lua` passed; all Lua
+  files passed `luac -p`; JSON/resource checks and ZIP CRC validation passed.
+  Manifest conventions and resource references were compared with bundled mods.
+- Task 003 remains active pending runtime evidence; task 004 is ready because
+  the investigated hook lacks a boarding override. Task 005 remains conditional.
+  No game executable, shipped resource, or original save was edited.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

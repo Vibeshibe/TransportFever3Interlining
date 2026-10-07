@@ -14,6 +14,7 @@ Link to existing documentation instead of duplicating detailed research.
 - Setup and tool status: [workspace setup](../../docs/setup.md) and
   [research tools](../../tools/README.md).
 - Work history: [progress log](../../docs/progress.md).
+- Latest findings and exact resume steps: [session handoff](session-handoff.md).
 - Agreed behavior, collaboration, and extender requirements:
   [requirements](requirements.md).
 - Active work and dependencies: [task board](../Tasks/README.md). Step 1 is

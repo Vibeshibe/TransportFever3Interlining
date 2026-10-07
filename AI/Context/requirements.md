@@ -42,6 +42,7 @@ research is in [interlining-research.md](../../docs/interlining-research.md).
 Work on `dev`, commit and push coherent milestones, and reserve `main` for
 validated stable releases. Game files and saves remain outside tracked files.
 
-Current authorization for this milestone: establish the task plan (001).
-No new decompilation or behavior implementation is part of step 1. Task 003 is
-ready for a subsequent investigation; task 002 now awaits behavioral observations.
+Current authorization: scripting-hook investigation (003), including targeted
+Ghidra analysis and passive diagnostics. On 2026-10-07 the user asked to resume
+and agreed to test the prepared probe. Task 002 still awaits behavioral
+observations. No native behavior patch has been implemented or validated.

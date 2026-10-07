@@ -1,0 +1,8 @@
+{
+    "authors": [{"name": "TPF3Interlining contributors", "role": "CREATOR"}],
+    "name": "TPF3 Interlining — Pathfinding Probe",
+    "summary": "Experimental passive diagnostics for the scripting-hook investigation.",
+    "description": "Logs callback timing and payload summaries. Does not change route weights, passenger state, or line settings. Use a disposable baseline copy; game integration is not yet validated.",
+    "tags": ["Script Mod"],
+    "url": ""
+}
