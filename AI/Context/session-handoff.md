@@ -8,19 +8,20 @@ boarding. [Full evidence](../../docs/scripting-hook-investigation.md) records
 the executable fingerprint, function addresses, and unresolved questions.
 Task 004 is ready; task 005 (shared extender) remains conditional.
 
-The passive probe is ready in `probes/pathfinding/` and packaged as ignored
-`analysis/packages/tpf3_interlining_probe_1.zip`. It has not been installed,
-enabled, or tested in-game. The user agreed to run it on a disposable baseline
-copy. [Instructions](../../probes/pathfinding/README.md) include the detected
-user-mod and log paths. No game files or original saves were modified.
+The probe loaded and all four events fired in the user's first test. See
+[Test 1](../../docs/test-run-2026-10-07.md) for evidence, UTC/local time mapping,
+counts, and the 13:52 S2-waiting/S1-arrival observation. Raw log, extract, and
+resulting save are preserved under ignored `analysis/test-runs/2026-10-07-test1/`.
+Installed runtime files match the repository at
+`game/installation/mods/tpf3_interlining_probe_1/`. Originals were only read.
 
 ## Resume checklist
 
-1. Read the probe run results: first verify the subscription marker, then event
-   counts, payloads, and timestamps. Missing initialization means integration
-   must be debugged before drawing conclusions about callback availability.
-2. Record the S1/S2/S3 stop/platform details and actual boarding observations
-   in task 002. The preserved baseline hash begins `c228e860e25a`.
+1. Extend read-only diagnostics with line-name mapping and bounded waiting-state
+   snapshots. The current log cannot identify the passenger who ignored S1.
+2. Complete task 002's station/platform, available capacity, and journey details;
+   one user-observed example is now recorded. The preserved baseline hash begins
+   `c228e860e25a`.
 3. Finish task 003's cadence, result-ordering/error, and downstream-use questions.
    `OnStartedLineUsage` does not prove the person has boarded.
 4. For native investigation, trace engine-owned boarding and journey transitions;

@@ -1,6 +1,6 @@
 # 003 — Establish scripting-hook capabilities
 
-- Status: In progress — static assessment recorded; runtime probe ready
+- Status: In progress — probe runtime verified; boarding API investigation remains
 - Owner: Assistant
 - Dependencies: 001; a runtime probe needs 002
 
@@ -38,11 +38,13 @@ full error handling, and mod ordering remain unresolved. A follow-up candidate
 at `0x140b35820` did not establish signal emission timing; do not treat its
 stack-relative `+0x170` access as the system signal.
 
-The [probe](../../probes/pathfinding/README.md) passes offline neutrality and
-sampling checks, Lua syntax checks, manifest/resource validation, and archive
-CRC validation. It is packaged locally, not installed or game-validated. The
-user agreed on 2026-10-07 to run the initial disposable-save test.
+The [probe](../../probes/pathfinding/README.md) passes offline checks and now
+loads in-game: all four events were observed in [Test 1](../../docs/test-run-2026-10-07.md).
+Pathfinding reached counter 800, with every logged town map empty. Invocation
+intervals usually span two simulation updates in the early samples, with a
+longer interval also observed. Native producer identity, complete ordering/error
+semantics, and changes to existing journeys remain open.
 
-Next: verify initialization and capture actual events; independently follow
-native boarding under task 004. Extender implementation remains conditional.
+Next: correlate waiting-state eligibility with arrivals; continue task 004.
+Extender implementation remains conditional.
 Milestone history: `git log -- AI/Tasks/003-scripting-hook.md`.

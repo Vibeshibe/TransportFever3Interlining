@@ -2,7 +2,7 @@
 
 The user supplied this save for [task 002](../AI/Tasks/002-baseline-save.md).
 The assistant will use observations and, when possible, diagnostics to compare
-baseline and modified behavior. No baseline result has been recorded yet.
+baseline and modified behavior. The first observation and runtime logs are recorded in [Test 1](test-run-2026-10-07.md).
 
 ## Received baseline
 

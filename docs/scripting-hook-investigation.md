@@ -81,13 +81,13 @@ table untouched and return `nil`; the probe follows that rule.
 
 ## Runtime gate
 
-The [probe and procedure](../probes/pathfinding/README.md) are ready for an
-initial load test. Offline tests cover observer neutrality and bounded logging;
-they do not verify resource loading, engine dispatch, cadence, or gameplay.
+The [probe](../probes/pathfinding/README.md) loaded successfully in
+[Test 1](test-run-2026-10-07.md). All four events fired; pathfinding reached
+counter 800 and every logged town map was empty, consistent with static
+inspection. Early consecutive callbacks usually span two simulation updates,
+with a longer interval also observed. This confirms repeated invocation during
+simulation, not a fixed universal cadence or effects on existing journeys.
 
-Still required: successful initialization, real payloads and callback timing,
-baseline boarding observations, and multi-mod return/error behavior before any
-weight-changing script. Town-map scope is established statically; how often
-the engine requests it and when resulting costs affect existing journeys remain
-open. Absence of logs without an initialization marker proves nothing about
-hook availability.
+Remaining checks include multi-mod return/error behavior, nonempty modifiers,
+downstream use, and exact eligibility of waiting passengers for alternatives.
+The passive probe cannot identify rejected boarding decisions or test a fix.

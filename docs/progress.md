@@ -164,6 +164,29 @@
   the investigated hook lacks a boarding override. Task 005 remains conditional.
   No game executable, shipped resource, or original save was edited.
 
+## 2026-10-07 — First runtime probe results recovered
+
+- Searched the user-supplied Proton prefix and found `local/crash_dump/stdout.txt`.
+  UTC timestamps map the user's 13:50–13:56 CEST test to 11:50–11:56Z.
+- Preserved the log, probe extract, provenance hashes, and Test1 save under
+  ignored `analysis/test-runs/2026-10-07-test1/`. Originals were only read.
+- Confirmed build 40408, probe initialization, and all four event types.
+  Pathfinding reached logged counter 800; all 28 sampled payloads contained
+  an empty town map. Recorded 19 arrivals, 8 line-use-start batches, and 6
+  completion batches. Sampling prevents treating 800 as the final total.
+- Recorded the user's 13:52 observation: a passenger kept waiting for S2 when
+  S1 arrived heading to the same station. The current log does not identify
+  the waiting passenger or establish capacity/platform/destination eligibility.
+- Verified all five installed probe files match repository revision 1 at
+  `game/installation/mods/tpf3_interlining_probe_1/`. Corrected installation
+  guidance: that location worked; the earlier user-mod suggestion was untested.
+- Added [Test 1](test-run-2026-10-07.md), updated tasks and handoff. Next:
+  bounded read-only waiting-state diagnostics and line-name mapping alongside
+  native boarding investigation. No behavior change or additional game run.
+- Validation: preserved evidence hashes checked, event counts independently
+  tallied, local Markdown links and `git diff --check` passed. Documentation-only
+  milestone; no repeat of unrelated Lua or Ghidra checks required.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

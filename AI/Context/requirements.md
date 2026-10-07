@@ -44,5 +44,5 @@ validated stable releases. Game files and saves remain outside tracked files.
 
 Current authorization: scripting-hook investigation (003), including targeted
 Ghidra analysis and passive diagnostics. On 2026-10-07 the user asked to resume
-and agreed to test the prepared probe. Task 002 still awaits behavioral
-observations. No native behavior patch has been implemented or validated.
+and agreed to test the prepared probe. Task 002 has a first user-observed example and runtime logs; exact boarding
+eligibility remains unresolved. No native behavior patch has been implemented or validated.

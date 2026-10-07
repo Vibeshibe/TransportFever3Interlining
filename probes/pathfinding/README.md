@@ -2,7 +2,8 @@
 
 Experimental diagnostics for task 003. This is not an interlining fix. The
 handler leaves routing payloads untouched and returns `nil`; it writes only its
-own counters and logs. Offline checks pass; in-game loading is unverified.
+own counters and logs. Offline checks pass. Loading and all four callbacks were verified in
+[Test 1](../../docs/test-run-2026-10-07.md).
 
 ## Prepare and install
 
@@ -13,19 +14,19 @@ rtk proxy python3 tools/package_probe.py
 ```
 
 This creates `analysis/packages/tpf3_interlining_probe_1.zip`, containing the
-mod directory and its five runtime files. Extract that directory into the
-game's user `local/mods/` directory. The currently detected parent directory is:
+mod directory and its five runtime files. The verified installation from Test 1
+is `<game installation>/mods/tpf3_interlining_probe_1/mod.json`, here:
 
 ```text
-/home/vibeshibe/Games/Heroic/Prefixes/default/Transport Fever 3/drive_c/users/Public/Documents/Steam/RUNE/3493540/local/mods/
+/home/vibeshibe/Games/Transport Fever 3/mods/tpf3_interlining_probe_1/mod.json
 ```
 
-The resulting path must end in
-`local/mods/tpf3_interlining_probe_1/mod.json`. Packaging does not install or
-activate the mod. In the game's mod selection for a disposable copy of
-`TPF3Interlining_Baseline`, enable **TPF3 Interlining — Pathfinding Probe**.
-Keep the preserved baseline untouched. If the mod is missing from the selection,
-report that first; its discovery/loading procedure still needs validation.
+The user's installed copy already matches the repository; no reinstall is
+needed for revision 1. For a fresh installation, extract the archive into the
+installation's `mods/` directory. The previously suggested Proton user
+`local/mods/` location has not been validated. Packaging does not install or
+activate anything. Enable **TPF3 Interlining — Pathfinding Probe** for a disposable
+baseline copy and keep the preserved baseline untouched.
 
 ## First run: about five minutes
 
@@ -37,7 +38,9 @@ report that first; its discovery/loading procedure still needs validation.
 3. Pause for roughly 15 seconds, resume, and record that boundary. After several
    more arrivals, finish the run. Save only under a new experiment name if needed.
 4. Provide the log path and observations. The currently detected log is the same
-   user `local/` directory's `crash_dump/stdout.txt`. Preserve a copy before
+   Proton prefix's `drive_c/users/Public/Documents/Steam/RUNE/3493540/local/`
+   directory's `crash_dump/stdout.txt`. Timestamps use UTC (two hours behind
+   Europe/Berlin during Test 1). Preserve a copy before
    another game session can replace it; it can go under ignored `analysis/`.
 
 Expected log events: `OnModifyPathfinding`, `OnArriveAtStop`,
