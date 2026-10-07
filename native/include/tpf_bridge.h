@@ -10,10 +10,12 @@ extern "C" {
 #define TFX_QUERY_ABI_VERSION 2u
 #define TFX_VEHICLE_ABI_VERSION 3u
 #define TFX_PLATFORM_ABI_VERSION 4u
+#define TFX_TERMINAL_ABI_VERSION 5u
 #define TFX_CAP_TERMINAL_OBSERVATION 1u
 #define TFX_CAP_PASSENGER_ROUTE_QUERIES 2u
 #define TFX_CAP_VEHICLE_QUERIES 4u
 #define TFX_CAP_PLATFORM_QUERIES 8u
+#define TFX_CAP_TERMINAL_QUERIES 16u
 #define TFX_PERSON_PLATFORMS_SIZE 16u
 #define TFX_WAITING_PAGE_SIZE 16u
 #define TFX_STOP_VEHICLES_SIZE 16u
@@ -134,6 +136,26 @@ typedef struct tfx_api_v4 {
     tfx_api_v3 v3;
     tfx_status (*read_person_platforms)(tfx_context, int32_t person, tfx_person_platforms *out);
 } tfx_api_v4;
+
+typedef struct tfx_terminal {
+    uint32_t struct_size;
+    int32_t station_entity, terminal, terminal_count;
+    uint32_t passengers_load, passengers_unload;
+} tfx_terminal;
+
+/* Presence means a nonempty, consistent component row/mask in this world.
+ * It does not establish destination reachability or a stable entity generation. */
+typedef struct tfx_entity_presence {
+    uint32_t struct_size;
+    int32_t entity;
+    uint32_t has_components, reserved;
+} tfx_entity_presence;
+
+typedef struct tfx_api_v5 {
+    tfx_api_v4 v4;
+    tfx_status (*read_terminal)(tfx_context, int32_t station, int32_t terminal, tfx_terminal *out);
+    tfx_status (*read_entity_presence)(tfx_context, int32_t entity, tfx_entity_presence *out);
+} tfx_api_v5;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

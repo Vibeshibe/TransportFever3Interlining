@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: In progress — ABI 4 edge membership and nonzero reservations captured
+- Status: In progress — ABI 5 terminal/presence queries; live candidate capture
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -59,8 +59,15 @@ passenger assignment corroborating a nonzero vehicle reservation; see
 Endpoint-node fallback remains unsupported; empty direct membership must reject
 an initial candidate.
 
-Next implement candidate validation with remaining terminal loading/unloading
-and journey checks, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
-still governs mutation, indexing and replication requirements.
+ABI 5 adds copied terminal passenger loading/unloading flags and entity presence
+with row/mask consistency. All three native suites pass. A separate consumer
+combines the SDK queries into a restricted read-only candidate validator; see
+[candidate evidence](../../docs/native-candidate-validation-2026-10-07.md).
+The first live S1→S3 candidate passed all implemented checks. Destination presence
+is not proof of onward path validity. No mutation API or Lua binding exists.
+
+Next validate one bounded engine-owned cross-line replacement and its complete
+journey. The [adapter design](../../docs/native-adapter-design.md) governs scope,
+indexing, replication and failure limits.
 
 Implementation history: `git log -- native AI/Tasks/005-shared-extender.md`.

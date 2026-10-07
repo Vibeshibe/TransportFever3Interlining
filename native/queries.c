@@ -2,9 +2,9 @@
 #include "queries.h"
 
 /* Offsets/strides are pinned to the backend executable fingerprint. */
-enum { WAITING, PERSON, LINE, GROUP, PLACE, VEHICLE, TYPE_COUNT };
-static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0};
-static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c, 0x1e8};
+enum { WAITING, PERSON, LINE, GROUP, PLACE, VEHICLE, STATION, TYPE_COUNT };
+static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0, 0x3cea860};
+static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c, 0x1e8, 0x58};
 typedef struct { uint64_t begin, end, capacity; } vector;
 typedef struct { uint64_t control, slots, size, capacity; } type_table;
 #define TRY(expression) do { tfx_status status_ = (expression); if (status_ != TFX_OK) return status_; } while (0)
@@ -66,7 +66,7 @@ static tfx_status begin_query(tfx_reader *r) {
     if (occupied != table.size) return TFX_INVALID_STATE;
     for (unsigned t = 0; t < TYPE_COUNT; ++t) {
         if (r->types[t] == -1) {
-            if (t == VEHICLE) continue; /* ABI2 queries do not require this type. */
+            if (t >= VEHICLE) continue; /* Earlier queries do not require these types. */
             return TFX_QUERY_UNAVAILABLE;
         }
         for (unsigned other = 0; other < t; ++other)
@@ -425,6 +425,54 @@ tfx_status tfx_query_platforms(tfx_reader *r, int32_t person, tfx_person_platfor
             if (!memcmp(&result.platforms[i], &result.platforms[j], sizeof(tfx_platform)))
                 return TFX_INVALID_STATE;
     }
+    *out = result;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_terminal(tfx_reader *r, int32_t station, int32_t terminal, tfx_terminal *out) {
+    if (!out || out->struct_size != sizeof(*out) || station < 0 || terminal < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    vector terminals;
+    TRY(component(r, station, STATION, &terminals, sizeof(terminals)));
+    if (!valid_vector(terminals, 0x88, 4096)) return TFX_INVALID_STATE;
+    uint64_t count = (terminals.end - terminals.begin) / 0x88;
+    if ((uint32_t)terminal >= count) return TFX_NOT_FOUND;
+    unsigned char flags[4];
+    TRY(read_bytes(r, terminals.begin + (uint64_t)terminal * 0x88 + 0x60, flags, sizeof(flags)));
+    if (flags[1] > 1 || flags[3] > 1) return TFX_INVALID_STATE;
+    tfx_terminal result = {.struct_size = sizeof(result), .station_entity = station,
+        .terminal = terminal, .terminal_count = (int32_t)count,
+        .passengers_load = flags[1], .passengers_unload = flags[3]};
+    *out = result;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_presence(tfx_reader *r, int32_t entity, tfx_entity_presence *out) {
+    if (!out || out->struct_size != sizeof(*out) || entity < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    vector rows, entries, masks;
+    TRY(entity_vector(r, &rows));
+    tfx_entity_presence result = {.struct_size = sizeof(result), .entity = entity};
+    if ((uint32_t)entity >= (rows.end - rows.begin) / 24) { *out = result; return TFX_OK; }
+    TRY(read_bytes(r, rows.begin + (uint64_t)entity * 24, &entries, sizeof(entries)));
+    if (!valid_vector(entries, 8, 128)) return TFX_INVALID_STATE;
+    int32_t handles[128][2];
+    size_t bytes = (size_t)(entries.end - entries.begin);
+    if (bytes) TRY(read_bytes(r, entries.begin, handles, bytes));
+    uint64_t expected[2] = {0}, actual[2];
+    for (size_t i = 0; i < bytes / 8; ++i) {
+        int32_t type = handles[i][0];
+        if (type < 0 || type >= 128 || handles[i][1] < 0) return TFX_INVALID_STATE;
+        uint64_t bit = UINT64_C(1) << (type % 64);
+        if (expected[type / 64] & bit) return TFX_INVALID_STATE;
+        expected[type / 64] |= bit;
+    }
+    TRY(read_bytes(r, r->world + 0xc0, &masks, sizeof(masks)));
+    if (!valid_vector(masks, 16, ENTITY_LIMIT) ||
+        (masks.end - masks.begin) / 16 < (rows.end - rows.begin) / 24) return TFX_INVALID_STATE;
+    TRY(read_bytes(r, masks.begin + (uint64_t)entity * 16, actual, sizeof(actual)));
+    if (memcmp(expected, actual, sizeof(expected))) return TFX_INVALID_STATE;
+    result.has_components = bytes != 0;
     *out = result;
     return TFX_OK;
 }

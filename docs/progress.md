@@ -442,6 +442,34 @@
   engine-owned replacement experiment. No passenger mutation or behavior fix
   is active; installed Lua probe and game/save files remain unchanged.
 
+## 2026-10-07 — Validate a live read-only alternate-boarding candidate
+
+- Added ABI 5 terminal passenger load/unload flags and entity-presence checks,
+  preserving ABI 1–4. Verified Station/terminal layouts through typed access and
+  field registration. Presence checks component-row/mask consistency without
+  claiming destination reachability.
+- Implemented a separate native interlining consumer using only the public SDK.
+  It re-reads current passenger/route, direct platform access, locked ready
+  arrival, terminal permissions, destination presence, loading-index membership
+  and capacity after reservations. Positive proposals preserve expected waiting
+  state and require engine revalidation; no mutation API was added.
+- Restricted the pilot to adjacent forward same-terminal legs, load mode0 and
+  100% maximum load. Multi-stop/wrap/alternative-terminal/node-fallback cases
+  remain excluded; fractional native compartment allocation is unresolved.
+- Validation: warning-clean build; bridge, query and candidate suites all passed
+  under isolated Wine. User restarted and unpaused a disposable baseline. The
+  bounded capture completed 1,200 callbacks, 27 candidate evaluations, seven
+  positives for the same observed pair, 12 unsupported-leg rejections and eight
+  boarding mismatches. Zero query errors/rejected boundaries; auto-disabled.
+- At sequence 47, S1 person 22747 passed the checks for S3 vehicle 97959, stops
+  1→2: shared boarding station 97948 terminal1, matching alighting station97294
+  terminal0, destination86002 present and 40 places remaining. This is a proposal,
+  not an actual alternate boarding. [Evidence and hashes](native-candidate-validation-2026-10-07.md).
+- Updated SDK/policy docs, adapter gates, tasks and handoff. Next implement the
+  bounded engine-owned waiting replacement, then verify actual boarding,
+  alighting, continuation and replica consistency. No game/save/probe file was
+  changed; no passenger preference policy or stable behavior fix is active.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

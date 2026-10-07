@@ -6,13 +6,13 @@
 #include "host.h"
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
-static unsigned char world[0x200], controls[31], slots[31][16], stores[6][0x98];
-static unsigned char data[6][32 * 0x1e8], stops[2][0x90];
-static uint64_t store_ptrs[6], rows[6][3], pages[6][2], masks[6][2];
-static int32_t handles[6][5][2], stations[2] = {90, 99};
+static unsigned char world[0x200], controls[31], slots[31][16], stores[7][0x98];
+static unsigned char data[7][32 * 0x1e8], stops[2][0x90];
+static uint64_t store_ptrs[7], rows[8][3], pages[7][2], masks[8][2];
+static int32_t handles[8][5][2], stations[2] = {90, 99};
 static uint32_t load_word = 1, max_load = 0x3f400000; /* 0.75 */
-static const uint32_t rvas[6] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0};
-static const uint32_t strides[6] = {32, 0x98, 40, 24, 12, 0x1e8};
+static const uint32_t rvas[7] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0, 0x3cea860};
+static const uint32_t strides[7] = {32, 0x98, 40, 24, 12, 0x1e8, 0x58};
 static const uint64_t image = 0x140000000;
 static tfx_api_v2 api = {.base.struct_size = sizeof(api)};
 static tfx_context expired;
@@ -23,6 +23,8 @@ static unsigned char index_controls[4][7], vehicle_slots[7][32], onboard_slots[7
 static int32_t assigned_ids[7], vehicle_ids[17];
 static uint32_t capacity, occupied, next_load;
 static tfx_api_v3 v3 = {.v2.base.struct_size = sizeof(v3)};
+static tfx_api_v5 v5 = {.v4.v3.v2.base.struct_size = sizeof(v5)};
+static unsigned char terminals[3][0x88];
 static tfx_api_v4 v4 = {.v3.v2.base.struct_size = sizeof(v4)};
 static unsigned char station_system[0x80], station_dynamic[0xb0], platform_slots[7][32], platform_controls[7];
 static uint64_t system_ptrs[3];
@@ -52,12 +54,12 @@ static void fixture(void) {
     memset(slots, 0, sizeof(slots)); memset(stores, 0, sizeof(stores));
     memset(data, 0, sizeof(data)); memset(stops, 0, sizeof(stops));
     memset(rows, 0, sizeof(rows)); memset(masks, 0, sizeof(masks)); unreadable = 0;
-    uint64_t table[4] = {address(controls), address(slots), 6, 31};
+    uint64_t table[4] = {address(controls), address(slots), 7, 31};
     memcpy(world + 0x48, table, sizeof(table));
     vector_at(world + 0x78, store_ptrs, sizeof(store_ptrs));
     vector_at(world + 0x90, rows, sizeof(rows));
     vector_at(world + 0xc0, masks, sizeof(masks));
-    for (unsigned i = 0; i < 6; ++i) {
+    for (unsigned i = 0; i < 7; ++i) {
         controls[i] = (unsigned char)i;
         put64(slots[i], image + rvas[i]); put32(slots[i] + 8, i + 1);
         store_ptrs[i] = address(stores[i]);
@@ -76,6 +78,12 @@ static void fixture(void) {
     vector_at(rows[3], handles[3], 8);
     vector_at(rows[4], handles[4], 8);
     masks[1][0] = (1 << 0) | (1 << 1) | (1 << 4);
+    masks[2][0] = 1 << 2; masks[3][0] = 1 << 3; masks[4][0] = 1 << 5;
+    handles[5][0][0] = 6; handles[5][0][1] = 0;
+    vector_at(rows[5], handles[5], 8); masks[5][0] = 1 << 6;
+    memset(terminals, 0, sizeof(terminals));
+    vector_at(data[6], terminals, sizeof(terminals));
+    terminals[1][0x61] = 1; terminals[2][0x63] = 1;
     put32(data[0], 2); put32(data[0] + 4, 0); put32(data[0] + 8, 1);
     put64(data[0] + 16, UINT64_C(0x123456789abcdef0)); put32(data[0] + 24, UINT32_MAX);
     put32(data[1] + 0x50, 43210);
@@ -181,7 +189,7 @@ static void vehicle_tests(void) {
     CHECK(tfx_query_vehicle(&r, 4, &v) == TFX_QUERY_BUDGET_EXHAUSTED);
     vehicle_fixture(); r = reader(); r.terminal_system = 0;
     CHECK(tfx_query_vehicle(&r, 4, &v) == TFX_QUERY_UNAVAILABLE);
-    vehicle_fixture(); r = reader(); controls[5] = 0x80; put64(world + 0x58, 5);
+    vehicle_fixture(); r = reader(); controls[5] = 0x80; put64(world + 0x58, 6);
     tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
     CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_OK); /* ABI2 still works without vehicle type. */
     CHECK(tfx_query_vehicle(&r, 4, &v) == TFX_QUERY_UNAVAILABLE);
@@ -260,6 +268,48 @@ static void platform_tests(void) {
     CHECK(tfx_query_platforms(&r, 1, &p) == TFX_QUERY_BUDGET_EXHAUSTED);
 }
 
+static void terminal_tests(void) {
+    fixture(); tfx_reader r = reader();
+    tfx_terminal t = {.struct_size = sizeof(t)};
+    CHECK(tfx_query_terminal(&r, 5, 1, &t) == TFX_OK && t.passengers_load && !t.passengers_unload);
+    CHECK(t.terminal_count == 3 && t.station_entity == 5 && t.terminal == 1);
+    CHECK(tfx_query_terminal(&r, 5, 2, &t) == TFX_OK && !t.passengers_load && t.passengers_unload);
+    tfx_terminal unchanged = t;
+    CHECK(tfx_query_terminal(&r, 5, 3, &t) == TFX_NOT_FOUND && !memcmp(&t, &unchanged, sizeof(t)));
+    terminals[2][0x63] = 2;
+    CHECK(tfx_query_terminal(&r, 5, 2, &t) == TFX_INVALID_STATE);
+    fixture(); r = reader();
+    memcpy(data[6] + 31 * strides[6], data[6], strides[6]); handles[5][0][1] = 0x4000001f;
+    CHECK(tfx_query_terminal(&r, 5, 1, &t) == TFX_OK && t.passengers_load);
+    fixture(); r = reader(); put64(data[6] + 8, address(terminals) + 1);
+    CHECK(tfx_query_terminal(&r, 5, 1, &t) == TFX_INVALID_STATE);
+    fixture(); r = reader();
+    tfx_entity_presence p = {.struct_size = sizeof(p)};
+    CHECK(tfx_query_presence(&r, 1, &p) == TFX_OK && p.has_components);
+    CHECK(tfx_query_presence(&r, 0, &p) == TFX_OK && !p.has_components);
+    CHECK(tfx_query_presence(&r, INT32_MAX, &p) == TFX_OK && !p.has_components);
+    tfx_entity_presence before = p;
+    masks[1][0] = 0;
+    CHECK(tfx_query_presence(&r, 1, &p) == TFX_INVALID_STATE && !memcmp(&p, &before, sizeof(p)));
+    fixture(); r = reader(); handles[1][1][0] = 0;
+    CHECK(tfx_query_presence(&r, 1, &p) == TFX_INVALID_STATE);
+    fixture(); r = reader(); r.reads_left = 0;
+    CHECK(tfx_query_presence(&r, 1, &p) == TFX_QUERY_BUDGET_EXHAUSTED);
+    fixture(); r = reader(); controls[6] = 0x80; put64(world + 0x58, 6);
+    tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
+    CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_OK);
+    CHECK(tfx_query_terminal(&r, 5, 1, &t) == TFX_QUERY_UNAVAILABLE);
+}
+
+static void terminal_client(tfx_context context, void *unused) {
+    (void)unused;
+    tfx_terminal t = {.struct_size = sizeof(t)};
+    tfx_entity_presence p = {.struct_size = sizeof(p)};
+    CHECK(v5.read_terminal(context, 5, 1, &t) == TFX_OK && t.passengers_load);
+    CHECK(v5.read_entity_presence(context, 1, &p) == TFX_OK && p.has_components);
+    expired = context;
+}
+
 static DWORD WINAPI wrong_thread(void *unused) {
     (void)unused;
     tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
@@ -270,6 +320,10 @@ static DWORD WINAPI wrong_thread(void *unused) {
     CHECK(v3.read_stop_vehicles(expired, 2, 0, &list) == TFX_WRONG_THREAD);
     tfx_person_platforms p = {.struct_size = sizeof(p)};
     CHECK(v4.read_person_platforms(expired, 1, &p) == TFX_WRONG_THREAD);
+    tfx_terminal t = {.struct_size = sizeof(t)};
+    tfx_entity_presence e = {.struct_size = sizeof(e)};
+    CHECK(v5.read_terminal(expired, 5, 1, &t) == TFX_WRONG_THREAD);
+    CHECK(v5.read_entity_presence(expired, 1, &e) == TFX_WRONG_THREAD);
     return 0;
 }
 
@@ -359,6 +413,7 @@ int main(void) {
     CHECK(tfx_get_api(2, &api.base) == TFX_OK);
     CHECK(tfx_get_api(3, &v3.v2.base) == TFX_OK && v3.v2.base.capabilities == 7);
     CHECK(tfx_get_api(4, &v4.v3.v2.base) == TFX_OK && v4.v3.v2.base.capabilities == 15);
+    CHECK(tfx_get_api(5, &v5.v4.v3.v2.base) == TFX_OK && v5.v4.v3.v2.base.capabilities == 31);
     CHECK(api.base.abi_version == 2 && api.base.capabilities == 3);
     tfx_client c = {.struct_size = sizeof(c), .id = "tests.queries", .before_terminal_selection = client};
     CHECK(api.base.register_client(&c) == TFX_OK);
@@ -381,6 +436,14 @@ int main(void) {
     tfx_person_platforms p = {.struct_size = sizeof(p)};
     CHECK(v4.read_person_platforms(expired, 1, &p) == TFX_STALE_CONTEXT);
     CHECK(v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    terminal_tests(); fixture(); r = reader();
+    c.before_terminal_selection = terminal_client;
+    CHECK(v5.v4.v3.v2.base.register_client(&c) == TFX_OK);
+    CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    tfx_terminal t = {.struct_size = sizeof(t)};
+    CHECK(v5.read_terminal(expired, 5, 1, &t) == TFX_STALE_CONTEXT);
+    CHECK(v5.v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    puts("PASS: terminal load/unload flags, entity row/mask consistency, missing/shared data, ABI5 guards.");
     puts("PASS: platform edge membership, distinct worlds, missing/ambiguous systems, malformed/oversized results, ABI4 guards.");
     puts("PASS: vehicle capacity/reservations, stop index, selected terminal, shared storage, malformed tables, ABI3 guards.");
     puts("PASS: passenger/route copies, contiguous/shared storage, malformed/missing data, budgets, scan, ABI2 lifetime/thread guards.");

@@ -127,11 +127,28 @@ static tfx_status read_person_platforms(tfx_context context, int32_t person, tfx
     return status;
 }
 
+static tfx_status read_terminal(tfx_context context, int32_t station, int32_t terminal, tfx_terminal *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_terminal(current_reader, station, terminal, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
+static tfx_status read_entity_presence(tfx_context context, int32_t entity, tfx_entity_presence *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_presence(current_reader, entity, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version < TFX_ABI_VERSION || version > TFX_PLATFORM_ABI_VERSION) return TFX_ABI_MISMATCH;
+    if (version < TFX_ABI_VERSION || version > TFX_TERMINAL_ABI_VERSION) return TFX_ABI_MISMATCH;
     size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
         version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) :
-        version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) : sizeof(tfx_api_v4);
+        version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) :
+        version == TFX_PLATFORM_ABI_VERSION ? sizeof(tfx_api_v4) : sizeof(tfx_api_v5);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
@@ -150,9 +167,14 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         v3->read_stop_vehicles = read_stop_vehicles;
         v3->read_vehicle = read_vehicle;
     }
-    if (version == TFX_PLATFORM_ABI_VERSION) {
+    if (version >= TFX_PLATFORM_ABI_VERSION) {
         out->capabilities |= TFX_CAP_PLATFORM_QUERIES;
         ((tfx_api_v4 *)out)->read_person_platforms = read_person_platforms;
+    }
+    if (version == TFX_TERMINAL_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_TERMINAL_QUERIES;
+        ((tfx_api_v5 *)out)->read_terminal = read_terminal;
+        ((tfx_api_v5 *)out)->read_entity_presence = read_entity_presence;
     }
     return TFX_OK;
 }

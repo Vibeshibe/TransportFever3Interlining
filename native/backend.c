@@ -6,7 +6,7 @@
 #include <wchar.h>
 #include "host.h"
 #include "slot.h"
-#include "query_probe.h"
+#include "candidate_probe.h"
 
 /* These bindings are private and pinned to a single research executable. */
 #define TERMINAL_UPDATE_RVA 0xb0db00u
@@ -135,7 +135,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.4.0; read-only queries; limit=1200; ABI=1,2,3,4\n");
+    log_line("TPF shared bridge 0.5.0; read-only candidates; limit=1200; ABI=1,2,3,4,5\n");
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);
@@ -150,7 +150,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     status = TFX_SYSTEM_ERROR;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)&tfx_start, &self)) goto fail;
-    status = tfx_register_query_probe(log_line);
+    status = tfx_register_candidate_probe(log_line);
     if (status != TFX_OK) goto fail;
     tfx_original = image + TERMINAL_UPDATE_RVA;
     status = tfx_replace_slot((void **)(image + TERMINAL_SLOT_RVA), tfx_original, &tfx_terminal_entry);

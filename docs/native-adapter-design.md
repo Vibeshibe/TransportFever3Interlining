@@ -68,11 +68,13 @@ expected state immediately before applying them.
 ## Remaining implementation gates
 
 The native bridge now verifies the executable and live virtual table, replaces
-Update's slot, and forwards through an ABI-preserving assembly wrapper. ABI 2
-now returns copied waiting-leg/destination and configured line-stop/loading
-snapshots; see [query validation](native-query-validation-2026-10-07.md). Actual
-platform compatibility, capacity/reservations, full route/permission validation,
-mutation bindings and write failure handling remain outstanding.
+Update's slot, and forwards through an ABI-preserving assembly wrapper. ABI 2–5
+provide copied passenger/route, vehicle capacity/reservations, direct platform,
+terminal permission and entity-presence queries. A separate read-only validator
+combines these for the restricted adjacent same-terminal case. Destination
+presence does not prove onward reachability; node fallback, fractional load
+limits and alternative terminals remain excluded. Mutation bindings, expected-state
+revalidation, write failure handling and live journey continuation remain outstanding.
 Same-line stop remapping demonstrates replacement;
 cross-line replacement still needs a disposable-save write test. Removal/addition
 is not an established rollback transaction: reject expected failures before the

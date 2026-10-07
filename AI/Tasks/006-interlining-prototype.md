@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — offline candidate policy only; engine adapter pending
+- Status: In progress — native read-only candidate observed; mutation pending
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -34,6 +34,15 @@ recorded S1/S3 adjacent segment and rejects 25 unsuitable/invalid controls.
 It reads copied snapshots, explains rejection reasons, and requires native
 validation for every proposal. It does not rank services, reserve seats, or
 change boarding; no acceptance criterion above is complete yet.
+
+The native `it_validate_candidate` now consumes ABI 5 live copied queries. It
+requires direct platform access, matching adjacent endpoints, locked ready loading,
+terminal load/unload flags, unrestricted line loading, destination presence and
+capacity after reservations. Query failures preserve output; exclusions carry
+reasons. Fixtures pass and the live capture identified an S1→S3 proposal; see
+[evidence](../../docs/native-candidate-validation-2026-10-07.md). This does not
+complete the broader criteria: onward travel and actual replacement are untested,
+while multi-stop/loop/alternative-terminal cases are deliberately excluded.
 
 Use [the test-save guide](../../docs/test-save.md). Define
 performance limits using measured baseline behavior, and avoid full-network

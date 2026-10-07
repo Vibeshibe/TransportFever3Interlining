@@ -18,6 +18,46 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Bridge **0.5 / ABI 5** adds terminal passenger load/unload flags and entity presence.
+ABI 1–4 remain compatible. `src/interlining/native_candidate.c` implements the
+restricted adjacent-leg validator entirely through the public SDK. No mutation
+operation is exposed. See [candidate evidence](../../docs/native-candidate-validation-2026-10-07.md)
+for static layouts, test commands, hashes and runtime results.
+
+All three suites (`query_tests`, `bridge_tests`, `candidate_tests`) passed under
+the isolated Wine prefix, following a warnings-as-errors cross-build. User restarted,
+loaded a disposable baseline paused, and unpaused after the observer loaded.
+`analysis/native-bridge/build-v5/tpf_shared_bridge.dll` loaded into Windows PID 308;
+log `tpf-bridge-308-29658466.log`, thread 596, worlds `0x2c5d3aa0` / `0x2c5d4760`.
+Capture completed 1,200 callbacks: 15 remembered people, 11 vehicles, 45 ready
+samples, 27 validations: 7 positives (same observed pair), 12 unsupported legs,
+8 boarding mismatches. Zero query errors/rejected boundaries. Observer auto-disabled;
+no debugger or stop-loader used. User was told they can pause/close. Restart
+before a revised DLL; do not overwrite the loaded build or assume its PID.
+
+First positive proposal: sequence 47, person **22747**, S1 `98278`, stops **1→2**,
+destination **86002**, S3 `97743` vehicle **97959**, stops **1→2**. Boarding station
+**97948** terminal **1**, alighting station **97294** terminal **0**, places left
+**40**. All implemented gates passed in that callback. No passenger was moved.
+Multiple-stop, terminal-mismatch and loop-wrap cases were also rejected.
+
+New layouts: Station RTTI RVA `0x3cea860`, stride `0x58`, first vector terminals
+stride `0x88`; `passengersLoad +0x61`, `passengersUnload +0x63`. Evidence getter
+`0x1405d9640`, registration `0x1422c1ab0`, export `terminal-permissions.txt`.
+Entity presence requires a nonempty component row consistent with the world mask;
+it does not prove reachability. Vehicle gate state2/load3, locked configured
+arrival, finite timer<=0. Load mode0/maxLoad1.0 only; fractional compartment
+allocation unresolved. No alternatives, multi-stop legs, wrap or node fallback.
+
+**Next:** implement a one-passenger engine-owned waiting replacement with current
+expected-state revalidation, then capture boarding/alighting/continuation and
+replication. Preserve native arrival bytes and unassigned vehicle -1. Dedicated
+modification scope ends before original terminal selection. No behavior fix,
+mutation API, Lua binding or stable release exists yet. Do not repeat generic
+query/platform captures; a positive read-only candidate is now observed.
+
+### Earlier platform implementation
+
 Bridge **0.4 / ABI 4** now exposes `read_person_platforms`: copied direct edge
 membership as station-entity/terminal pairs, plus edge entity/index and place.
 ABI 1–3 remain compatible. **Platform membership and a nonzero reservation are
@@ -37,8 +77,8 @@ At sequence 595, person **71583** was assigned to vehicle **97913**, S3 stops 4�
 vehicle API reported capacity 40, onboard 0, reserved 1, remaining 39. This
 corroborates that sampled reservation, not an exhaustive census. At Wimborne,
 S1 persons 98760/113752 and S3 person 114323 map to station 97948 terminal 1,
-while S2 person 75514 maps to terminal 2. S1/S3 share physical access; route and
-alighting compatibility still need current-callback validation.
+while S2 person 75514 maps to terminal 2. S1/S3 share physical access; the subsequent ABI 5 consumer validates route and
+alighting compatibility within the current callback.
 
 Current-world discovery: world `+0x30` vector of 8-byte system pointers (dispatcher
 `0x142bb8a50`); find unique StationSystem vtable RVA **0x3706600** (RTTI RVA
@@ -56,12 +96,8 @@ Reader caps: system vector256, map4095 slots,16 returned pairs, existing shared
 64-query/8192-read/1MiB budgets. Tests passed, including two distinct worlds,
 shared storage, missing/ambiguous system, malformed data and ABI4 thread/token.
 
-**Next:** implement read-only candidate validation combining waiting leg, direct
-edge membership, actual locked vehicle platform, capacity/loading rules and
-adjacent destination/journey continuity. Add verified terminal loading/unloading
-flags and destination checks before enabling one-passenger engine-owned mutation.
-Keep native infrastructure separate from interlining policy. No mutation API,
-Lua bridge binding, passenger behavior change or stable release exists yet.
+This platform milestone led to the ABI 5 candidate validator above. Native
+infrastructure remains separate from interlining policy.
 
 ### Earlier vehicle implementation
 
@@ -228,14 +264,13 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Implement the read-only candidate validator and remaining terminal/load/unload
-   and destination predicates. Direct platform membership and nonzero reservations
-   have live evidence; ABI 4 queries are implemented. Then
-   implement one-passenger mutation after candidate validation is complete.
+1. Implement the bounded one-passenger engine-owned replacement. The read-only
+   adjacent candidate, direct platform membership and nonzero reservations have
+   live evidence; ABI 5 terminal/presence queries are implemented.
    The dedicated scope must finish before original selection starts; inserting
    into the engine's later commit scope would invalidate prior selections.
    Use the current callback's world and preserve the original ABI/call. Loader
-   and interception passed the pilot; mutation bindings, live candidate validation
+   and interception passed the pilot; mutation bindings, live onward-journey validation
    and controlled mutation tests are outstanding. Boundary observation and paired
    line-index callbacks are done;
    do not repeat generic boarding captures. The

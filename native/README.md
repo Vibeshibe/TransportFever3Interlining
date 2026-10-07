@@ -1,7 +1,7 @@
 # Shared native bridge — experimental read-only pilot
 
 The bridge provides one centrally owned terminal-update interception and a small
-versioned C API and copied passenger/line-stop/vehicle/platform queries. **It cannot change
+versioned C API and copied passenger/line-stop/vehicle/platform/terminal queries. **It cannot change
 passenger routes or components.** The Lua
 policy in `src/interlining/` remains separate and is not connected to this DLL.
 This is a development loader, not an automatically installed game mod.
@@ -16,6 +16,8 @@ rtk proxy env WINEPREFIX="$PWD/tools/runtime/bridge-test" WINEDEBUG=-all \
   wine analysis/native-bridge/build/bridge_tests.exe
 rtk proxy env WINEPREFIX="$PWD/tools/runtime/bridge-test" WINEDEBUG=-all \
   wine analysis/native-bridge/build/query_tests.exe
+rtk proxy env WINEPREFIX="$PWD/tools/runtime/bridge-test" WINEDEBUG=-all \
+  wine analysis/native-bridge/build/candidate_tests.exe
 ```
 
 Downloads are explicit. The helper pins LLVM-MinGW 20250910 (LLVM 21.1.1), verifies
@@ -25,8 +27,8 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 `analysis/`. Do not overwrite a DLL currently loaded in the game; use a new build
 directory and restart the game before testing a changed bridge.
 
-Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`, and
-`bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
+Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
+`candidate_tests.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
 There is no production switch that bypasses executable verification.
 
@@ -59,20 +61,20 @@ two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.4 registers the bounded `research.passenger-route-observer` client.
-It scans at most 1,024 masks per callback, remembers up to 32 candidate person IDs
-and 16 vehicle IDs, then re-reads up to eight people and four vehicles per callback.
-Two person-edge membership reads per callback provide up to 48 changed platform
-snapshots. Vehicle logging is bounded to 64 ordinary records, plus a shared
-24-record allowance for assignments/nonzero reservations. Eight query errors
-stop the consumer; missing former waiting records are expected after boarding.
+Version 0.5 registers the bounded `research.interlining-candidates` client.
+It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
+vehicle IDs, and checks up to four vehicles for a ready loading state. For one
+ready vehicle it considers up to eight remembered people and performs at most
+two complete candidate validations. It logs up to 80 changed results and prints
+aggregate rejection counts at the limit. Eight query errors stop the consumer.
+Missing former waiting records are expected after ordinary boarding.
 
 Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
-`97742`, `97743` and their stops. At Wimborne (group `97291`) the consumer compares
-edge membership with each line's configured stop 1. These are save-specific
-research inputs, not SDK defaults or an eligibility policy. Cached IDs are always
-re-read. Snapshot comparisons suppress logs only; they never authorize mutations
-or reuse engine pointers across worlds.
+`97742`, `97743` and their stops. These are save-specific research inputs, not SDK
+defaults. Cached IDs are always re-read in the current callback. Result comparisons
+suppress logs only; they never authorize mutations or reuse engine pointers.
+The separate [native policy](../src/interlining/README.md) returns proposals and
+rejection reasons. A positive result does not reserve a seat or move a passenger.
 
 ## Client contract
 
@@ -184,6 +186,26 @@ alternative boarding. Resolve a vehicle's station-group index before comparing
 its selected terminal with these station-entity pairs; check its locked choice,
 terminal loading/unloading flags, route continuity and capacity separately.
 
+## Terminal and entity-presence queries (ABI 5)
+
+Initialize `tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)}` and request
+`tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base)`. ABI 5 adds
+`TFX_CAP_TERMINAL_QUERIES`; ABI 1–4 retain their layouts and capabilities.
+
+- `read_terminal(context, station_entity, terminal, out)` copies terminal count
+  and passenger loading/unloading flags from the Station component.
+- `read_entity_presence(context, entity, out)` checks the current world's component
+  row against its 128-bit mask. A consistent nonempty row reports presence; an
+  empty or out-of-range entity reports absence. Inconsistency fails the query.
+
+These queries obey the existing lifetime, budget and unchanged-output rules.
+Presence is not destination reachability or proof of a valid onward path. The
+native policy requires matching boarding and alighting terminals, direct edge
+membership, locked arrival, ready loading, unrestricted passenger load and spare
+capacity including reservations. Multi-stop legs, loop wrap, alternative terminals
+and fractional load limits remain excluded. Every proposal still requires engine
+revalidation before any future mutation.
+
 ## Interception and compatibility
 
 Pinned executable SHA-256:
@@ -208,18 +230,22 @@ limits, and duplicate IDs. The slot/assembly test checks ownership refusal,
 restored page protection, integer/float/stack arguments, original return value,
 and exactly one original call. Query tests cover both storage layouts, malformed
 and absent records, disabled loading, non-finite fractions, scan pagination,
-budgets, output preservation, ABI 2/3/4 context/thread rules, vehicle capacities,
+budgets, output preservation, ABI 2/3/4/5 context/thread rules, vehicle capacities,
 mixed passenger/freight reservations, index corruption and overflow refusal.
 Platform tests cover separate worlds, ambiguous/missing systems, shared storage,
 multiple terminals, absent edges and oversized/invalid results.
+Terminal tests cover shared storage, bounds and malformed flags; presence tests
+cover row/mask consistency. Candidate tests exercise the accepted adjacent case,
+expected-state preservation, rejection gates and query failures.
 These tests do not prove arbitrary native-client
 safety, cross-line migration, save compatibility, or third-party mod support.
 See [the query capture](../docs/native-query-validation-2026-10-07.md) for runtime
 evidence and the unresolved Proton stop-loader stall. See
 [vehicle capture](../docs/native-vehicle-validation-2026-10-07.md) for ABI 3 results
 and [platform/reservation capture](../docs/native-platform-validation-2026-10-07.md)
-for ABI 4 membership and a live nonzero-reservation cross-check. Full candidate
-eligibility and mutation remain unimplemented.
+for ABI 4 membership and a live nonzero-reservation cross-check. The bounded
+read-only candidate policy passed [a live capture](../docs/native-candidate-validation-2026-10-07.md);
+passenger mutation remains absent.
 
 Implementation references: Microsoft's [x64 calling convention](https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention),
 [atomic pointer exchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchangepointer),
