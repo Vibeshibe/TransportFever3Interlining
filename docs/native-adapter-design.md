@@ -68,9 +68,12 @@ expected state immediately before applying them.
 ## Remaining implementation gates
 
 The native bridge now verifies the executable and live virtual table, replaces
-Update's slot, and forwards through an ABI-preserving assembly wrapper. Native
-mutation bindings, live route/permission queries, and write failure handling
-are not implemented. Same-line stop remapping demonstrates replacement;
+Update's slot, and forwards through an ABI-preserving assembly wrapper. ABI 2
+now returns copied waiting-leg/destination and configured line-stop/loading
+snapshots; see [query validation](native-query-validation-2026-10-07.md). Actual
+platform compatibility, capacity/reservations, full route/permission validation,
+mutation bindings and write failure handling remain outstanding.
+Same-line stop remapping demonstrates replacement;
 cross-line replacement still needs a disposable-save write test. Removal/addition
 is not an established rollback transaction: reject expected failures before the
 first removal, and do not promise recovery from an engine assertion or allocator

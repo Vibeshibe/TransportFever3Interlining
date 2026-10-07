@@ -18,6 +18,42 @@ Revision 1 runtime files matched the repository at
 
 ## Latest implementation
 
+Bridge 0.2 now implements and runtime-verifies copied waiting-person and line-stop
+queries. See [query validation](../../docs/native-query-validation-2026-10-07.md).
+ABI 2 adds `read_waiting_leg`, `read_line_stop`, `scan_waiting_people`; ABI 1 remains
+compatible. Private readers resolve types per world/dispatch and copy contiguous
+or shared-page components, with explicit failures and bounded reads. No game
+component getters or mutation operations are called. Passenger snapshots include
+destination, original arrival bits, and optional opaque terminal-place bytes.
+Stop snapshots resolve configured station/terminal and passenger loading settings.
+
+Builds are in `analysis/native-bridge/build-v2/` (do not overwrite a loaded DLL).
+Both `bridge_tests.exe` and `query_tests.exe` passed. The restarted disposable game
+was Linux PID 87399 / Windows PID 308. Capture
+`tpf-bridge-308-23938409.log` logged 20 passenger records (8 IDs), 40 stop records,
+400 callbacks, zero query errors and zero boundary rejections. Windows thread 596;
+worlds `0x2eb2bca0` and `0x2eb2c960`. S3 uses Wimborne terminal 1, S2 terminal 2.
+This capture includes assigned configuration/data reads, not an eligibility proof;
+no interlining behavior change is active.
+
+Observer auto-disabled. A subsequent optional `--stop` loader hung without a result.
+Directly read DLL counters: `enabled=0`, `observed=400`, `rejected=0`. Terminated
+only the hung loader (Linux PID 89794); no game signal or injected-thread kill.
+No debugger is attached to the game. Loader-only GDB inspection was denied by OS
+ptrace permissions. Stop-stall cause is unresolved; wrap future Wine loader calls
+in `rtk proxy timeout 45 ...` because its internal timeout covers remote-thread
+waits, not Wine startup/all APIs. User can pause/close; restart before a new DLL.
+
+**Next:** implement arriving-vehicle/capacity/reservation and actual platform
+compatibility queries. Configured stops and maximum-load fractions are already
+available but insufficient. Then finish candidate revalidation and implement the
+one-passenger engine-owned replacement. The sampled person `114323` has S3 stops
+1→4, so it does not meet the current adjacent-only offline policy. Keep the original
+Test 2 same-terminal adjacent S1/S3 case as the reference; do not switch to an
+ineligible multi-stop passenger merely because the scanner found one.
+
+### Earlier bridge implementation
+
 The shared native bridge is implemented in `native/` and passed an in-game
 400-invocation read-only capture. See [validation](../../docs/native-bridge-validation-2026-10-07.md)
 and [build/API/loader guide](../../native/README.md). It replaces the terminal
@@ -43,9 +79,8 @@ The game has no debugger attached. The DLL remains pinned, forwarding only,
 until game exit; no autoload, disk game changes or passenger changes. It is safe
 for the user to pause/close. The installed passive Lua probe is unchanged.
 
-**Next:** add copied live passenger/route queries through the bridge, then the
-one-passenger mutation adapter when validation gates are implemented. Do not
-repeat generic boarding or boundary captures. No behavior fix is active.
+This established the interception for the queries above. Do not repeat generic
+boarding or boundary captures. No behavior fix is active.
 
 ### Earlier boundary evidence
 
@@ -104,8 +139,9 @@ were a transit-boarding transition.
 
 ## Resume checklist
 
-1. Extend the implemented read-only host with copied live waiting-leg and route
-   queries, then implement one-passenger mutation after validation is complete.
+1. Finish live vehicle capacity/reservations and actual platform compatibility
+   queries; waiting-leg and configured route snapshots are implemented. Then
+   implement one-passenger mutation after candidate validation is complete.
    The dedicated scope must finish before original selection starts; inserting
    into the engine's later commit scope would invalidate prior selections.
    Use the current callback's world and preserve the original ABI/call. Loader
@@ -156,7 +192,14 @@ Live captures: ignored `analysis/native-boarding/runtime-trace-01.jsonl` (paused
 empty), `runtime-trace-02.jsonl` (successful), and `runtime-threads.txt`.
 New captures: `runtime-boundary-01.jsonl` (80 calls) and
 `runtime-boundary-02.jsonl` (200 calls); details/hashes in the runtime evidence doc.
-New exports: `terminal-scope.txt`, `person-index-removal.txt`, and
+New query exports: `read-lookups.txt`, `read-storage.txt`, `read-layouts.txt`.
+Registry helper `0x140099970`; handle lookup `0x1400a4b90`; typed accessors
+`0x140095a50` (32 bytes), `0x140095bc0` (152), `0x140095970` (24),
+`0x1400955b0` (40, receives world+0x48), `0x1402809d0` (12).
+Line/stop configuration registration `0x1418829c0` exposes field offsets.
+Native query code and evidence document the actual implemented layouts.
+
+Earlier exports: `terminal-scope.txt`, `person-index-removal.txt`, and
 `system-update-dispatch.txt`. Dispatcher `0x142bb8a50` calls Update through vtable
 slot `+0x58` (return `0x142bb8aec`). Scoped wrapper `0x142bbbba0` opens changes;
 `0x142bbc060` closes them. Terminal interior sites `0x140b0f40e`/`0x140b0f5ef`

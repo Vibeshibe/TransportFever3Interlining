@@ -7,6 +7,8 @@ this document specifies ownership and compatibility. The first
 [native bridge](../native/README.md) implements a read-only C ABI, explicit loader,
 and verified virtual-table interception. Passenger mutation and Lua bindings
 remain unimplemented.
+ABI 2 adds [copied passenger and line-stop queries](../native/README.md), with
+bounded scans and per-dispatch read budgets; ABI 1 remains compatible.
 
 ## Ownership and clients
 
@@ -19,7 +21,8 @@ ABI 1 uses explicit structure sizes and fixed-width scalar fields. Its concrete
 operations are `register_client`, `unregister_client`, and `read_observation`.
 Keep any future Lua/Teal bridge over the same service layer. Use readable names
 such as `register_client`, `subscribe_before_terminal_selection`,
-`read_waiting_leg`, and `request_waiting_leg_change`; those additional names remain proposals.
+`request_waiting_leg_change`; mutation operations remain proposals. `read_waiting_leg`,
+`read_line_stop` and `scan_waiting_people` are now implemented in ABI 2.
 Callbacks receive a temporary context token valid only for their invocation.
 Copy returned snapshots; do not retain references into engine storage.
 

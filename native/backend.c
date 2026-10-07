@@ -6,6 +6,7 @@
 #include <wchar.h>
 #include "host.h"
 #include "slot.h"
+#include "query_probe.h"
 
 /* These bindings are private and pinned to a single research executable. */
 #define TERMINAL_UPDATE_RVA 0xb0db00u
@@ -23,6 +24,12 @@ extern void tfx_terminal_entry(void);
 static unsigned char *image;
 static volatile LONG start_state, enabled, simulation_thread, observed, rejected;
 static HANDLE ownership, log_file = INVALID_HANDLE_VALUE;
+
+static int copy_memory(void *unused, uint64_t address, void *out, size_t size) {
+    (void)unused;
+    SIZE_T got = 0;
+    return ReadProcessMemory(GetCurrentProcess(), (const void *)(uintptr_t)address, out, size, &got) && got == size;
+}
 
 static void log_line(const char *message) {
     DWORD written;
@@ -103,7 +110,9 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     if (count > OBSERVATION_LIMIT) return;
     uint32_t bits;
     memcpy(&bits, &delta, sizeof(bits));
-    tfx_status status = tfx_dispatch(bits);
+    tfx_reader reader;
+    tfx_reader_init(&reader, (uint64_t)(uintptr_t)world, (uint64_t)(uintptr_t)image, copy_memory, NULL);
+    tfx_status status = tfx_dispatch_with_reader(bits, &reader);
     if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
         snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
@@ -125,7 +134,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.1.0; read-only pilot; limit=400; ABI=1\n");
+    log_line("TPF shared bridge 0.2.0; read-only queries; limit=400; ABI=1,2\n");
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);
@@ -140,6 +149,8 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     status = TFX_SYSTEM_ERROR;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)&tfx_start, &self)) goto fail;
+    status = tfx_register_query_probe(log_line);
+    if (status != TFX_OK) goto fail;
     tfx_original = image + TERMINAL_UPDATE_RVA;
     status = tfx_replace_slot((void **)(image + TERMINAL_SLOT_RVA), tfx_original, &tfx_terminal_entry);
     if (status != TFX_OK) {

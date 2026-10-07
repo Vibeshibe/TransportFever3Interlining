@@ -361,6 +361,35 @@
   clients remain trusted code, and arbitrary callback failures are not contained.
   No interlining behavior fix or stable release is claimed.
 
+## 2026-10-07 — Add and validate copied passenger and route queries
+
+- Traced the component registry, entity component handles, contiguous/shared
+  storage and native line-stop field registrations. Implemented bounded memory
+  readers that avoid the game's asserting getters and return copied values.
+- Added ABI 2 while preserving ABI 1: waiting-leg/destination snapshots,
+  configured stop/station/terminal/loading snapshots, and paged waiting-person
+  scans. Enforced callback/thread lifetime and shared per-dispatch query/read/byte
+  budgets; failed queries leave results unchanged. No mutation capability added.
+- Added an example consumer using only the public API. It scans up to 1,024 entity
+  masks per callback, returns at most 16 IDs per page, and records at most 24
+  passenger samples within the existing 400-call capture.
+- Validation: warning-clean Windows cross-build; query fixtures and existing
+  bridge tests passed under isolated Wine. Tests cover both storage layouts,
+  malformed/missing data, loading flags/fractions, pagination, limits, and
+  context/thread access. User restarted and resumed a disposable save. Capture
+  reached 400 callbacks with 20 passenger records (8 IDs), 40 stop records and
+  no sampled query errors/rejected boundaries. Confirmed the known S2/S3
+  Wimborne terminal distinction. [Evidence](native-query-validation-2026-10-07.md)
+  records artifact hashes, static provenance and validation limits.
+- Observer auto-disabled. The optional stop-confirmation loader hung under Proton;
+  direct bridge-counter reads confirmed disabled/400/zero rejected. Terminated
+  only that loader; root cause remains unresolved. Future loader calls need an
+  outer timeout covering Wine startup/API stalls. No game/save/probe file or
+  passenger state was modified; DLL remains forwarding until game exit.
+- Next: vehicle capacity including reservations and actual platform compatibility,
+  then full candidate validation before the single-passenger write experiment.
+  Maximum-load fractions and configured terminals alone are not eligibility.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: In progress — read-only native bridge and C ABI implemented
+- Status: In progress — ABI 2 passenger/route queries runtime verified
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -40,8 +40,14 @@ Windows x64 wrapper tests cover integer/float/stack arguments and original retur
 value/call count. The loader successfully activated the verified virtual slot in
 the disposable game; see the current progress entry for capture results.
 
-Next implement copied live waiting-leg/route queries, then validate one bounded
-cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
+ABI 2 now exposes copied waiting-leg, destination and configured line-stop/loading
+snapshots, plus bounded scans. Both native suites pass. The in-game capture logged
+20 passenger records and 40 stop records without query errors; see
+[validation](../../docs/native-query-validation-2026-10-07.md). Observer disabled
+automatically; a later optional stop-loader stall is documented and cleaned up.
+
+Next finish vehicle capacity/reservations and actual platform compatibility
+queries, then validate one bounded cross-line replacement. The [adapter design](../../docs/native-adapter-design.md)
 still governs mutation, indexing and replication requirements.
 
 Implementation history: `git log -- native AI/Tasks/005-shared-extender.md`.

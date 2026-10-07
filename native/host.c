@@ -11,6 +11,7 @@ static int dispatching;
 static DWORD dispatch_thread;
 static tfx_context current_token;
 static tfx_observation current_observation;
+static tfx_reader *current_reader;
 
 static int valid_id(const char *id) {
     if (!id) return 0;
@@ -72,15 +73,59 @@ static tfx_status read_observation(tfx_context context, tfx_observation *out) {
     return result;
 }
 
+static tfx_status query_context(tfx_context context) {
+    if (!context || context != current_token) return TFX_STALE_CONTEXT;
+    if (GetCurrentThreadId() != dispatch_thread) return TFX_WRONG_THREAD;
+    return current_reader ? TFX_OK : TFX_QUERY_UNAVAILABLE;
+}
+
+static tfx_status read_waiting_leg(tfx_context context, int32_t person, tfx_waiting_leg *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_waiting(current_reader, person, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
+static tfx_status read_line_stop(tfx_context context, int32_t line, int32_t stop, tfx_line_stop *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_stop(current_reader, line, stop, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
+static tfx_status scan_waiting_people(tfx_context context, int32_t first_entity, tfx_waiting_page *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_scan(current_reader, first_entity, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version != TFX_ABI_VERSION) return TFX_ABI_MISMATCH;
-    if (!out || out->struct_size != sizeof(*out)) return TFX_INVALID_ARGUMENT;
+    if (version != TFX_ABI_VERSION && version != TFX_QUERY_ABI_VERSION) return TFX_ABI_MISMATCH;
+    size_t size = version == TFX_ABI_VERSION ? sizeof(*out) : sizeof(tfx_api_v2);
+    if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
+    if (version == TFX_QUERY_ABI_VERSION) {
+        out->struct_size = sizeof(tfx_api_v2);
+        out->abi_version = TFX_QUERY_ABI_VERSION;
+        out->capabilities |= TFX_CAP_PASSENGER_ROUTE_QUERIES;
+        tfx_api_v2 *v2 = (tfx_api_v2 *)out;
+        v2->read_waiting_leg = read_waiting_leg;
+        v2->read_line_stop = read_line_stop;
+        v2->scan_waiting_people = scan_waiting_people;
+    }
     return TFX_OK;
 }
 
 tfx_status tfx_dispatch(uint32_t delta_seconds_bits) {
+    return tfx_dispatch_with_reader(delta_seconds_bits, NULL);
+}
+
+tfx_status tfx_dispatch_with_reader(uint32_t delta_seconds_bits, tfx_reader *reader) {
     tfx_client selected[TFX_MAX_CLIENTS];
     AcquireSRWLockExclusive(&lock);
     if (dispatching) { ReleaseSRWLockExclusive(&lock); return TFX_BUSY; }
@@ -90,6 +135,7 @@ tfx_status tfx_dispatch(uint32_t delta_seconds_bits) {
     }
     dispatching = 1;
     dispatch_thread = GetCurrentThreadId();
+    current_reader = reader;
     current_observation = (tfx_observation){sizeof(tfx_observation), delta_seconds_bits, ++sequence};
     uint32_t count = client_count;
     memcpy(selected, clients, count * sizeof(*clients));
@@ -105,6 +151,7 @@ tfx_status tfx_dispatch(uint32_t delta_seconds_bits) {
     }
     AcquireSRWLockExclusive(&lock);
     dispatch_thread = 0;
+    current_reader = NULL;
     dispatching = 0;
     ReleaseSRWLockExclusive(&lock);
     return TFX_OK;
