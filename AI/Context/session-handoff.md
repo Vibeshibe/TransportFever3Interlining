@@ -1,6 +1,6 @@
 # Session handoff — 2026-10-08
 
-## Latest — 0.7.4 timed out; 0.7.5 prepared, NOT loaded
+## Latest — 0.7.4 timed out; 0.7.5 pushed, awaiting restart
 
 0.7.4 build-v7e trial stopped at2013 with home_clear_timeout, zero query errors,
 staged3, switching_blocked1.120770 home87062 cleared to-1 in worlds1/2 at1981/1982;
@@ -18,7 +18,7 @@ Last Linux93030/start2190548 / Windows304; world1 0x33227050/world2 0x33227d10,
 thread624; all expire on restart/reload. Evidence live-run.json/live-audit.json,
 log22022778 and home-timeout-followup.jsonl under ignored build-v7e.
 
-Prepared0.7.5 build-v7f: both-world matching home loss closes as home_invalidated
+Prepared0.7.5 build-v7f (commit5a5b93e pushed): both-world matching home loss closes as home_invalidated
 without arrival/removal claims; affected ID and attempt remain consumed. New
 proposals can resume once ALL pending cases resolve and no permanent error block.
 One-world evidence keeps32-callback deadline. Restored/reassigned homes, mixed
@@ -31,7 +31,8 @@ Mutable DLL SHA25634ad73a8d3aaad513899327ebeaafe22167a47f3ef5d0c99668044f552685b
 [Home invalidation guide](../../docs/home-invalidation.md) records full evidence,
 all artifact hashes, policy and next trial. Next restart into before_multi_passenger
 baseline paused, load ONLY build-v7f, and prove confirmed home_invalidated followed
-by an actual later different-person switch/boarding. No new restart requested yet.
+by an actual later different-person switch/boarding. **Fresh restart into paused
+baseline requested; awaiting user readiness.** Do not inject until old process exits.
 Prepared watch_trial.py/audit_trial.py under build-v7f read live-run.json. The
 audit accepts home_invalidated only with cleared mask3/removal0 and requires an
 actual later boarding for home_invalidation_continuation_proven. Separate original
