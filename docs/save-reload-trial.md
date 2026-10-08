@@ -151,3 +151,20 @@ flags confirm the pilot cap of 18,000. Eligibility, mutation backend and host
 attempt limit are unchanged from the passing 0.6.3 suites. No new live replacement
 or save/reload result is claimed. The captured external helper is preserved before
 adding its CMake target and tightening incomplete-scan/platform error reporting.
+
+## Longer trial loaded from preserved warm-up save
+
+The user confirmed restart into the progressed save, paused. Linux PID 42420 /
+Windows PID 312 had no existing bridge mapping. The recorded 0.6.4 DLL loaded
+successfully (`tfx_start=0`) and logged its 18,000-callback limit. New log:
+`analysis/native-bridge/build-v6e/tpf-bridge-312-6954251.log`.
+User confirmed normal-speed unpause; both worlds began observation without
+rejected boundaries (thread 600; world 1 `0x2d2f8580`, world 2 `0x2d2f78c0`).
+No replacement or save/reload result follows merely from successful startup.
+
+The warm-up save was copied into ignored
+`analysis/baselines/04569232cb31/TPF3Interlining_warmup_01.sav`, 77,688,477 bytes,
+SHA-256 `04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`.
+The copy hash matched and source size/mtime were unchanged across copying.
+Its manifest records source modification time `2026-10-08T10:45:30.502598+00:00`.
+This preserves demand development; the switched-passenger checkpoint is pending.

@@ -1,6 +1,24 @@
 # Session handoff — 2026-10-08
 
-## Latest repeat capture: complete, no changes
+## Active longer trial
+
+User confirmed the progressed warm-up save loaded and paused after restart.
+Linux PID 42420 / Windows PID 312 had no previous bridge mapping. Loaded 0.6.4
+from `analysis/native-bridge/build-v6e/tpf_shared_bridge.dll`; `tfx_start=0` and
+startup log confirms limit 18,000. Log:
+`analysis/native-bridge/build-v6e/tpf-bridge-312-6954251.log`.
+User confirmed normal-speed unpause; callbacks arrived in both worlds on thread
+600. World 1 is `0x2d2f8580`, world 2 `0x2d2f78c0`. A bounded log watcher is active
+in the current turn. Do not overwrite/reload the DLL or reuse older world addresses.
+
+Preserved warm-up save: `analysis/baselines/04569232cb31/TPF3Interlining_warmup_01.sav`,
+SHA-256 `04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`,
+77,688,477 bytes. Copy hash and source stability checked; manifest beside it.
+This is a progressed baseline, not a switched-passenger save checkpoint.
+Monitor for applied replacement and boarding in both worlds, then ask user to
+pause and save under a new name for the read-only reload test.
+
+## Previous repeat capture: complete, no changes
 
 The 0.6.2 pilot loaded into Windows PID 312 (`tfx_start=0`); user unpaused.
 Log: `analysis/native-bridge/build-v6c/tpf-bridge-312-5551718.log`. It completed
@@ -12,7 +30,7 @@ only; the DLL remains pinned until process exit. There is no active watcher.
 User clarified the original baseline has young routes and sparse demand and
 asked to give it more time. Prepared 0.6.4 longer capture below. User was asked to
 save current progress as `TPF3Interlining_warmup_01`, restart, load it and pause;
-this action has not been confirmed. Do not discard simulation progress.
+this action is now confirmed; the longer trial above is active.
 
 After auto-disable, user reported S1 arriving at Wimborne with an S3 passenger.
 Read-only external snapshot found person 75515 waiting on S3 stops 1→4, destination
@@ -79,7 +97,7 @@ one-direction pilot filter excluded them. It ended on restart with no engine
 attempt. Source commit `6abfdc3` implements mutation; `c819e21` permits either
 S1/S3 direction on the same adjacent shared segment. Both were pushed to dev.
 
-**Now loaded for the repeat trial:** revision 0.6.2 at `analysis/native-bridge/build-v6c/`.
+**Previous repeat trial:** revision 0.6.2 at `analysis/native-bridge/build-v6c/`.
 Code review found the observer permanently retained its first 32 person IDs.
 `pilot_cache.h` now replaces older discovery IDs as new people arrive and clears
 log suppression for replaced slots. All eligibility reads remain fresh. A 96-ID
@@ -103,7 +121,7 @@ backend. Build inputs are paired `--observe-person` and `--observe-destination`;
 see [the checkpoint procedure](../../docs/save-reload-trial.md). The initial
 `build-v6d` observer uses the previous passenger's IDs for offline validation only.
 Rebuild in a new directory using the repeat trial's actual IDs before loading it.
-The repeat write trial still uses the preserved 0.6.2 `build-v6c` artifact. All four
+The completed short repeat used the preserved 0.6.2 `build-v6c` artifact. All four
 offline suites passed, including the observer binary contract and read-only host
 regression. Observer and test-log hashes are in the checkpoint procedure.
 
@@ -111,7 +129,7 @@ Before loading the repeat pilot, host inspection found Linux PID 33922 / Windows
 PID 312 without a bridge mapping. The user then confirmed the save paused and
 authorized loading. See the active-trial section above. PIDs can be reused.
 
-## Longer capture prepared, not loaded
+## Longer capture implementation
 
 User clarified the original baseline has young routes and low demand; give the
 simulation more time and retain eligibility rules. Revision 0.6.4 builds a longer
@@ -123,8 +141,8 @@ pilot's original stops 1→2 selection and one engine attempt remain unchanged.
 
 ## Next steps
 
-1. Wait for the user to confirm saving/restarting into the progressed baseline,
-   then load the 0.6.4 `build-v6e` pilot and observe for an onboard checkpoint.
+1. Monitor the active 0.6.4 `build-v6e` pilot for an onboard checkpoint;
+   ask for pause/save once both-world boarding is recorded.
    Preserve the historical 0.6.1/0.6.2 DLLs and capture logs.
 2. Verify save/reload and repeat controlled replacements before broader rollout.
    No generic boarding/entry/platform trace needs repeating; those facts are proven.

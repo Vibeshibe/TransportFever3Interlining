@@ -570,6 +570,16 @@ the planned alighting station. User acknowledged the distinction. One world was
 readable; the second was skipped, and the helper reported partial evidence.
 [Details, artifact hashes and remaining steps](save-reload-trial.md).
 
+### Longer warm-up trial started
+
+User confirmed save/restart into the progressed baseline. Preserved and verified
+`TPF3Interlining_warmup_01.sav` under `analysis/baselines/04569232cb31/` (77,688,477
+bytes; full hash in the trial record). Loaded the recorded 0.6.4 DLL into fresh
+Linux PID 42420 / Windows PID 312 with `tfx_start=0`. Log
+`analysis/native-bridge/build-v6e/tpf-bridge-312-6954251.log` confirms the 18,000
+callback cap and observations in both worlds after user-confirmed unpause.
+Monitoring for a switched passenger and onboard save checkpoint; outcomes pending.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
