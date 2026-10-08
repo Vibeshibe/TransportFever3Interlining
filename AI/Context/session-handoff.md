@@ -8,7 +8,10 @@ passed. See [the trial record](../../docs/multi-passenger-trial.md) for bounds,
 commands, artifact hashes and remaining live validation. Expanded baseline backed
 up under `analysis/baselines/ce2e02d935da/`; user reports 40+ waiting people and
 confirmed restarted, loaded and paused. Preflight Linux26846 / Windows312 had no
-old bridge mapped. At this checkpoint loading is pending; do not claim live success.
+old bridge mapped. Implementation committed/pushed as `cb7c91d`. Loader returned `tfx_start=0`;
+`build-v7a/tpf-bridge-312-7795382.log` confirms five-passenger/18,000-callback
+startup. User asked to unpause at normal speed; no Update observations yet at
+this checkpoint. Monitor this log next; do not reload the DLL or claim live success.
 The host now permits an explicit bounded count, with once-per-person ledger and
 failure latch; older one-attempt descriptions below refer to completed 0.6 trials.
 

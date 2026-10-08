@@ -76,5 +76,9 @@ final consumer regression was rerun after adding the no-new-proposal cap guard.
 ## Live validation
 
 Preflight located fresh Linux process **26846**, Windows process **312**, with
-no old bridge mapped. These IDs must be rediscovered after restart. At this
-checkpoint the build is prepared; live loading and outcomes are still pending.
+no old bridge mapped. These IDs must be rediscovered after restart. Implementation committed/pushed as `cb7c91d`. The explicit Proton loader returned
+**`tfx_start=0`**; `build-v7a/tpf-bridge-312-7795382.log` confirms version 0.7.0,
+five passengers, 18,000 callbacks and verified slot installation. No Update
+observations yet at the paused checkpoint. The user has been asked to unpause at
+normal speed; switching/boarding/arrival outcomes remain pending. Ignored
+`build-v7a/trial.json` records the load metadata.

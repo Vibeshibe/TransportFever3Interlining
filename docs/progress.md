@@ -635,7 +635,9 @@ All existing native suites, new host/consumer multi-passenger regressions and
 observer binary contract tests passed. Added final-callback no-new-proposal test;
 invalid passenger cap inputs reject. Expanded baseline and build hashes, commands,
 limits and preflight are in [the trial record](multi-passenger-trial.md).
-Live validation is pending at this implementation checkpoint.
+Implementation committed/pushed as `cb7c91d`. Loaded successfully into the
+fresh paused game (`tfx_start=0`); startup log confirms configured bounds. The
+user has been asked to unpause; live switching/boarding/arrival are pending.
 
 ## Ongoing workflow
 
