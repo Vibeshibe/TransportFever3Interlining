@@ -60,11 +60,12 @@ both mutable/read-only DLL contract suites also pass; peak allowance40/64 querie
 Build warnings are errors.
 
 Prepared ignored build directory `analysis/native-bridge/build-v7f/`, cap5/18000,
-reserve enabled. **Not loaded or live-validated.** Current0.7.4 DLL forwards only
-and remains mapped until exit. All watchers/readers have ended. No save was
-modified by our tools. Next use a fresh paused before_multi_passenger baseline,
-then require home_invalidated confirmation, resumed discovery and an actual
-later different-person switch/boarding, with separate final journey outcomes.
+reserve enabled. Loaded after the user restarted into the verified before_multi_passenger baseline;
+loader returned0. Fresh Linux102810/start2320640, Windows304; log
+`tpf-bridge-304-23489567.log`. User confirmed normal-speed unpause; watcher73040
+is active. **Live outcomes remain pending.** No save was modified by our tools.
+Require home_invalidated confirmation, resumed discovery and an actual later
+different-person switch/boarding, with separate final journey outcomes.
 
 ## Artifact hashes
 

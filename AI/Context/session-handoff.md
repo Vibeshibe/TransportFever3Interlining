@@ -1,6 +1,17 @@
 # Session handoff — 2026-10-08
 
-## Latest — 0.7.4 timed out; 0.7.5 pushed, awaiting restart
+## Latest — 0.7.5 live trial running
+
+User restarted, loaded the correct before_multi_passenger baseline paused, then
+confirmed normal-speed unpause. Fresh Linux102810/start2320640, Windows304;
+no old bridge mappings. Stdout load18:02:40Z, ready18:03:26Z. Loaded build-v7f
+0.7.5 mutable DLL (hash below), tfx_start0; cap5/18000, reserve1, grace32.
+Log `tpf-bridge-304-23489567.log`; metadata `build-v7f/live-run.json`.
+Watcher73040 active; world1 `0x2e7c3ca0`, world2 `0x2e7c4960`, thread592.
+No live outcome yet. Do not reinject; monitor confirmed
+home_invalidated followed by a different passenger's switch and boarding.
+
+## Previous — 0.7.4 timed out; 0.7.5 prepared
 
 0.7.4 build-v7e trial stopped at2013 with home_clear_timeout, zero query errors,
 staged3, switching_blocked1.120770 home87062 cleared to-1 in worlds1/2 at1981/1982;

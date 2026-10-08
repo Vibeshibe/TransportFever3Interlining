@@ -832,6 +832,13 @@ and query errors retain their guards. No native writes/ABI/routes/caps changed.
 Consumer/reserve/host/contract checks pass (max40/64). Build-v7f is NOT loaded;
 next prove actual continuation live. [Complete evidence and policy](home-invalidation.md).
 
+## 2026-10-08 — 0.7.5 live validation started
+
+Verified fresh process, correct original baseline hash and prepared DLL hash;
+loaded build-v7f successfully. User confirmed normal-speed unpause. Capture
+retains cap5/18000, reserve1 and grace32; live outcomes are pending. Details in
+[home-invalidation evidence](home-invalidation.md) and the session handoff.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
