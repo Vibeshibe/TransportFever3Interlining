@@ -1,9 +1,9 @@
-# Shared native bridge — experimental read-only pilot
+# Shared native bridge — experimental one-passenger pilot
 
 The bridge provides one centrally owned terminal-update interception and a small
-versioned C API and copied passenger/line-stop/vehicle/platform/terminal queries. **It cannot change
-passenger routes or components.** The Lua
-policy in `src/interlining/` remains separate and is not connected to this DLL.
+versioned C API with copied queries and a staged waiting-leg change operation.
+**Version 0.6 can change one passenger in the disposable baseline.** The native
+policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 
 ## Build and isolated tests
@@ -55,18 +55,23 @@ loader times out, do not infer the target operation failed or unload its DLL.
 
 The bridge writes `tpf-bridge-WINDOWS_PID-UPTIME.log` beside the DLL. Start returns
 zero only after verifying the executable, live entry bytes, table layout, and
-hook ownership. Run the simulation to collect up to 1,200 accepted invocations;
+hook ownership. Run the simulation to collect up to 3,600 accepted invocations;
 the first eight and final invocation are logged. This is not a game-tick count:
 two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.5 registers the bounded `research.interlining-candidates` client.
+Version 0.6 registers `research.interlining-one-passenger`, which uses the same
+bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
 vehicle IDs, and checks up to four vehicles for a ready loading state. For one
 ready vehicle it considers up to eight remembered people and performs at most
 two complete candidate validations. It logs up to 80 changed results and prints
-aggregate rejection counts at the limit. Eight query errors stop the consumer.
+aggregate rejection counts if discovery reaches the limit. Once the first eligible
+S1→S3 adjacent Wimborne→Melksham proposal is staged, discovery stops and the
+consumer tracks its result and journey in each world. The pilot ends early after
+boarding and original-destination building presence in both worlds. Eight query
+errors stop discovery/tracking.
 Missing former waiting records are expected after ordinary boarding.
 
 Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
@@ -74,7 +79,8 @@ Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
 defaults. Cached IDs are always re-read in the current callback. Result comparisons
 suppress logs only; they never authorize mutations or reuse engine pointers.
 The separate [native policy](../src/interlining/README.md) returns proposals and
-rejection reasons. A positive result does not reserve a seat or move a passenger.
+rejection reasons. A proposal alone does not reserve a seat or move a passenger;
+the new staged operation performs the bounded waiting-line replacement.
 
 ## Client contract
 
@@ -206,6 +212,38 @@ capacity including reservations. Multi-stop legs, loop wrap, alternative termina
 and fractional load limits remain excluded. Every proposal still requires engine
 revalidation before any future mutation.
 
+## Staged waiting changes and journey state (ABI 6)
+
+Initialize `tfx_api_v6` with its complete size and request `TFX_CHANGE_ABI_VERSION`.
+ABI 6 appends `request_waiting_leg_change`, `read_change_result`, and
+`read_person_journey`; older ABI structures and capability masks are unchanged.
+
+A request contains expected passenger state, current dispatch sequence, proposed
+line/stops, candidate vehicle and a revalidation callback. Successful submission
+returns a ticket, not an applied result. After all observers finish, the host
+rejects every competing request for the same person, then invokes the consumer's
+revalidator with a fresh context. Its original callback token has expired.
+Revalidation may read queries but may not stage further changes. Keep callback
+code loaded until dispatch returns. Query budgets remain shared across this work.
+
+The backend checks the entire staged native waiting value plus destination/place,
+opens a dedicated modification scope and performs notified engine remove/add.
+It closes the scope before original selection. Only three route integers change.
+One engine attempt is permitted per DLL lifetime, including failed postconditions.
+There is no automatic rollback or retry after starting the engine operation.
+The generic service trusts the consumer's route revalidation; it does not expose
+raw memory writes or choose an alternate service itself.
+
+Read a ticket's `tfx_change_result` during a later callback of the same client ID.
+Results distinguish pending, conflict, expected-state mismatch, policy rejection,
+and applied replacement. At most 64 results are retained; overwritten tickets
+return not-found. Read-only dispatchers cannot accept mutation requests.
+
+Journey queries copy target/at-entity, component-state flags, current waiting or
+onboard line/stops/vehicle, and an opaque world ordinal. These observations do not
+establish save/reload compatibility or arbitrary onward-journey correctness.
+See [implementation and trial evidence](../docs/native-mutation-validation-2026-10-08.md).
+
 ## Interception and compatibility
 
 Pinned executable SHA-256:
@@ -223,7 +261,7 @@ calls the observer, then tail-jumps to the original function. It has Windows x64
 unwind metadata and does not relocate engine instructions. The observer checks
 the system table, update-data pointer, thread, and modification-window flags.
 The original engine call still executes on rejected observations. Only a null
-window and enabled nested/post flag are accepted; no engine mutation is called.
+window and enabled nested/post flag are accepted; ABI 6 may perform the bounded engine-owned change before the original Update.
 
 Registry tests exercise two consumers, expired tokens, thread/reentrancy guards,
 limits, and duplicate IDs. The slot/assembly test checks ownership refusal,
@@ -245,7 +283,7 @@ evidence and the unresolved Proton stop-loader stall. See
 and [platform/reservation capture](../docs/native-platform-validation-2026-10-07.md)
 for ABI 4 membership and a live nonzero-reservation cross-check. The bounded
 read-only candidate policy passed [a live capture](../docs/native-candidate-validation-2026-10-07.md);
-passenger mutation remains absent.
+the ABI 6 trial now implements a bounded waiting-line replacement.
 
 Implementation references: Microsoft's [x64 calling convention](https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention),
 [atomic pointer exchange](https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchangepointer),

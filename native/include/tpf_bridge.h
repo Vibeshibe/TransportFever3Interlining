@@ -11,6 +11,9 @@ extern "C" {
 #define TFX_VEHICLE_ABI_VERSION 3u
 #define TFX_PLATFORM_ABI_VERSION 4u
 #define TFX_TERMINAL_ABI_VERSION 5u
+#define TFX_CHANGE_ABI_VERSION 6u
+#define TFX_CAP_WAITING_LEG_CHANGE 32u
+#define TFX_CAP_PERSON_JOURNEY 64u
 #define TFX_CAP_TERMINAL_OBSERVATION 1u
 #define TFX_CAP_PASSENGER_ROUTE_QUERIES 2u
 #define TFX_CAP_VEHICLE_QUERIES 4u
@@ -29,7 +32,8 @@ enum {
     TFX_BUSY, TFX_LIMIT_REACHED, TFX_NOT_FOUND, TFX_STALE_CONTEXT,
     TFX_WRONG_THREAD, TFX_UNSUPPORTED_BUILD, TFX_HOOK_CONFLICT,
     TFX_SYSTEM_ERROR, TFX_PROTECTION_ERROR, TFX_QUERY_UNAVAILABLE,
-    TFX_INVALID_STATE, TFX_QUERY_BUDGET_EXHAUSTED
+    TFX_INVALID_STATE, TFX_QUERY_BUDGET_EXHAUSTED,
+    TFX_PENDING, TFX_REQUEST_CONFLICT, TFX_EXPECTED_STATE_CHANGED, TFX_POLICY_REJECTED
 };
 
 /* Tokens expire when this particular client's callback returns. */
@@ -156,6 +160,41 @@ typedef struct tfx_api_v5 {
     tfx_status (*read_terminal)(tfx_context, int32_t station, int32_t terminal, tfx_terminal *out);
     tfx_status (*read_entity_presence)(tfx_context, int32_t entity, tfx_entity_presence *out);
 } tfx_api_v5;
+
+/* One callback-scoped proposal; the host stages it until all clients finish.
+ * Revalidation gets a NEW token and must return TFX_OK to permit the operation.
+ * Keep this function's module alive until dispatch returns. No engine pointers. */
+typedef struct tfx_waiting_leg_change tfx_waiting_leg_change;
+typedef tfx_status (*tfx_revalidate_change)(tfx_context, const tfx_waiting_leg_change *);
+struct tfx_waiting_leg_change {
+    uint32_t struct_size, reserved;
+    uint64_t dispatch_sequence;
+    tfx_waiting_leg expected;
+    int32_t line, boarding_stop, alighting_stop, candidate_vehicle;
+    tfx_revalidate_change revalidate;
+};
+typedef struct tfx_change_result {
+    uint32_t struct_size;
+    tfx_status status; /* PENDING is staging only; OK means replacement, not boarding. */
+    uint64_t ticket, dispatch_sequence;
+    int32_t person;
+    uint32_t engine_attempted;
+} tfx_change_result;
+#define TFX_JOURNEY_WAITING 1u
+#define TFX_JOURNEY_ONBOARD 2u
+#define TFX_JOURNEY_MOVING 4u
+#define TFX_JOURNEY_AT_BUILDING 8u
+typedef struct tfx_person_journey {
+    uint32_t struct_size, flags;
+    uint32_t world_id, reserved; /* Opaque process-local ordinal, not an engine pointer. */
+    int32_t person, destination, line, boarding_stop, alighting_stop, vehicle;
+} tfx_person_journey;
+typedef struct tfx_api_v6 {
+    tfx_api_v5 v5;
+    tfx_status (*request_waiting_leg_change)(tfx_context, const tfx_waiting_leg_change *, uint64_t *ticket);
+    tfx_status (*read_change_result)(tfx_context, uint64_t ticket, tfx_change_result *out);
+    tfx_status (*read_person_journey)(tfx_context, int32_t person, tfx_person_journey *out);
+} tfx_api_v6;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

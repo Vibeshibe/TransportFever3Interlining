@@ -4,9 +4,9 @@ The user requested a reusable, readable extension if native access is necessary.
 The scripting API cannot currently commit the required passenger change. The
 [selected boundary](native-adapter-design.md) provides an initial backend target;
 this document specifies ownership and compatibility. The first
-[native bridge](../native/README.md) implements a read-only C ABI, explicit loader,
-and verified virtual-table interception. Passenger mutation and Lua bindings
-remain unimplemented.
+[native bridge](../native/README.md) implements a versioned C ABI, explicit loader,
+and verified virtual-table interception. ABI 6 stages one experimental passenger
+replacement; Lua bindings remain unimplemented.
 ABI 2 adds [copied passenger and line-stop queries](../native/README.md), with
 bounded scans and per-dispatch read budgets; ABI 1 remains compatible.
 
@@ -28,8 +28,10 @@ Copy returned snapshots; do not retain references into engine storage.
 
 ## Dispatch and conflicts
 
-The observer implements ordering and context/thread rules. Request staging and
-conflict outcomes below remain requirements for the future mutation capability.
+The host implements ordering, context/thread rules, staged requests and explicit
+conflict outcomes. ABI 6 rejects all same-person contenders before applying any
+change and calls the requesting consumer again for eligibility revalidation.
+A process-wide one-attempt limit bounds this development pilot.
 
 Publish callback order explicitly and keep it deterministic by client identifier.
 Reject duplicate identifiers and registration changes during dispatch. Stage
@@ -51,9 +53,8 @@ hook site and decline installation rather than overwrite another extension.
 One shared registry reduces conflicts between cooperating clients; it cannot
 guarantee compatibility with independent binary patches.
 
-The implemented first capability is read-only terminal-entry observation. The
-planned mutation capability is bounded waiting-leg replacement with explicit
-expected state. Add capabilities through versioned interfaces without exposing
+The first capability was read-only terminal-entry observation. ABI 6 now adds
+bounded waiting-leg replacement with explicit expected state. Add capabilities through versioned interfaces without exposing
 generic memory writes. The pilot uses LLVM-MinGW, an explicit Windows loader,
 atomic virtual-slot replacement, and an assembly wrapper with unwind metadata.
 No instructions are relocated. The DLL stays pinned until exit; disabling stops

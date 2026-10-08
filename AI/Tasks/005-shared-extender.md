@@ -1,6 +1,6 @@
 # 005 — Provide a reusable native extension if required
 
-- Status: In progress — ABI 5 terminal/presence queries; live candidate capture
+- Status: In progress — ABI 6 staged changes implemented; live trial running
 - Owner: Assistant
 - Dependencies: 004 verifies a suitable intervention point
 
@@ -71,3 +71,7 @@ journey. The [adapter design](../../docs/native-adapter-design.md) governs scope
 indexing, replication and failure limits.
 
 Implementation history: `git log -- native AI/Tasks/005-shared-extender.md`.
+
+ABI 6 implementation and offline guard/operation tests are complete; the first
+[live replacement trial](../../docs/native-mutation-validation-2026-10-08.md) is
+running. Do not mark broad acceptance criteria complete from fixture tests.

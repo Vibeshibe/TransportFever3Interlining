@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — native read-only candidate observed; mutation pending
+- Status: In progress — one-passenger engine-owned change implemented; live trial running
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -51,3 +51,7 @@ extension if the bounded prototype establishes correctness.
 
 Implementation history: `git log -- src/interlining tests/test_candidate.lua`.
 Planning history: `git log -- AI/Tasks/006-interlining-prototype.md`.
+
+ABI 6 implementation and offline guard/operation tests are complete; the first
+[live replacement trial](../../docs/native-mutation-validation-2026-10-08.md) is
+running. Do not mark broad acceptance criteria complete from fixture tests.

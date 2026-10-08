@@ -10,9 +10,9 @@ typedef struct tfx_reader {
     uint64_t world, image, terminal_system, station_system;
     tfx_copy_memory copy;
     void *user;
-    uint32_t bytes_left, reads_left, queries_left;
+    uint32_t bytes_left, reads_left, queries_left, world_id;
     int types_ready;
-    int32_t types[7];
+    int32_t types[10];
 } tfx_reader;
 
 void tfx_reader_init(tfx_reader *, uint64_t world, uint64_t image, tfx_copy_memory, void *user);
@@ -24,4 +24,7 @@ tfx_status tfx_query_vehicle(tfx_reader *, int32_t vehicle, tfx_vehicle *out);
 tfx_status tfx_query_platforms(tfx_reader *, int32_t person, tfx_person_platforms *out);
 tfx_status tfx_query_terminal(tfx_reader *, int32_t station, int32_t terminal, tfx_terminal *out);
 tfx_status tfx_query_presence(tfx_reader *, int32_t entity, tfx_entity_presence *out);
+/* Internal complete component snapshot for compare-and-replace, including padding. */
+tfx_status tfx_query_waiting_raw(tfx_reader *, int32_t person, unsigned char out[32]);
+tfx_status tfx_query_journey(tfx_reader *, int32_t person, tfx_person_journey *out);
 #endif

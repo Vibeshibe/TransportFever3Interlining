@@ -470,6 +470,28 @@
   alighting, continuation and replica consistency. No game/save/probe file was
   changed; no passenger preference policy or stable behavior fix is active.
 
+## 2026-10-08 — Implement the bounded engine-owned passenger switch
+
+- Added ABI 6 staged waiting-line requests and owner-scoped outcome tickets,
+  preserving older interfaces. All requests wait until observers finish;
+  same-person conflicts reject all contenders. A fresh callback revalidates
+  eligibility, and the backend compares the complete 32-byte waiting component,
+  destination and place before invoking any engine change.
+- Bound and verified Begin/Remove/Add/End against the pinned executable and live
+  entry bytes. Confirmed the add function's fifth stack argument from native
+  same-line remapping. Preserve all original waiting bytes except the three route
+  integers; use notified engine operations and finish the scope before selection.
+- Enforced one engine attempt per DLL lifetime across worlds and clients. Added
+  copied journey-state queries and a baseline S1→S3 pilot consumer that tracks
+  boarding, leaving the vehicle and original-destination building presence.
+- Validation: warnings-as-errors build and all three isolated Wine suites pass.
+  New fixtures cover conflicts, ownership, thread/context expiry, deferred order,
+  stale raw padding/destination, policy refusal, native-call argument/order,
+  preserved bytes, postconditions and the process-wide attempt allowance.
+- Loaded build-v6 into the user's paused disposable save; user unpaused.
+  Live trial is running. [Implementation, hashes and trial record](native-mutation-validation-2026-10-08.md).
+  No successful gameplay change is claimed until the runtime result is recorded.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

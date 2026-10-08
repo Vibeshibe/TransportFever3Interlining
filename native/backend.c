@@ -7,12 +7,14 @@
 #include "host.h"
 #include "slot.h"
 #include "candidate_probe.h"
+#include "mutation.h"
+#include "mutation_entries.h"
 
 /* These bindings are private and pinned to a single research executable. */
 #define TERMINAL_UPDATE_RVA 0xb0db00u
 #define TERMINAL_VTABLE_RVA 0x3702758u
 #define TERMINAL_SLOT_RVA   0x37027b0u
-#define OBSERVATION_LIMIT 1200
+#define OBSERVATION_LIMIT 3600
 static const unsigned char expected_hash[32] = {
     0x5e,0x72,0x0c,0xd7,0xfe,0xfd,0x68,0x8a,0x16,0x75,0xb6,0x1c,0x6e,0xec,0xaa,0xdf,
     0xd2,0x5c,0x17,0x1d,0xa9,0xe9,0xe9,0x38,0xaf,0x85,0xe5,0xef,0xae,0xbd,0x8a,0x35};
@@ -23,6 +25,9 @@ void *tfx_original;
 extern void tfx_terminal_entry(void);
 static unsigned char *image;
 static volatile LONG start_state, enabled, simulation_thread, observed, rejected;
+static tfx_engine_changes change_operations;
+static uint64_t world_addresses[4];
+static uint32_t world_count;
 static HANDLE ownership, log_file = INVALID_HANDLE_VALUE;
 
 static int copy_memory(void *unused, uint64_t address, void *out, size_t size) {
@@ -35,6 +40,7 @@ static void log_line(const char *message) {
     DWORD written;
     if (log_file != INVALID_HANDLE_VALUE)
         WriteFile(log_file, message, (DWORD)strlen(message), &written, NULL);
+    if (log_file != INVALID_HANDLE_VALUE && !strncmp(message, "change_", 7)) FlushFileBuffers(log_file);
 }
 
 static int open_log(HMODULE self) {
@@ -84,6 +90,8 @@ static int supported_memory(void) {
         nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC ||
         nt->OptionalHeader.SizeOfImage < TERMINAL_SLOT_RVA + sizeof(void *)) return 0;
     if (memcmp(image + TERMINAL_UPDATE_RVA, entry_bytes, sizeof(entry_bytes))) return 0;
+    for (unsigned i = 0; i < sizeof(change_entries) / sizeof(change_entries[0]); ++i)
+        if (memcmp(image + change_entries[i].rva, change_entries[i].bytes, 16)) return 0;
     /* Adjacent lifecycle entries establish the expected table layout. */
     void **table = (void **)(image + TERMINAL_VTABLE_RVA);
     return table[0] == image + 0xb0c570 && table[4] == image + 0xb0c8b0 &&
@@ -113,16 +121,23 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     tfx_reader reader;
     tfx_reader_init(&reader, (uint64_t)(uintptr_t)world, (uint64_t)(uintptr_t)image, copy_memory, NULL);
     reader.terminal_system = (uint64_t)(uintptr_t)system;
-    tfx_status status = tfx_dispatch_with_reader(bits, &reader);
+    uint32_t world_id = 0;
+    for (unsigned i = 0; i < world_count; ++i) if (world_addresses[i] == reader.world) world_id = i + 1;
+    if (!world_id) {
+        if (world_count == 4) { InterlockedExchange(&enabled, 0); log_line("Refused: world limit exceeded.\n"); return; }
+        world_addresses[world_count++] = reader.world; world_id = world_count;
+    }
+    reader.world_id = world_id;
+    tfx_status status = tfx_dispatch_with_writer(bits, &reader, tfx_apply_waiting_change, &change_operations);
     if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
         snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
                  count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
         log_line(line);
     }
-    if (count == OBSERVATION_LIMIT) {
+    if (count == OBSERVATION_LIMIT || tfx_pilot_complete()) {
         InterlockedExchange(&enabled, 0);
-        log_line("Capture complete; hook forwards only. Passenger mutation unavailable.\n");
+        log_line("Pilot observation complete; hook forwards only. No further changes permitted.\n");
         FlushFileBuffers(log_file);
     }
 }
@@ -135,7 +150,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.5.0; read-only candidates; limit=1200; ABI=1,2,3,4,5\n");
+    log_line("TPF shared bridge 0.6.0; one passenger change maximum; limit=3600; ABI=1,2,3,4,5,6\n");
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);
@@ -150,6 +165,11 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     status = TFX_SYSTEM_ERROR;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)&tfx_start, &self)) goto fail;
+    change_operations = (tfx_engine_changes){
+        (void (*)(void *))(image + 0x2bb4640),
+        (void (*)(void *, int32_t, const void *, uint8_t))(image + 0x2bb7320),
+        (void (*)(void *, int32_t, const void *, uint8_t, uint8_t))(image + 0xb21cd0),
+        (void (*)(void *))(image + 0x2bb4d90), log_line};
     status = tfx_register_candidate_probe(log_line);
     if (status != TFX_OK) goto fail;
     tfx_original = image + TERMINAL_UPDATE_RVA;

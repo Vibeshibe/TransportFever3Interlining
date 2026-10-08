@@ -54,8 +54,20 @@ rounding are unresolved. Empty direct platform membership also rejects.
 
 `requires_engine_revalidation` is always set. Destination presence and matching
 alighting terminals do not establish pathfinding success, save compatibility or
-safe cross-line mutation. No API writes passenger state. The research observer
+safe cross-line mutation. ABI 5 provides read-only queries. The research observer
 in `native/candidate_probe.c` samples the baseline save and logs proposals;
 repeated proposals are not unique passengers or completed boardings.
 
 Build and run `candidate_tests.exe` using the [native instructions](../../native/README.md).
+
+## One-passenger native trial
+
+Bridge 0.6 uses the validator in a behavior-changing consumer: the first eligible
+baseline S1→S3 adjacent Wimborne→Melksham proposal is submitted through ABI 6.
+The host stages it until observers finish, invokes the consumer's full validator
+again, compares expected state and applies engine-owned remove/add in a dedicated
+scope. The host allows one engine attempt across all clients/worlds per load.
+The consumer then tracks boarding and destination state; it does not switch again.
+
+This remains an explicit development loader, with no persistent install or Lua
+binding. See [the trial record](../../docs/native-mutation-validation-2026-10-08.md).

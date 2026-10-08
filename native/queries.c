@@ -2,9 +2,9 @@
 #include "queries.h"
 
 /* Offsets/strides are pinned to the backend executable fingerprint. */
-enum { WAITING, PERSON, LINE, GROUP, PLACE, VEHICLE, STATION, TYPE_COUNT };
-static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0, 0x3cea860};
-static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c, 0x1e8, 0x58};
+enum { WAITING, PERSON, LINE, GROUP, PLACE, VEHICLE, STATION, ONBOARD, MOVING, AT_BUILDING, TYPE_COUNT };
+static const uint32_t type_rvas[TYPE_COUNT] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0, 0x3cea860, 0x3cea960, 0x3ceaa00, 0x3ceaa68};
+static const uint32_t strides[TYPE_COUNT] = {0x20, 0x98, 0x28, 0x18, 0x0c, 0x1e8, 0x58, 0x20, 0x18, 0};
 typedef struct { uint64_t begin, end, capacity; } vector;
 typedef struct { uint64_t control, slots, size, capacity; } type_table;
 #define TRY(expression) do { tfx_status status_ = (expression); if (status_ != TFX_OK) return status_; } while (0)
@@ -473,6 +473,52 @@ tfx_status tfx_query_presence(tfx_reader *r, int32_t entity, tfx_entity_presence
     TRY(read_bytes(r, masks.begin + (uint64_t)entity * 16, actual, sizeof(actual)));
     if (memcmp(expected, actual, sizeof(expected))) return TFX_INVALID_STATE;
     result.has_components = bytes != 0;
+    *out = result;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_waiting_raw(tfx_reader *r, int32_t person, unsigned char out[32]) {
+    if (!out || person < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    unsigned char result[32];
+    TRY(component(r, person, WAITING, result, sizeof(result)));
+    memcpy(out, result, sizeof(result));
+    return TFX_OK;
+}
+
+tfx_status tfx_query_journey(tfx_reader *r, int32_t person, tfx_person_journey *out) {
+    if (!out || out->struct_size != sizeof(*out) || person < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    unsigned char human[0x54], onboard[0x20], waiting[0x20];
+    TRY(component(r, person, PERSON, human, sizeof(human)));
+    if (i32(human) != 0) return TFX_INVALID_STATE;
+    if (r->types[ONBOARD] < 0 || r->types[MOVING] < 0 || r->types[AT_BUILDING] < 0)
+        return TFX_QUERY_UNAVAILABLE;
+    vector masks;
+    TRY(read_bytes(r, r->world + 0xc0, &masks, sizeof(masks)));
+    if (!valid_vector(masks, 16, ENTITY_LIMIT) || (uint32_t)person >= (masks.end - masks.begin) / 16)
+        return TFX_INVALID_STATE;
+    uint64_t bits[2];
+    TRY(read_bytes(r, masks.begin + (uint64_t)person * 16, bits, sizeof(bits)));
+    tfx_person_journey result = {.struct_size = sizeof(result), .world_id = r->world_id, .person = person,
+        .destination = i32(human + 0x50), .line = -1, .boarding_stop = -1, .alighting_stop = -1, .vehicle = -1};
+    const unsigned types[4] = {WAITING, ONBOARD, MOVING, AT_BUILDING};
+    for (unsigned i = 0; i < 4; ++i) {
+        unsigned t = (unsigned)r->types[types[i]];
+        if (bits[t / 64] & (UINT64_C(1) << (t % 64))) result.flags |= 1u << i;
+    }
+    if ((result.flags & 3u) == 3u) return TFX_INVALID_STATE;
+    if (result.flags & TFX_JOURNEY_WAITING) {
+        TRY(component(r, person, WAITING, waiting, sizeof(waiting)));
+        result.line = i32(waiting); result.boarding_stop = i32(waiting + 4);
+        result.alighting_stop = i32(waiting + 8); result.vehicle = i32(waiting + 24);
+    } else if (result.flags & TFX_JOURNEY_ONBOARD) {
+        TRY(component(r, person, ONBOARD, onboard, sizeof(onboard)));
+        result.line = i32(onboard); result.boarding_stop = i32(onboard + 4);
+        result.alighting_stop = i32(onboard + 8); result.vehicle = i32(onboard + 12);
+    }
+    if ((result.flags & 3u) && (result.line < 0 || result.boarding_stop < 0 ||
+        result.alighting_stop < 0 || result.vehicle < -1)) return TFX_INVALID_STATE;
     *out = result;
     return TFX_OK;
 }

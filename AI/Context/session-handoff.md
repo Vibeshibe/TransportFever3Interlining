@@ -1,4 +1,4 @@
-# Session handoff — 2026-10-07
+# Session handoff — 2026-10-08
 
 ## Current result
 
@@ -6,8 +6,8 @@ Task 003 remains active. Static analysis confirms the pathfinding hook exchanges
 only a town cost-factor map; it cannot itself commit alternate passenger
 boarding. [Full evidence](../../docs/scripting-hook-investigation.md) records
 the executable fingerprint, function addresses, and unresolved questions.
-Task 004 is active; task 005 now has an implemented and runtime-observed read-only
-native bridge. Passenger mutation remains unimplemented.
+Tasks 004–006 remain active. ABI 6 implements the first bounded engine-owned
+passenger replacement; offline tests pass and the live trial is running.
 
 The probe loaded and all four events fired in the user's first test. See
 [Test 1](../../docs/test-run-2026-10-07.md) for evidence, UTC/local time mapping,
@@ -16,7 +16,34 @@ resulting save are preserved under ignored `analysis/test-runs/2026-10-07-test1/
 Revision 1 runtime files matched the repository at
 `game/installation/mods/tpf3_interlining_probe_1/`. Originals were only read.
 
-## Latest implementation
+## Current work — 2026-10-08
+
+ABI 6 first engine-owned waiting replacement is implemented and all three native
+suites pass. It stages requests until observers finish, rejects same-person
+conflicts, runs consumer revalidation with a fresh token, compares complete raw
+waiting bytes and public expected state, then Begin/Remove/Add/End. There is a
+one-engine-attempt allowance across both worlds and all clients. Read
+[the implementation/trial record](../../docs/native-mutation-validation-2026-10-08.md).
+
+User restarted a disposable baseline, left it paused and then unpaused after
+build-v6 loaded successfully into Windows PID308. Live trial is ongoing:
+`analysis/native-bridge/build-v6/tpf-bridge-308-2576496.log`. Do not load another
+DLL or overwrite this build while the process remains open. Pilot waits for a
+baseline S1→S3 adjacent Wimborne→Melksham candidate, then tracks journey state.
+Cap3600 callbacks; early completion when original-destination building state is
+seen after boarding in both worlds. No debugger; no installed probe or game-file
+edits. Record the actual runtime outcome before claiming a successful switch.
+
+New native source: `mutation.c/.h`, `mutation_entries.h`; shared ABI/host additions,
+journey reader and pilot consumer. Add signature has FIVE arguments: world,
+person, copied32bytes, notify1, local-storage1. Proven by native stack store at
+`0x140b3116d` preceding call `0x140b3117e`. All four entry signatures checked.
+New exports `mutation-bindings.txt`, `mutation-world-dispatch.txt` (ignored).
+Journey flags use RTTI onboard3cea960, moving3ceaa00, building3ceaa68. Building
+layout is not read; target/at-entity comes from Person+50. Verify resulting runtime
+state, replication, correct alighting and onward travel. Save/reload untested.
+
+## Previous implementation — 2026-10-07
 
 Bridge **0.5 / ABI 5** adds terminal passenger load/unload flags and entity presence.
 ABI 1–4 remain compatible. `src/interlining/native_candidate.c` implements the

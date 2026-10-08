@@ -4,11 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "host.h"
+#include "mutation.h"
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
-static unsigned char world[0x200], controls[31], slots[31][16], stores[7][0x98];
-static unsigned char data[7][32 * 0x1e8], stops[2][0x90];
-static uint64_t store_ptrs[7], rows[8][3], pages[7][2], masks[8][2];
+static unsigned char world[0x200], controls[31], slots[31][16], stores[10][0x98];
+static unsigned char data[10][32 * 0x1e8], stops[2][0x90];
+static uint64_t store_ptrs[10], rows[8][3], pages[10][2], masks[8][2];
 static int32_t handles[8][5][2], stations[2] = {90, 99};
 static uint32_t load_word = 1, max_load = 0x3f400000; /* 0.75 */
 static const uint32_t rvas[7] = {0x3cea8f0, 0x3cea768, 0x3cea8c0, 0x3cea828, 0x3cf2ba8, 0x3ceaaa0, 0x3cea860};
@@ -355,6 +356,154 @@ static void client(tfx_context context, void *unused) {
     CHECK(api.read_waiting_leg(context, 1, &leg) == TFX_QUERY_BUDGET_EXHAUSTED);
 }
 
+static tfx_api_v6 v6 = {.v5.v4.v3.v2.base.struct_size = sizeof(v6)};
+static unsigned engine_step, validation_count, host_mode, host_readback;
+static uint64_t tickets[2];
+static tfx_context staged_context;
+static tfx_waiting_leg_change staged_request;
+static tfx_status wanted_result;
+static int corrupt_after_end;
+static void journey_fixture(void) {
+    fixture();
+    const uint32_t extra[3] = {0x3cea960, 0x3ceaa00, 0x3ceaa68};
+    for (unsigned i = 7; i < 10; ++i) {
+        controls[i] = (unsigned char)i;
+        put64(slots[i], image + extra[i - 7]); put32(slots[i] + 8, i + 1);
+        store_ptrs[i] = address(stores[i]);
+        vector_at(stores[i] + 0x68, data[i], 32);
+        pages[i][0] = address(data[i]); vector_at(stores[i] + 0x80, pages[i], sizeof(pages[i]));
+    }
+    put64(world + 0x58, 10); world[0x1f8] = 1;
+    put32(data[0] + 12, 0xaabbccdd); put32(data[0] + 28, 0x1234abcd);
+    engine_step = 0; corrupt_after_end = 0;
+}
+static void fake_begin(void *w) {
+    CHECK(w == world && engine_step++ == 0); put64(world + 0x1f0, 1);
+}
+static void fake_remove(void *w, int32_t person, const void *type, uint8_t notify) {
+    CHECK(w == world && person == 1 && address(type) == image + 0x3cea8f0 && notify == 1 && engine_step++ == 1);
+    memset(data[0], 0, 32);
+}
+static void fake_add(void *w, int32_t person, const void *value, uint8_t notify, uint8_t local) {
+    CHECK(w == world && person == 1 && notify == 1 && local == 1 && engine_step++ == 2);
+    memcpy(data[0], value, 32);
+}
+static void fake_end(void *w) {
+    CHECK(w == world && engine_step++ == 3); put64(world + 0x1f0, 0);
+    if (corrupt_after_end) data[0][16] ^= 1;
+}
+static void fake_log(const char *text) { CHECK(text != NULL); }
+static tfx_engine_changes fake_ops = {fake_begin, fake_remove, fake_add, fake_end, fake_log};
+static tfx_status guard_change(tfx_context c, const tfx_waiting_leg_change *q) {
+    ++validation_count;
+    tfx_waiting_leg live = {.struct_size = sizeof(live)};
+    CHECK(v6.v5.v4.v3.v2.read_waiting_leg(staged_context, 1, &live) == TFX_STALE_CONTEXT);
+    CHECK(v6.v5.v4.v3.v2.read_waiting_leg(c, 1, &live) == TFX_OK);
+    uint64_t unused = 0;
+    CHECK(v6.request_waiting_leg_change(c, q, &unused) == TFX_BUSY);
+    return host_mode == 2 ? TFX_POLICY_REJECTED : TFX_OK;
+}
+static tfx_waiting_leg_change make_request(tfx_reader *r) {
+    tfx_waiting_leg_change q = {.struct_size = sizeof(q), .line = 6,
+        .boarding_stop = 2, .alighting_stop = 3, .candidate_vehicle = 4, .revalidate = guard_change};
+    q.expected.struct_size = sizeof(q.expected);
+    CHECK(tfx_query_waiting(r, 1, &q.expected) == TFX_OK);
+    return q;
+}
+static DWORD WINAPI change_wrong_thread(void *unused) {
+    (void)unused; uint64_t ticket;
+    CHECK(v6.request_waiting_leg_change(staged_context, &staged_request, &ticket) == TFX_WRONG_THREAD);
+    return 0;
+}
+static void change_client(tfx_context c, void *user) {
+    unsigned id = (unsigned)(uintptr_t)user;
+    if (host_readback) {
+        tfx_change_result result = {.struct_size = sizeof(result)};
+        CHECK(v6.read_change_result(c, tickets[id], &result) == TFX_OK && result.status == wanted_result);
+        CHECK(result.engine_attempted == (wanted_result == TFX_OK));
+        if (host_mode == 1) CHECK(v6.read_change_result(c, tickets[1 - id], &result) == TFX_NOT_FOUND);
+        return;
+    }
+    CHECK(engine_step == 0); /* A second observer sees no in-dispatch writes. */
+    if (host_mode == 3 && id == 1) { data[0][12] ^= 1; return; }
+    tfx_reader r = reader(); staged_request = make_request(&r);
+    tfx_observation obs = {.struct_size = sizeof(obs)};
+    CHECK(v6.v5.v4.v3.v2.base.read_observation(c, &obs) == TFX_OK);
+    staged_request.dispatch_sequence = obs.dispatch_sequence;
+    staged_context = c;
+    if (host_mode == 4) {
+        uint64_t sentinel = 999;
+        CHECK(v6.request_waiting_leg_change(c, &staged_request, &sentinel) == TFX_LIMIT_REACHED && sentinel == 999);
+        return;
+    }
+    HANDLE thread = CreateThread(NULL, 0, change_wrong_thread, NULL, 0, NULL);
+    CHECK(thread && WaitForSingleObject(thread, 5000) == WAIT_OBJECT_0); CloseHandle(thread);
+    CHECK(v6.request_waiting_leg_change(c, &staged_request, &tickets[id]) == TFX_OK);
+    tfx_change_result result = {.struct_size = sizeof(result)};
+    CHECK(v6.read_change_result(c, tickets[id], &result) == TFX_OK);
+    CHECK(result.status == (host_mode == 1 && id == 1 ? TFX_REQUEST_CONFLICT : TFX_PENDING));
+}
+static void mutation_tests(void) {
+    CHECK(tfx_get_api(6, &v6.v5.v4.v3.v2.base) == TFX_OK && v6.v5.v4.v3.v2.base.capabilities == 127);
+    journey_fixture(); tfx_reader r = reader(); r.world_id = 2;
+    tfx_person_journey j = {.struct_size = sizeof(j)};
+    CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_WAITING && j.world_id == 2 && j.vehicle == -1);
+    handles[1][0][0] = 7; masks[1][0] = (1u << 7) | (1u << 1) | (1u << 4);
+    put32(data[7], 6); put32(data[7] + 4, 2); put32(data[7] + 8, 3); put32(data[7] + 12, 4);
+    CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_ONBOARD && j.line == 6 && j.vehicle == 4);
+    memcpy(data[7] + 31 * 32, data[7], 32); handles[1][0][1] = 0x4000001f;
+    CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.vehicle == 4);
+    masks[1][0] |= 1; CHECK(tfx_query_journey(&r, 1, &j) == TFX_INVALID_STATE);
+    masks[1][0] = (1u << 1) | (1u << 8); CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_MOVING);
+    masks[1][0] = (1u << 1) | (1u << 9); CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_AT_BUILDING && j.line == -1);
+    for (unsigned scenario = 0; scenario < 6; ++scenario) {
+        journey_fixture(); r = reader(); tfx_waiting_leg_change q = make_request(&r);
+        unsigned char raw[32]; CHECK(tfx_query_waiting_raw(&r, 1, raw) == TFX_OK);
+        uint32_t attempted = 99;
+        if (scenario == 0) data[0][12] ^= 1;
+        if (scenario == 1) put32(data[1] + 0x50, 77);
+        if (scenario == 2) put64(world + 0x1f0, 1);
+        if (scenario == 3) r.queries_left = 3;
+        if (scenario == 4) corrupt_after_end = 1;
+        tfx_status status = tfx_apply_waiting_change(&r, &q, raw, &attempted, &fake_ops);
+        if (scenario < 2) CHECK(status == TFX_EXPECTED_STATE_CHANGED && !attempted && !engine_step);
+        if (scenario == 2) CHECK(status == TFX_INVALID_STATE && !attempted && !engine_step);
+        if (scenario == 3) CHECK(status == TFX_QUERY_BUDGET_EXHAUSTED && !attempted && !engine_step);
+        if (scenario == 4) CHECK(status == TFX_INVALID_STATE && attempted == 1 && engine_step == 4);
+        if (scenario == 5) {
+            CHECK(status == TFX_OK && attempted == 1 && engine_step == 4);
+            CHECK(!memcmp(data[0] + 12, raw + 12, 20));
+        }
+    }
+    tfx_client clients[2] = {
+        {.struct_size = sizeof(tfx_client), .id = "tests.change.a", .before_terminal_selection = change_client},
+        {.struct_size = sizeof(tfx_client), .id = "tests.change.b", .before_terminal_selection = change_client, .user_data = (void *)1}
+    };
+    for (host_mode = 1; host_mode <= 4; ++host_mode) {
+        journey_fixture(); validation_count = 0; host_readback = 0;
+        CHECK(v6.v5.v4.v3.v2.base.register_client(&clients[0]) == TFX_OK);
+        if (host_mode == 1 || host_mode == 3) CHECK(v6.v5.v4.v3.v2.base.register_client(&clients[1]) == TFX_OK);
+        r = reader(); CHECK(tfx_dispatch_with_writer(0, &r, tfx_apply_waiting_change, &fake_ops) == TFX_OK);
+        CHECK(!engine_step);
+        if (host_mode == 1) CHECK(!validation_count);
+        if (host_mode == 3) CHECK(v6.v5.v4.v3.v2.base.unregister_client(clients[1].id) == TFX_OK);
+        wanted_result = host_mode == 1 ? TFX_REQUEST_CONFLICT : host_mode == 2 ? TFX_POLICY_REJECTED : TFX_EXPECTED_STATE_CHANGED;
+        host_readback = 1; r = reader(); CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+        CHECK(v6.v5.v4.v3.v2.base.unregister_client(clients[0].id) == TFX_OK);
+        if (host_mode == 1) CHECK(v6.v5.v4.v3.v2.base.unregister_client(clients[1].id) == TFX_OK);
+        if (host_mode == 3) break;
+    }
+    journey_fixture(); host_mode = 0; host_readback = 0;
+    CHECK(v6.v5.v4.v3.v2.base.register_client(&clients[0]) == TFX_OK);
+    r = reader(); CHECK(tfx_dispatch_with_writer(0, &r, tfx_apply_waiting_change, &fake_ops) == TFX_OK && engine_step == 4);
+    host_readback = 1; wanted_result = TFX_OK; r = reader(); CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    journey_fixture(); host_mode = 4; host_readback = 0; r = reader();
+    CHECK(tfx_dispatch_with_writer(0, &r, tfx_apply_waiting_change, &fake_ops) == TFX_OK && !engine_step);
+    CHECK(v6.v5.v4.v3.v2.base.unregister_client(clients[0].id) == TFX_OK);
+    uint64_t ticket; CHECK(v6.request_waiting_leg_change(staged_context, &staged_request, &ticket) == TFX_STALE_CONTEXT);
+    puts("PASS: ABI6 journeys; deferred conflict/stale/policy guards, ownership, context/thread expiry; engine call order/fifth argument, byte preservation, postconditions and process-wide one-attempt cap.");
+}
+
 int main(void) {
     fixture();
     tfx_reader r = reader();
@@ -443,6 +592,7 @@ int main(void) {
     tfx_terminal t = {.struct_size = sizeof(t)};
     CHECK(v5.read_terminal(expired, 5, 1, &t) == TFX_STALE_CONTEXT);
     CHECK(v5.v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    mutation_tests();
     puts("PASS: terminal load/unload flags, entity row/mask consistency, missing/shared data, ABI5 guards.");
     puts("PASS: platform edge membership, distinct worlds, missing/ambiguous systems, malformed/oversized results, ABI4 guards.");
     puts("PASS: vehicle capacity/reservations, stop index, selected terminal, shared storage, malformed tables, ABI3 guards.");

@@ -1,8 +1,8 @@
 # Native adapter: first intervention
 
-Status: the [native bridge](../native/README.md) implements read-only interception
-of this entry boundary. The mutation adapter remains a proposal backed by static
-analysis and read-only runtime observation; no passenger writes are implemented.
+Status: the [native bridge](../native/README.md) implements this entry boundary
+and ABI 6 staged engine-owned waiting replacement. Offline guard/operation tests
+pass; the [first live trial](native-mutation-validation-2026-10-08.md) is in progress.
 
 ## Selected boundary
 
@@ -48,7 +48,9 @@ Relevant engine operations are BeginModification `0x142bb4640`, removal
 `0x142bb7320`, terminal addition `0x140b21cd0`, and EndModification
 `0x142bb4d90`. The game's own scoped wrapper uses `0x142bbbba0`/`0x142bbc060`.
 Terminal RTTI is `0x143cea8f0`. These are build-specific research addresses,
-not a public API or a complete callable binding table.
+not public API addresses. ABI 6 privately binds these four operations after
+live signature checks. Add takes a fifth byte argument (local storage=1), verified
+at the native remapping call site; it must not be omitted.
 
 ## Index and replication responsibilities
 
@@ -73,8 +75,10 @@ provide copied passenger/route, vehicle capacity/reservations, direct platform,
 terminal permission and entity-presence queries. A separate read-only validator
 combines these for the restricted adjacent same-terminal case. Destination
 presence does not prove onward reachability; node fallback, fractional load
-limits and alternative terminals remain excluded. Mutation bindings, expected-state
-revalidation, write failure handling and live journey continuation remain outstanding.
+limits and alternative terminals remain excluded. ABI 6 implements mutation
+bindings, full expected-state comparison, deferred conflict checks and one-attempt
+limits. Live journey continuation, replication and persistent save behavior still
+need evidence; postcondition failures stop further changes but cannot roll back.
 Same-line stop remapping demonstrates replacement;
 cross-line replacement still needs a disposable-save write test. Removal/addition
 is not an established rollback transaction: reject expected failures before the

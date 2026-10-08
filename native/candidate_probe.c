@@ -4,6 +4,11 @@
 #include "candidate_probe.h"
 #include "../src/interlining/native_candidate.h"
 static tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)};
+static tfx_api_v6 changes_api = {.v5.v4.v3.v2.base.struct_size = sizeof(changes_api)};
+static uint64_t change_ticket;
+static int32_t changed_person = -1, expected_destination = -1;
+static uint32_t result_logged, arrived_worlds, onboard_worlds, pilot_done;
+static tfx_person_journey last_journey[4];
 static void (*log_line)(const char *);
 static int32_t scan_cursor, people[32], vehicles[16];
 static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor;
@@ -36,6 +41,58 @@ static void discover(tfx_context context, uint64_t sequence) {
     if (status != TFX_OK) { error("stop_vehicles", status); return; }
     for (uint32_t i = 0; i < list.count; ++i) remember(vehicles, &vehicle_count, 16, list.vehicles[i]);
 }
+static tfx_status revalidate(tfx_context context, const tfx_waiting_leg_change *request) {
+    it_candidate fresh;
+    tfx_status status = it_validate_candidate(&api, context, request->expected.person, request->candidate_vehicle, &fresh);
+    if (status != TFX_OK) return status;
+    if (fresh.reason != IT_CANDIDATE) return TFX_POLICY_REJECTED;
+    if (memcmp(&fresh.expected, &request->expected, sizeof(fresh.expected)) ||
+        fresh.dispatch_sequence != request->dispatch_sequence || fresh.proposed_line != request->line ||
+        fresh.boarding_stop != request->boarding_stop || fresh.alighting_stop != request->alighting_stop)
+        return TFX_EXPECTED_STATE_CHANGED;
+    return TFX_OK;
+}
+
+static void track_change(tfx_context context) {
+    char text[384];
+    if (!result_logged) {
+        tfx_change_result result = {.struct_size = sizeof(result)};
+        tfx_status status = changes_api.read_change_result(context, change_ticket, &result);
+        if (status != TFX_OK) { error("change_result", status); return; }
+        if (result.status == TFX_PENDING) return;
+        snprintf(text, sizeof(text), "pilot_result ticket=%llu status=%u engine_attempted=%u person=%d\n",
+            (unsigned long long)change_ticket, result.status, result.engine_attempted, result.person);
+        log_line(text); result_logged = 1;
+        if (result.status != TFX_OK) { pilot_done = 1; return; }
+    }
+    tfx_person_journey journey = {.struct_size = sizeof(journey)};
+    tfx_status status = changes_api.read_person_journey(context, changed_person, &journey);
+    if (status != TFX_OK) { error("journey", status); if (failures >= 8) pilot_done = 1; return; }
+    if (!journey.world_id || journey.world_id > 4) { error("world_id", TFX_INVALID_STATE); return; }
+    unsigned index = journey.world_id - 1;
+    if (journey.flags & TFX_JOURNEY_ONBOARD) onboard_worlds |= 1u << index;
+    if ((journey.flags & TFX_JOURNEY_AT_BUILDING) && journey.destination == expected_destination &&
+        (onboard_worlds & (1u << index))) arrived_worlds |= 1u << index;
+    if ((last_journey[index].flags & TFX_JOURNEY_ONBOARD) && !(journey.flags & TFX_JOURNEY_ONBOARD)) {
+        tfx_vehicle vehicle = {.struct_size = sizeof(vehicle)};
+        tfx_status vehicle_status = api.v4.v3.read_vehicle(context, last_journey[index].vehicle, &vehicle);
+        snprintf(text, sizeof(text), "pilot_left_vehicle world_id=%u vehicle=%d expected_alighting=%d vehicle_query_status=%u current_line=%d current_stop=%d\n",
+            journey.world_id, last_journey[index].vehicle, last_journey[index].alighting_stop,
+            vehicle_status, vehicle_status == TFX_OK ? vehicle.line : -1, vehicle_status == TFX_OK ? vehicle.stop_index : -1);
+        log_line(text);
+    }
+    if (memcmp(&journey, &last_journey[index], sizeof(journey))) {
+        snprintf(text, sizeof(text), "pilot_journey world_id=%u person=%d flags=%u destination=%d line=%d stops=%d,%d vehicle=%d\n",
+            journey.world_id, journey.person, journey.flags, journey.destination, journey.line,
+            journey.boarding_stop, journey.alighting_stop, journey.vehicle);
+        log_line(text); last_journey[index] = journey;
+    }
+    if ((arrived_worlds & 3u) == 3u) {
+        log_line("pilot_complete destination_building_observed_in_both_worlds=1\n"); pilot_done = 1;
+    }
+}
+int tfx_pilot_complete(void) { return pilot_done != 0; }
+
 static void evaluate(tfx_context context, uint64_t sequence) {
     uint32_t checks = vehicle_count < 4 ? vehicle_count : 4;
     for (uint32_t i = 0; i < checks && failures < 8; ++i) {
@@ -69,6 +126,22 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             if (status != TFX_OK) { error("validate", status); return; }
             ++attempts; ++reasons[proposal.reason];
             if (proposal.reason == IT_CANDIDATE) ++accepted;
+            /* First bounded behavior trial: baseline S1 -> S3 shared adjacent leg. */
+            if (!change_ticket && proposal.reason == IT_CANDIDATE &&
+                proposal.expected.line == 98278 && proposal.proposed_line == 97743 &&
+                proposal.expected.boarding_stop == 1 && proposal.expected.alighting_stop == 2) {
+                tfx_waiting_leg_change request = {.struct_size = sizeof(request),
+                    .dispatch_sequence = sequence, .expected = proposal.expected,
+                    .line = proposal.proposed_line, .boarding_stop = proposal.boarding_stop,
+                    .alighting_stop = proposal.alighting_stop, .candidate_vehicle = proposal.proposed_vehicle,
+                    .revalidate = revalidate};
+                status = changes_api.request_waiting_leg_change(context, &request, &change_ticket);
+                if (status != TFX_OK) { error("request_change", status); return; }
+                changed_person = leg.person; expected_destination = leg.destination;
+                char staged[160]; snprintf(staged, sizeof(staged), "pilot_staged ticket=%llu person=%d sequence=%llu\n",
+                    (unsigned long long)change_ticket, changed_person, (unsigned long long)sequence);
+                log_line(staged);
+            }
             if (logged >= 80 || last_reason[pi][vi] == (unsigned char)(proposal.reason + 1)) continue;
             last_reason[pi][vi] = (unsigned char)(proposal.reason + 1);
             char text[768];
@@ -81,6 +154,7 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                 proposal.boarding_station, proposal.boarding_terminal, proposal.alighting_station,
                 proposal.alighting_terminal, proposal.observed_places_left, proposal.requires_engine_revalidation);
             log_line(text); ++logged;
+            if (change_ticket) return;
         }
         return; /* At most one ready vehicle / two validations per callback. */
     }
@@ -89,11 +163,12 @@ static void sample(tfx_context context, void *unused) {
     (void)unused;
     tfx_observation observation = {.struct_size = sizeof(observation)};
     if (api.v4.v3.v2.base.read_observation(context, &observation) != TFX_OK) return;
+    if (change_ticket) { track_change(context); return; }
     if (failures < 8) {
         discover(context, observation.dispatch_sequence);
         if (failures < 8) evaluate(context, observation.dispatch_sequence);
     }
-    if (observation.dispatch_sequence == 1200) {
+    if (observation.dispatch_sequence == 3600) {
         char text[256];
         snprintf(text, sizeof(text), "candidate_summary people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u\n",
             person_count, vehicle_count, ready, attempts, accepted, failures);
@@ -108,7 +183,9 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     log_line = write_line;
     tfx_status status = tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base);
     if (status != TFX_OK) return status;
-    tfx_client client = {.struct_size = sizeof(client), .id = "research.interlining-candidates",
+    status = tfx_get_api(TFX_CHANGE_ABI_VERSION, &changes_api.v5.v4.v3.v2.base);
+    if (status != TFX_OK) return status;
+    tfx_client client = {.struct_size = sizeof(client), .id = "research.interlining-one-passenger",
         .before_terminal_selection = sample};
     return api.v4.v3.v2.base.register_client(&client);
 }
