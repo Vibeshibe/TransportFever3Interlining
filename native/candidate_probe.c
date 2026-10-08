@@ -13,7 +13,7 @@ typedef struct pilot_passenger {
     int32_t person, destination, line, vehicle, boarding_stop, alighting_stop;
     uint32_t result_logged, arrived_worlds, onboard_worlds;
     int32_t home;
-    uint32_t destination_slots, removed_worlds, invalidated_worlds;
+    uint32_t destination_slots, removed_worlds, invalidated_worlds, lifecycle_resolved;
     tfx_person_journey last_journey[4];
 } pilot_passenger;
 static pilot_passenger passengers[TFX_PASSENGER_LIMIT];
@@ -74,6 +74,22 @@ static int selected_person(int32_t person) {
         if (passengers[i].person == person) return 1;
     return 0;
 }
+static int passenger_finished(const pilot_passenger *p) {
+    return p->arrived_worlds == 3u || p->lifecycle_resolved;
+}
+static int lifecycle_pending(void) {
+    for (unsigned i = 0; i < passenger_count; ++i) {
+        const pilot_passenger *p = &passengers[i];
+        if (!p->lifecycle_resolved && (p->removed_worlds || p->invalidated_worlds)) return 1;
+    }
+    return 0;
+}
+static int attempt_reserved(void) {
+    if (!TFX_RESERVE_LAST_FOR_LIFECYCLE || passenger_count + 1 != TFX_PASSENGER_LIMIT) return 0;
+    for (unsigned i = 0; i < passenger_count; ++i)
+        if (passengers[i].lifecycle_resolved) return 0;
+    return 1;
+}
 static int boarding_pending(void) {
     for (unsigned i = 0; i < passenger_count; ++i)
         if (!passengers[i].result_logged || passengers[i].onboard_worlds != 3u) return 1;
@@ -84,14 +100,15 @@ static void summary(const char *reason) {
     summary_logged = 1;
     char text[384];
     snprintf(text, sizeof(text), "pilot_summary reason=%s staged=%u passenger_limit=%u people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u switching_blocked=%u\n",
-        reason, passenger_count, (unsigned)TFX_PASSENGER_LIMIT, person_count, vehicle_count, ready, attempts, accepted, failures, tracking_blocked);
+        reason, passenger_count, (unsigned)TFX_PASSENGER_LIMIT, person_count, vehicle_count, ready, attempts, accepted, failures, (tracking_blocked || lifecycle_pending()));
     log_line(text);
     for (unsigned i = 0; i < passenger_count; ++i) {
         const pilot_passenger *p = &passengers[i];
         snprintf(text, sizeof(text), "pilot_passenger_summary person=%d destination=%d ticket=%llu result_logged=%u onboard_world_mask=%u destination_world_mask=%u removed_world_mask=%u invalidated_world_mask=%u outcome=%s\n",
             p->person, p->destination, (unsigned long long)p->ticket, p->result_logged, p->onboard_worlds, p->arrived_worlds,
             p->removed_worlds, p->invalidated_worlds, p->arrived_worlds == 3u ? "original_destination_reached" :
-            p->removed_worlds == 3u ? "passenger_removed" : p->invalidated_worlds == 3u ? "destination_invalidated" : "unresolved");
+            p->lifecycle_resolved && p->removed_worlds == 3u ? "passenger_removed" :
+            p->lifecycle_resolved && p->invalidated_worlds == 3u ? "destination_invalidated" : "unresolved");
         log_line(text);
     }
     for (unsigned i = 0; i < IT_REASON_COUNT; ++i) if (reasons[i]) {
@@ -100,10 +117,10 @@ static void summary(const char *reason) {
     }
 }
 static void stop(const char *reason) { pilot_done = 1; summary(reason); }
-/* Confirm a classification in both worlds, but block new requests on the FIRST
- * anomaly. This revision never resumes switching after a lifecycle event. */
+/* One-world evidence pauses discovery. Matching both-world outcomes close only
+ * this journey after confirmed boarding; its ID and consumed attempt are retained.
+ * Unexplained query failures use a separate permanent block. */
 static void lifecycle_event(pilot_passenger *p, unsigned bit, int removed, uint64_t sequence) {
-    tracking_blocked = 1;
     uint32_t *mask = removed ? &p->removed_worlds : &p->invalidated_worlds;
     const char *outcome = removed ? "passenger_removed" : "destination_invalidated";
     if (!(*mask & bit)) {
@@ -114,7 +131,15 @@ static void lifecycle_event(pilot_passenger *p, unsigned bit, int removed, uint6
         log_line(text);
     }
     if (p->removed_worlds && p->invalidated_worlds) stop("lifecycle_world_disagreement");
-    else if (*mask == 3u) stop(removed ? "passenger_removed" : "destination_invalidated");
+    else if (p->arrived_worlds) stop("arrival_lifecycle_disagreement");
+    else if (*mask == 3u) {
+        if (p->onboard_worlds != 3u) { stop("lifecycle_before_confirmed_boarding"); return; }
+        p->lifecycle_resolved = 1;
+        char text[256];
+        snprintf(text, sizeof(text), "pilot_lifecycle_resolved person=%d sequence=%llu outcome=%s arrival=0 attempt_retained=1\n",
+            p->person, (unsigned long long)sequence, outcome);
+        log_line(text);
+    }
 }
 static void track_change(tfx_context context, pilot_passenger *p, uint64_t sequence) {
     char text[384];
@@ -130,7 +155,7 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
             stop("change_rejected_or_failed"); return;
         }
     }
-    if (p->arrived_worlds == 3u) return;
+    if (passenger_finished(p)) return;
     tfx_person_lifecycle life = {.struct_size = sizeof(life)};
     tfx_status status = lifecycle_api.read_person_lifecycle(context, p->person, &life);
     if (status != TFX_OK) {
@@ -188,7 +213,10 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
             log_line(text);
         }
     }
-    if (journey.flags == TFX_JOURNEY_AT_BUILDING && (p->onboard_worlds & bit)) p->arrived_worlds |= bit;
+    if (journey.flags == TFX_JOURNEY_AT_BUILDING && (p->onboard_worlds & bit)) {
+        if (p->removed_worlds || p->invalidated_worlds) { stop("arrival_lifecycle_disagreement"); return; }
+        p->arrived_worlds |= bit;
+    }
     if ((p->last_journey[index].flags & TFX_JOURNEY_ONBOARD) && !(journey.flags & TFX_JOURNEY_ONBOARD)) {
         tfx_vehicle vehicle = {.struct_size = sizeof(vehicle)};
         tfx_status vehicle_status = api.v4.v3.read_vehicle(context, p->last_journey[index].vehicle, &vehicle);
@@ -301,14 +329,25 @@ static void sample(tfx_context context, void *unused) {
     uint64_t sequence = observation.dispatch_sequence;
     /* Separate tracking and discovery budgets. Paired callback phases cover both
      * alternating worlds; a pending boarding is tracked on EVERY callback. */
-    if (passenger_count && (tracking_blocked || boarding_pending() || passenger_count == TFX_PASSENGER_LIMIT ||
+    int pending_before = lifecycle_pending();
+    if (passenger_count && (tracking_blocked || pending_before || attempt_reserved() || boarding_pending() || passenger_count == TFX_PASSENGER_LIMIT ||
             (sequence / 2) % 2 == 0 || sequence == TFX_OBSERVATION_LIMIT)) {
         for (unsigned i = 0; i < passenger_count && !pilot_done; ++i)
             track_change(context, &passengers[i], sequence);
-        unsigned arrived = 0;
-        for (unsigned i = 0; i < passenger_count; ++i) arrived += passengers[i].arrived_worlds == 3u;
-        if (!pilot_done && arrived == TFX_PASSENGER_LIMIT) stop("all_destinations_observed");
-    } else if (!tracking_blocked && failures < 8 && sequence < TFX_OBSERVATION_LIMIT) {
+        unsigned arrived = 0, finished = 0;
+        for (unsigned i = 0; i < passenger_count; ++i) {
+            arrived += passengers[i].arrived_worlds == 3u;
+            finished += passenger_finished(&passengers[i]);
+        }
+        if (!pilot_done && pending_before && !lifecycle_pending() && !tracking_blocked) {
+            char text[160];
+            snprintf(text, sizeof(text), "pilot_tracking_resumed sequence=%llu remaining_attempts=%u\n",
+                (unsigned long long)sequence, (unsigned)TFX_PASSENGER_LIMIT - passenger_count);
+            log_line(text);
+        }
+        if (!pilot_done && finished == TFX_PASSENGER_LIMIT && !tracking_blocked)
+            stop(arrived == TFX_PASSENGER_LIMIT ? "all_destinations_observed" : "all_outcomes_observed");
+    } else if (!tracking_blocked && !lifecycle_pending() && !attempt_reserved() && failures < 8 && sequence < TFX_OBSERVATION_LIMIT) {
         discover(context, sequence);
         if (failures < 8) evaluate(context, sequence);
     }
@@ -324,9 +363,9 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     failures = attempts = accepted = logged = ready = 0;
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));
-    char text[160];
-    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_stop=1\n",
-        (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT);
+    char text[256];
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u\n",
+        (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE);
     log_line(text);
     tfx_status status = tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base);
     if (status != TFX_OK) return status;

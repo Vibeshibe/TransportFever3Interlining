@@ -5,11 +5,12 @@ versioned C API with copied queries and a staged waiting-leg change operation.
 **Version 0.7 supports a build-time cap of 1–5 distinct passengers.**
 The default remains one. The first batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
-See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 distinguishes
-passenger removal and cleared destination assignments from arrival and unresolved
-errors, without permitting further switches after either event. Its live trial
-confirmed five boardings, four original arrivals and one separate removal outcome;
-see [results and limits](../docs/lifecycle-tracking.md). The native
+See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 validated
+five boardings, four original arrivals and one separate removal outcome.
+Version 0.7.3 continues serving other passengers after a lifecycle outcome is
+confirmed in both worlds following confirmed boarding; unexplained failures
+retain their stops. See [continuation and its trial](../docs/lifecycle-continuation.md).
+The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 
@@ -35,7 +36,7 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 directory and restart the game before testing a changed bridge.
 
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
-`candidate_tests.exe`, `host_batch_tests.exe`, `pilot_tests.exe`,
+`candidate_tests.exe`, `host_batch_tests.exe`, `pilot_tests.exe`, `pilot_reserve_tests.exe`,
 `journey_probe_tests.exe`, `journey_snapshot.exe`,
 `boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
@@ -103,15 +104,22 @@ callback cap, eight query errors, or an unexpected result, boarding or destinati
 A cap with fewer arrivals is an incomplete capture, not a success. Final summaries
 include each passenger's boarding and destination world masks.
 
-Version 0.7.2 also records removal/invalidation masks and an explicit outcome.
-Before staging, it copies the passenger's home and original destination slots.
-During tracking, the first lifecycle anomaly or journey/lifecycle query error
-permanently blocks new requests in this capture. Read-only tracking continues to
-confirm removal or cleared slots in both worlds, then stops with that reason.
-Replica disagreement, changed home, reassigned destination or inconsistent identity
-stops as unresolved. Eight query errors and the callback cap remain in force.
-Previously observed arrivals are retained; lifecycle outcomes never add arrivals.
-See [implementation and next trial](../docs/lifecycle-tracking.md).
+Version 0.7.3 records separate removal/invalidation masks and outcomes. Before
+staging, it copies the home and original destination slots. Pending lifecycle
+evidence pauses new proposals until every affected passenger has a matching
+both-world outcome. Only previously confirmed boardings qualify for continuation.
+The passenger's tracking then closes while its ID and attempt remain consumed.
+Unexpected identity changes, reassignment, mixed arrival/lifecycle evidence and
+unexplained reads still block switching; confirmation cannot clear a read-error
+block. Lifecycle outcomes never add arrivals. A fully tracked batch with lifecycle
+outcomes ends as `all_outcomes_observed`, distinct from all destinations reached.
+
+For a continuation trial, `--reserve-last-attempt-for-lifecycle` holds the final
+attempt until a lifecycle outcome has been confirmed. This default-off pacing
+option requires at least two allowed attempts and changes no eligibility checks.
+It avoids exhausting the cap before continuation can be tested. Both normal and
+reserved schedules have consumer regression coverage; see
+[implementation and next trial](../docs/lifecycle-continuation.md).
 
 Run `host_batch_tests.exe` and `host_batch_tests.exe failure` in separate processes,
 plus `pilot_tests.exe`, alongside the existing suites. These cover multi-person

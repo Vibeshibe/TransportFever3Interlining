@@ -741,6 +741,24 @@ attempts preceded removal, fixtures establish blocking with unused allowance.
 The log audit passed; full outcomes, hashes and limitations are in the
 [lifecycle trial](lifecycle-tracking.md). No gameplay code changed in this record.
 
+## 2026-10-08 — Continue after confirmed lifecycle outcomes
+
+Version0.7.3 closes a lifecycle-affected passenger after successful both-world
+boarding and matching both-world removal/invalidation, then permits further
+eligible passengers within the unchanged five-attempt cap. Pending classifications
+pause discovery; a separate permanent query-error block cannot be cleared by
+confirmation. Closed IDs remain excluded and attempts consumed. Disagreements,
+identity changes and lifecycle loss before confirmed boarding remain stops.
+Mixed completed batches report all_outcomes_observed, never all arrivals.
+
+Added default-off trial pacing to reserve the last attempt for a confirmed
+lifecycle outcome, addressing the prior capture's already-exhausted allowance.
+The prepared build-v7d uses cap5/18,000 with reserve enabled; ABI7 and native
+query/mutation operations are unchanged. Normal/reserved consumer tests, host
+batch/failure, candidate and DLL contract checks pass; peak allowance40/64.
+Invalid reserve/cap combinations reject in CLI and CMake. No live loading yet.
+[Behavior, hashes, validation and the next test](lifecycle-continuation.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

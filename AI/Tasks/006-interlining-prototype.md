@@ -112,3 +112,10 @@ coverage limits are in [the lifecycle trial](../../docs/lifecycle-tracking.md).
 Next bounded implementation may handle classified lifecycle outcomes explicitly,
 keeping unexplained identity/read errors as hard stops; route expansion remains
 separate. No active watcher or further running time is needed for this trial.
+
+Version0.7.3 now implements continuation after both-world lifecycle confirmation
+for previously confirmed boardings. IDs/attempts remain consumed; unresolved
+failures retain their stops. Normal and reserved-attempt fixtures pass. Prepared
+build-v7d reserves the fifth attempt to demonstrate a later successful change
+following lifecycle resolution. Next perform the [fresh bounded trial](../../docs/lifecycle-continuation.md);
+no new game load or injection occurred during implementation.

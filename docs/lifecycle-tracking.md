@@ -180,3 +180,7 @@ The diagnostic milestone is complete for removal classification and preserving
 arrivals through later invalidation. Further implementation should keep unknown
 identity/query failures as hard stops and handle classified lifecycle outcomes
 explicitly; do not silently turn them into successes or loosen route eligibility.
+
+The later [version0.7.3 continuation implementation](lifecycle-continuation.md)
+changes the global stop after classified outcomes while preserving failure
+blocks and attempt bounds. The results above remain specific to0.7.2.

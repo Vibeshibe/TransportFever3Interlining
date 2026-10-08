@@ -13,4 +13,14 @@
 #if TFX_PASSENGER_LIMIT < 1 || TFX_PASSENGER_LIMIT > 5
 #error "Passenger limit must be between 1 and 5"
 #endif
+/* Optional test pacing: keep one attempt available for observed continuation. */
+#ifndef TFX_RESERVE_LAST_FOR_LIFECYCLE
+#define TFX_RESERVE_LAST_FOR_LIFECYCLE 0
+#endif
+#if TFX_RESERVE_LAST_FOR_LIFECYCLE != 0 && TFX_RESERVE_LAST_FOR_LIFECYCLE != 1
+#error "Lifecycle reserve must be 0 or 1"
+#endif
+#if TFX_RESERVE_LAST_FOR_LIFECYCLE && TFX_PASSENGER_LIMIT < 2
+#error "Lifecycle reserve requires at least two passenger attempts"
+#endif
 #endif

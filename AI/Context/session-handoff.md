@@ -1,5 +1,33 @@
 # Session handoff — 2026-10-08
 
+## Lifecycle continuation implemented — ready for fresh live test (latest)
+
+User asked to finish implementation/automated tests before another game load.
+Version0.7.3 is complete in `analysis/native-bridge/build-v7d`, **not loaded**.
+Mutable DLL SHA256 `6c29dc15804889f319f471d81ff5b04f25b15a5047b51bc915d0b6562609b39c`.
+ABI7/query/mutation implementations unchanged. Five attempts/18,000 callbacks,
+same S1↔S3 stops1→2 eligibility; trial reserve enabled for the fifth attempt.
+
+After both-world boarding and matching lifecycle confirmation, the affected
+passenger closes without an arrival or attempt refund; other passengers may be
+served once ALL pending lifecycle cases resolve. Any permanent query-error block
+remains. Unknown identity/reassignment/disagreement and lifecycle-before-boarding
+still stop. Closed IDs are never reselected or read again. Final mixed batch
+reason is all_outcomes_observed, distinct from all_destinations_observed.
+
+Normal/reserved consumer, host batch/failure, candidate and both DLL contract
+suites passed. Max fixture allowance40/64. Invalid reserve/cap1 rejected by CLI
+and CMake. No running test/watcher sessions. See [continuation guide](../../docs/lifecycle-continuation.md).
+
+Next: request readiness for one fresh restart/load of disposable
+`TPF3Interlining_before_multi_passenger_01` paused. Its ce2e02d935da… hash was
+rechecked unchanged. Previous0.7.2 may remain loaded until game exit. Verify
+fresh process/save, load only build-v7d mutable DLL, then ask to unpause. Require
+confirmed lifecycle resolution and a subsequent successful different-passenger
+change with remaining allowance; a resumption log alone is insufficient.
+If no lifecycle event occurs, cap expiry is inconclusive—do not expand it silently.
+Do not reuse historical PID/worlds below or overwrite loaded DLLs.
+
 ## Lifecycle diagnostics — live trial completed (latest)
 
 Version0.7.2 implementation `935ef65` and startup/arrival checkpoint `45fafcb` are
