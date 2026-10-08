@@ -1,6 +1,40 @@
 # Session handoff — 2026-10-08
 
-## Current checkpoint — multi-passenger trial stopped for lifecycle investigation
+## Completed read-only lifecycle control (latest)
+
+**Both lifecycle changes reproduced without interlining switches.** From the
+preserved pre-trial baseline,120770 lost SimPerson in both worlds at476.55s,
+concurrent with Scaffold appearing on its home87062. At560.06s,122261 was at its
+unchanged home122255 with workplace72934 cleared (-1), while72934 gained Scaffold.
+This supports native building redevelopment; exact native causality is not traced.
+Neither case counts as original-destination arrival or proves all mod behavior safe.
+See [lifecycle investigation](../../docs/passenger-lifecycle-investigation.md).
+
+External monitor session2247 **finished, exit0**, at2026-10-08T14:31:42.771544Z:
+2,153 accepted world samples,7 rejected inconsistent reads. No external watcher
+remains. Ghidra session75896 also finished successfully. User was told they may
+pause or close the game; no further running time is needed for this control.
+Only read-only `lifecycle-v7b/tpf_journey_observer.dll` was loaded. It may continue
+to its3,600-callback cap and stays loaded until process exit. No mutation DLL.
+
+Historical process for this control: Linux52616 / Windows308, thread628,
+worlds1 `0x2bd709c0`,2 `0x2bd6fd00`; all expire on restart/reload. Baseline copy
+`TPF3Interlining_before_multi_passenger_01` has source hash ce2e02d935da….
+Artifacts under ignored `analysis/native-bridge/lifecycle-v7b/`:
+`pre-trial-inventory.json`, `control-lifecycle.jsonl`, immutable
+`control-observer-at-completion.log`, `control-run.json`, `watch_control.py`.
+Full hashes and timeline are in the investigation document. Preserve both save
+backups; do not replay this control merely to recover context.
+
+**Next implement lifecycle classification in copied journey diagnostics**, with
+fixtures separating original arrival, removed passenger, invalidated destination
+and unresolved identity/read failures. Maintain mutation stop/cap/eligibility
+while adding diagnostics. Missing state alone cannot justify more switching;
+a lifecycle outcome is not a successful journey. Then plan a fresh bounded
+trial with explicit handling of confirmed lifecycle outcomes. Other two batch
+original destinations remain unverified. No stable release/autoload yet.
+
+## Historical checkpoint — multi-passenger trial stopped for lifecycle investigation
 
 Version 0.7.0 implementation `cb7c91d` and startup `a19a76b` are pushed on dev.
 Loaded `analysis/native-bridge/build-v7a/tpf_shared_bridge.dll`, passenger cap5,
@@ -44,8 +78,7 @@ mask/row agreement. Built `analysis/native-bridge/build-v7b`, **DLL NOT loaded**
 Consumer regression passed after diagnostics change; new helper also exercised
 read-only against the missing entity. Do not overwrite loaded build-v7a artifacts.
 
-**Next investigate simulation-person removal and target/at-building ID semantics
-before another mutation trial.** Compare native lifecycle behavior using preserved
+**This was the investigation gate before the completed control above.** Compare native lifecycle behavior using preserved
 baseline/checkpoint. Keep missing-record stop, bounds and eligibility unchanged;
 do not count absence or unmatched at-building ID as successful arrival. No fifth
 switch, complete batch journey validation, stable release or autoload is proven.

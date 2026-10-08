@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — one-passenger engine-owned change implemented; repeat boarding and saved journey with native transfer completed
+- Status: In progress — four batch boardings; native lifecycle control complete; batch arrivals unverified
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -88,3 +88,11 @@ an unmatched at-building ID for another. Preserve bounds; next investigate
 lifecycle/identity semantics before another mutation trial. Original destinations
 for this batch remain unverified. Checkpoint/evidence are in the trial record;
 version 0.7.1 adds diagnostics only and has not been loaded into the game.
+
+The [read-only lifecycle control](../../docs/passenger-lifecycle-investigation.md)
+now reproduced both removal120770 and workplace invalidation122261 without
+interlining switches. Each coincided with Scaffold appearing on the associated
+home/work building. Next implement copied lifecycle diagnostics and regression
+fixtures; distinguish removed/invalidated journeys from original arrival while
+retaining mutation bounds and current stop behavior. Broader batch validation
+and exact native causal tracing are still unproven.

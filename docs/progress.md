@@ -674,6 +674,23 @@ Added bounded external entity inventory with five passing layout/identity tests.
 Restored a separately named pre-trial copy for the next comparison; no mutation
 trial resumed. [Lifecycle investigation](passenger-lifecycle-investigation.md).
 
+## 2026-10-08 — Native lifecycle changes reproduced in the control
+
+The preserved pre-trial baseline ran with only a read-only observer, no switching
+consumer or mutation backend. Both anomalies reproduced:120770 lost passenger
+components while home87062 gained Scaffold;122261 lost work72934 and appeared at
+its unchanged home122255 while72934 gained Scaffold. This supports redevelopment
+as the explanation without establishing an exact native call sequence. Neither
+outcome is original-destination arrival, and full batch completion remains open.
+
+The bounded monitor finished early after560.06 wall seconds (including initial
+pause),2,153 accepted world samples and7 rejected inconsistent reads; exit0.
+Immutable logs/hashes and limits are in the [lifecycle investigation](passenger-lifecycle-investigation.md).
+Targeted Ghidra exports also corroborate native return-home handling. No gameplay
+code changed in this milestone. Next add explicit lifecycle classifications to
+journey diagnostics with fixtures, retaining mutation bounds and the stop until
+handling of these outcomes is validated. User can pause/close the control game.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
