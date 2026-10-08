@@ -663,6 +663,17 @@ read-only against the live missing record. Next investigate native lifecycle
 and destination/building identity before another mutation trial. [Evidence,
 checkpoint hashes and limitations](multi-passenger-trial.md).
 
+## 2026-10-08 — Inspect passenger identity and current home
+
+Read-only reload/component snapshots found ID120770 now represents a scenery
+asset, while person122261 is at its current home122255 with destinations
+[122255,75501,-1]. Original target72934 is still a building. Neither finding proves
+original-trip arrival or the cause of retirement/retargeting. Targeted Ghidra
+exports identify native entity-removal and target-to-home transformation paths.
+Added bounded external entity inventory with five passing layout/identity tests.
+Restored a separately named pre-trial copy for the next comparison; no mutation
+trial resumed. [Lifecycle investigation](passenger-lifecycle-investigation.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
