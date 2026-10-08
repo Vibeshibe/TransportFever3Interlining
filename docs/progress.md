@@ -810,6 +810,13 @@ All watchers/readers ended. The prepared0.7.4 implementation exactly addresses
 this pending state and is pushed as4d6e70a, but is not loaded. Next is its bounded
 live test. Complete sequences/hashes in [continuation evidence](lifecycle-continuation.md).
 
+## 2026-10-08 — 0.7.4 live validation loaded
+
+Verified the fresh correct baseline and loaded the tested build-v7e DLL; loader
+returned0. Startup confirms cap5/18000, reserve1 and grace32. User confirmed
+normal-speed unpause; no live result yet. Process/log details in the handoff and
+[cleared-home guide](home-clear-handling.md). No policy or bound changes.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

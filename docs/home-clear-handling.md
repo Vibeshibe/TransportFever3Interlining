@@ -82,3 +82,13 @@ fits within32 callbacks remain unknown;0.7.4 still needs a live trial. No natura
 cause or original arrival is inferred from absence. The run recorded four
 boardings and three original arrivals, with no fifth switch. All watchers ended.
 See [complete diagnostic evidence and hashes](lifecycle-continuation.md#diagnostic-outcome--exact-cleared-home-state-captured).
+
+## Live trial startup — 2026-10-08
+
+Loaded0.7.4 from build-v7e into fresh Linux93030/start2190548 / Windows304 after
+verifying the correct before_multi_passenger baseline and no previous bridge.
+Stdout load17:40:52Z, ready17:41:37Z. DLL hash matches the tested artifact above;
+loader tfx_start0. Log `tpf-bridge-304-22022778.log` confirms cap5/18000, reserve1
+and home-clear grace32. User confirmed normal-speed unpause; live outcome pending.
+World1 `0x33227050`, world2 `0x33227d10`, thread624; log watcher48734 active.
+Metadata is adjacent live-run.json; do not reuse older worlds/process identities.

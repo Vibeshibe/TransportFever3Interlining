@@ -1,19 +1,22 @@
 # Session handoff — 2026-10-08
 
-## 0.7.4 live trial requested — awaiting fresh paused baseline
+## 0.7.4 trial running (latest)
 
-User authorized the next trial. Preflight found no running game; verified
-build-v7e mutable DLL7f136927850b… and preserved before_multi_passenger baseline
-ce2e02d935da… unchanged. Asked user to start the game, load a disposable copy of
-`TPF3Interlining_before_multi_passenger_01`, and leave it paused. Await readiness.
-No injection, new process/world IDs, or active watchers yet.
+User loaded the correct disposable before_multi_passenger baseline paused.
+Fresh Linux93030/start2190548 / Windows304, stdout load17:40:52Z, ready17:41:37Z.
+No previous bridge mappings. Loaded build-v7e mutable DLL SHA256
+7f136927850b48987d51299aad4f9118398e7f7823331ff9e0dcec4eeb57d2a1
+(source4d6e70a), tfx_start0. Log tpf-bridge-304-22022778.log confirms0.7.4,
+cap5/18000, reserve1 and home grace32. Metadata build-v7e/live-run.json.
+**User confirmed normal-speed unpause.** World1 `0x33227050`, world2
+`0x33227d10`, thread624; log watcher48734 active. No external memory reader.
+Do not inject again or rebuild the loaded DLL. Prior process/world IDs below stale.
 
-Prepared ignored build-v7e/preflight.json, watch_trial.py and audit_trial.py.
-Watcher/audit read the new logfile name from live-run.json (create after loading).
-Audit checks no proposals while home/lifecycle is pending, removal within32
-callbacks, retained IDs/cap and a later actual distinct-passenger boarding.
-Require home_clear_continuation_proven, not just a resumption log. All existing
-bounds unchanged: cap5/18000, final attempt reserved. Do not rebuild pinned DLL.
+Watcher/audit scripts use live-run.json's log path. Check no proposals while
+home/lifecycle is pending, removal within32 callbacks, retained IDs/cap and a
+later actual distinct-passenger boarding. Require home_clear_continuation_proven,
+not just a resumption log. Do not expand grace/cap automatically. Original save
+hash ce2e02d935da… was verified during preflight. No new outcome claimed yet.
 
 ## Latest result — exact home=-1 trigger captured; capture ended
 
