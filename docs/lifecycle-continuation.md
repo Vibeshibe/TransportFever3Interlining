@@ -188,3 +188,51 @@ summary, rejects inconsistent reads and makes no engine calls. First two passeng
 home value. Targeted export of PE-unwind-confirmed14256b0c0 into
 `analysis/native-boarding/home-transition-dispatch.txt` confirms the dispatcher
 calls ApplySimPersonData14256da20; this adds static call context, not runtime cause.
+
+## Diagnostic outcome — exact cleared-home state captured
+
+At callback7909, world1, the new diagnostic recorded:
+
+```text
+pilot_identity_error person=120842 sequence=7909 world_id=1 expected_home=75531 observed_home=-1 destinations=-1,78804,-1 target=78804 removed_world_mask=0 outcome=unresolved
+```
+
+The pilot stopped with `passenger_identity_unresolved`, query_errors0, no fifth
+attempt and no classified lifecycle outcome. Four distinct switches boarded:
+
+| Passenger | Replacement / vehicle | Staged | Both-world boarding | Original arrival |
+| --- | --- | --- | --- | --- |
+| 120842 | S3→S1 / 97745 | 512 | 514 | Not observed; target78804 |
+| 122261 | S3→S1 / 97745 | 518 | 520 | 72934 at2444/2445 |
+| 40365 | S1→S3 / 97912 | 1074 | 1095 | 86033 at4537/4540 |
+| 123348 | S3→S1 / 98594 | 4631 | 4633 | 72220 at7371/7372 |
+
+Watcher89335 exited0 at17:34:21.006802Z. The wrapper reports forwards only;
+`switching_blocked=0` is the separate pending/error latch, not an active pilot.
+No continuation proof is claimed. The immutable log and log-invariant audit are
+under `analysis/native-bridge/build-v7d-identity-log/`.
+
+A bounded read-only follow-up began at17:35:12.134176Z, approximately51 seconds
+later. Its first repeated, closed-window reads found120842 without SimPerson in
+both worlds, only EcsOctreeNode; it completed immediately,2 accepted samples and
+0 rejections. Original home75531 and target78804 still had building components.
+This establishes a later absence following the precisely observed cleared-home
+state. It does not time the removal, establish a32-callback latency bound, prove
+arrival, or identify the exact native redevelopment/removal call. No additional
+switch was performed. The earlier run's unidentified passenger remains unknown.
+
+SHA-256:
+
+- `tpf-bridge-308-19903924.log`:
+  `b2af1ec92d8a2dca87979468f4062864126ddb5b76ac06f36695a2139b7f43f2`.
+- `home-clear-followup.jsonl`:
+  `30b7de26d12e62f0b17027b71005d42aab64f152e3fcd4b2c048c397d6597b75`.
+- `live-audit.json`:
+  `f544d744a157fd8f28ed57772b892493a25db764cf246c4da6a3fccae4d01673`.
+
+All watchers/readers have ended; the user was told the game may be paused/closed.
+No save or installed game file was modified by our tools. Prepared0.7.4
+(commit4d6e70a) handles exactly this pending state, with passing fixtures and a
+32-callback timeout. It is **not loaded or live-validated**. Next validate the
+pending→both-world removal→later distinct-passenger switch sequence in a fresh
+bounded run; never expand the grace or attempt limit merely to obtain a pass.

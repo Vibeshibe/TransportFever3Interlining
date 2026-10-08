@@ -1,5 +1,36 @@
 # Session handoff — 2026-10-08
 
+## Latest result — exact home=-1 trigger captured; capture ended
+
+0.7.3 diagnostic build (a864a5e), loaded build-v7d-identity-log, stopped at7909:
+**person120842, world1, expected_home75531, observed_home-1, destinations
+[-1,78804,-1], target78804 unchanged, removedmask0**. Four switches/boardings;
+three original arrivals:122261→72934 at2444/2445;40365→86033 at4537/4540;
+123348→72220 at7371/7372.120842 arrival unobserved. No fifth switch, lifecycle
+resolution or resumption; continuation is still unproven. query_errors0.
+
+Watcher89335 exited0 at17:34:21.006802Z. A read-only copied follow-up started
+17:35:12.134176Z (~51sec later) and immediately confirmed120842 is now only
+EcsOctreeNode in BOTH worlds. Original75531/78804 still buildings. This does NOT
+measure removal latency or prove it fits32 callbacks, nor attribute natural cause.
+All reader/test/Ghidra/watcher processes ended. User told game may be paused/closed.
+Original DLL remains mapped but forwards only. Never inject a second build here.
+
+Last process Linux82918/start1979449 / Windows308, worlds1/2
+0x37a25410/0x37a260d0, thread592; expire on restart/reload. Metadata live-run.json.
+Evidence under ignored build-v7d-identity-log:
+- log19903924 SHA256 b2af1ec92d8a2dca87979468f4062864126ddb5b76ac06f36695a2139b7f43f2
+- home-clear-followup.jsonl SHA256 30b7de26d12e62f0b17027b71005d42aab64f152e3fcd4b2c048c397d6597b75
+- live-audit.json SHA256 f544d744a157fd8f28ed57772b892493a25db764cf246c4da6a3fccae4d01673
+
+**Next: live-test prepared0.7.4**, commit4d6e70a already pushed, build-v7e NOT loaded.
+Requires fresh game restart and correct before_multi_passenger baseline. No new
+restart has been requested yet. Validate home-pending→both-world removal within
+32 callbacks→a later different-person switch. Existing policy/limits and reserve
+remain. Do not expand grace/cap automatically. Full details in
+[home-clear handling](../../docs/home-clear-handling.md) and continuation guide.
+The historical running sections below describe startup only; capture is FINISHED.
+
 ## Cleared-home implementation prepared — NOT loaded
 
 Version0.7.4 build-v7e adds a32-callback pending state for exactly home=-1 after
@@ -13,10 +44,11 @@ Mutable DLL7f136927850b…; full hashes/evidence in
 
 Static function140b33470 explicitly removes when first destination(home)=-1.
 This supports the bounded observation policy but does not prove the previous
-identity stop's exact person/value. Current diagnostic run selected40365 instead
-of120770, so it has not reproduced that stop. Current run still uses0.7.3 below.
+identity stop's exact person/value. Diagnostic run selected40365 instead
+of120770; it later caught the same guard for120842 with home=-1 (latest result
+above). It used0.7.3 only;0.7.4 remains fixture-tested.
 
-## Identity diagnostic capture running (latest)
+## Identity diagnostic startup (historical; finished above)
 
 User restarted and loaded the correct before_multi_passenger baseline paused.
 Fresh Linux82918/start1979449 / Windows308. Stdout load17:05:36Z, ready17:06:27Z;
@@ -29,7 +61,7 @@ External monitor65191 ended exit0 at600sec,17:18:36.890100Z (11,271 world
 samples/13 rejections).120770 lost SimPerson with home87062 Scaffold in both
 worlds at17:14:22Z, WITHOUT being switched in this run. No transient home value
 was captured. Identity-transition.jsonl hash1769b6c3412e… recorded in new guide.
-Native watcher89335 remains active. Never reuse prior process/worlds below.
+Native watcher89335 has since finished as recorded above. Never reuse prior process/worlds below.
 
 This build adds precise identity-stop logs only; all policy/limits unchanged.
 Monitor pilot_identity_error for passenger/home/sequence/world, then preserve

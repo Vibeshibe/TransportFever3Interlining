@@ -130,3 +130,8 @@ Version0.7.4 prepared and fixture-tested: a cleared home pauses new proposals fo
 up to32 callbacks awaiting confirmed removal; unknown changes still stop. Not
 loaded. See [cleared-home policy](../../docs/home-clear-handling.md). The separate
 0.7.3 diagnostic capture remains active; avoid mixing build outcomes.
+
+Diagnostic capture finished at7909:120842 home75531→-1, target78804 retained;
+later both-world absence confirmed. Four boardings/three original arrivals; no
+fifth or continuation.0.7.4 is prepared (4d6e70a), requires fresh live validation
+of its32-callback pending-removal window. All watchers/readers ended.

@@ -52,9 +52,9 @@ permanent errors, excluded IDs and final-callback behavior. Host batch/failure
 and both DLL compatibility suites also pass. Peak fixture usage remains40/64
 queries. Build warnings are errors.
 
-Prepared in ignored `analysis/native-bridge/build-v7e/`; **not loaded**. The game
-continues running the separate0.7.3 diagnostic build. Do not rebuild either loaded
-artifact or infer live validation from these fixtures.
+Prepared in ignored `analysis/native-bridge/build-v7e/` (commit4d6e70a); **not loaded**.
+The separate0.7.3 diagnostic capture has now stopped; its DLL remains mapped
+until game exit. Do not infer live validation from these fixtures.
 
 SHA-256 evidence:
 
@@ -69,4 +69,16 @@ SHA-256 evidence:
 The external monitor ended at its600-second bound,17:18:36.890100Z:11,271 accepted
 world samples and13 read rejections. Repeated copied reads are observational,
 not atomic. The native diagnostic trial remains separately bounded at18,000
-callbacks; its final outcome belongs in the continuation record.
+callbacks; its final outcome is in the continuation record below.
+
+
+## Subsequent live diagnostic confirms the pending state
+
+The diagnostic build stopped at7909 on120842: home75531→-1, destination slots
+`[-1,78804,-1]`, target78804 unchanged, both-world boarding already confirmed.
+This matches the new pending-state gate. A copied follow-up approximately51sec
+later found no SimPerson in either world. The native removal time and whether it
+fits within32 callbacks remain unknown;0.7.4 still needs a live trial. No natural
+cause or original arrival is inferred from absence. The run recorded four
+boardings and three original arrivals, with no fifth switch. All watchers ended.
+See [complete diagnostic evidence and hashes](lifecycle-continuation.md#diagnostic-outcome--exact-cleared-home-state-captured).

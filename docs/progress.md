@@ -797,6 +797,19 @@ still observed120770 removed alongside home construction without switching that
 passenger, but missed any transient home value. External monitor finished at600sec;
 native trial continues. See [evidence and implementation](home-clear-handling.md).
 
+## 2026-10-08 — Exact cleared-home trigger confirmed
+
+Diagnostic capture stopped at7909 on120842: expected home75531 became-1 while
+slots[-1,78804,-1] and target78804 retained the original work destination. Four
+switches boarded;122261,40365 and123348 reached original destinations. No fifth
+switch, query errors or confirmed lifecycle resolution. A read-only follow-up
+~51sec later found120842 without SimPerson in both worlds. Removal latency and
+cause remain unmeasured; the32-callback allowance is not live-validated.
+
+All watchers/readers ended. The prepared0.7.4 implementation exactly addresses
+this pending state and is pushed as4d6e70a, but is not loaded. Next is its bounded
+live test. Complete sequences/hashes in [continuation evidence](lifecycle-continuation.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
