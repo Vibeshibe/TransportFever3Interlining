@@ -621,6 +621,22 @@ exit metadata, both backup save hashes/sizes, Git object integrity and diff hygi
 The completed test survived; no replay was needed. Final documentation and handoff
 were recovered from working files. [Evidence and hashes](save-reload-trial.md).
 
+## 2026-10-08 — Prepare a five-passenger trial
+
+Preserved and verified the user's expanded signalling/bus feeder save, with
+40+ waiting passengers reported. Implemented version 0.7.0 with an explicit
+1–5 passenger build cap (default one), a cross-world/client attempted-ID ledger,
+one engine attempt per dispatch and fail-closed postcondition handling. The
+consumer waits for confirmed expected boarding in both worlds before the next
+switch, independently tracks original destinations, and reports incomplete runs.
+S1↔S3 adjacent-leg eligibility is unchanged. No bus/platform/through-leg expansion.
+
+All existing native suites, new host/consumer multi-passenger regressions and
+observer binary contract tests passed. Added final-callback no-new-proposal test;
+invalid passenger cap inputs reject. Expanded baseline and build hashes, commands,
+limits and preflight are in [the trial record](multi-passenger-trial.md).
+Live validation is pending at this implementation checkpoint.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

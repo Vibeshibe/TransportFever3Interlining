@@ -7,10 +7,14 @@
 #include "../src/interlining/native_candidate.h"
 static tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)};
 static tfx_api_v6 changes_api = {.v5.v4.v3.v2.base.struct_size = sizeof(changes_api)};
-static uint64_t change_ticket;
-static int32_t changed_person = -1, expected_destination = -1;
-static uint32_t result_logged, arrived_worlds, onboard_worlds, pilot_done;
-static tfx_person_journey last_journey[4];
+typedef struct pilot_passenger {
+    uint64_t ticket;
+    int32_t person, destination, line, vehicle, boarding_stop, alighting_stop;
+    uint32_t result_logged, arrived_worlds, onboard_worlds;
+    tfx_person_journey last_journey[4];
+} pilot_passenger;
+static pilot_passenger passengers[TFX_PASSENGER_LIMIT];
+static uint32_t passenger_count, pilot_done, summary_logged;
 static void (*log_line)(const char *);
 static int32_t scan_cursor, people[32], vehicles[16];
 static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor, person_replacement_cursor;
@@ -62,42 +66,85 @@ static tfx_status revalidate(tfx_context context, const tfx_waiting_leg_change *
     return TFX_OK;
 }
 
-static void track_change(tfx_context context) {
+static int selected_person(int32_t person) {
+    for (unsigned i = 0; i < passenger_count; ++i)
+        if (passengers[i].person == person) return 1;
+    return 0;
+}
+static int boarding_pending(void) {
+    for (unsigned i = 0; i < passenger_count; ++i)
+        if (!passengers[i].result_logged || passengers[i].onboard_worlds != 3u) return 1;
+    return 0;
+}
+static void summary(const char *reason) {
+    if (summary_logged) return;
+    summary_logged = 1;
     char text[384];
-    if (!result_logged) {
+    snprintf(text, sizeof(text), "pilot_summary reason=%s staged=%u passenger_limit=%u people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u\n",
+        reason, passenger_count, (unsigned)TFX_PASSENGER_LIMIT, person_count, vehicle_count, ready, attempts, accepted, failures);
+    log_line(text);
+    for (unsigned i = 0; i < passenger_count; ++i) {
+        const pilot_passenger *p = &passengers[i];
+        snprintf(text, sizeof(text), "pilot_passenger_summary person=%d destination=%d ticket=%llu result_logged=%u onboard_world_mask=%u destination_world_mask=%u\n",
+            p->person, p->destination, (unsigned long long)p->ticket, p->result_logged, p->onboard_worlds, p->arrived_worlds);
+        log_line(text);
+    }
+    for (unsigned i = 0; i < IT_REASON_COUNT; ++i) if (reasons[i]) {
+        snprintf(text, sizeof(text), "candidate_reason name=%s count=%u\n", it_reason_name((it_reason)i), reasons[i]);
+        log_line(text);
+    }
+}
+static void stop(const char *reason) { pilot_done = 1; summary(reason); }
+static void track_change(tfx_context context, pilot_passenger *p, uint64_t sequence) {
+    char text[384];
+    if (!p->result_logged) {
         tfx_change_result result = {.struct_size = sizeof(result)};
-        tfx_status status = changes_api.read_change_result(context, change_ticket, &result);
+        tfx_status status = changes_api.read_change_result(context, p->ticket, &result);
         if (status != TFX_OK) { error("change_result", status); return; }
         if (result.status == TFX_PENDING) return;
         snprintf(text, sizeof(text), "pilot_result ticket=%llu status=%u engine_attempted=%u person=%d\n",
-            (unsigned long long)change_ticket, result.status, result.engine_attempted, result.person);
-        log_line(text); result_logged = 1;
-        if (result.status != TFX_OK) { pilot_done = 1; return; }
+            (unsigned long long)p->ticket, result.status, result.engine_attempted, result.person);
+        log_line(text); p->result_logged = 1;
+        if (result.status != TFX_OK || result.engine_attempted != 1 || result.person != p->person) {
+            stop("change_rejected_or_failed"); return;
+        }
     }
     tfx_person_journey journey = {.struct_size = sizeof(journey)};
-    tfx_status status = changes_api.read_person_journey(context, changed_person, &journey);
-    if (status != TFX_OK) { error("journey", status); if (failures >= 8) pilot_done = 1; return; }
-    if (!journey.world_id || journey.world_id > 4) { error("world_id", TFX_INVALID_STATE); return; }
-    unsigned index = journey.world_id - 1;
-    if (journey.flags & TFX_JOURNEY_ONBOARD) onboard_worlds |= 1u << index;
-    if ((journey.flags & TFX_JOURNEY_AT_BUILDING) && journey.destination == expected_destination &&
-        (onboard_worlds & (1u << index))) arrived_worlds |= 1u << index;
-    if ((last_journey[index].flags & TFX_JOURNEY_ONBOARD) && !(journey.flags & TFX_JOURNEY_ONBOARD)) {
+    tfx_status status = changes_api.read_person_journey(context, p->person, &journey);
+    if (status != TFX_OK) { error("journey", status); return; }
+    /* This research trial expects exactly the two known replica worlds. */
+    if (!journey.world_id || journey.world_id > 2 || journey.person != p->person) {
+        stop("unexpected_world_or_person"); return;
+    }
+    unsigned index = journey.world_id - 1, bit = 1u << index;
+    if (p->arrived_worlds & bit) return; /* Do not mistake a subsequent trip for this journey. */
+    if (journey.destination != p->destination) { stop("destination_changed_before_arrival"); return; }
+    if (!(p->onboard_worlds & bit) && journey.flags == TFX_JOURNEY_ONBOARD) {
+        if (journey.line != p->line || journey.vehicle != p->vehicle ||
+            journey.boarding_stop != p->boarding_stop || journey.alighting_stop != p->alighting_stop) {
+            stop("unexpected_first_boarding"); return;
+        }
+        p->onboard_worlds |= bit;
+        if (p->onboard_worlds == 3u) {
+            snprintf(text, sizeof(text), "pilot_boarded_both person=%d vehicle=%d sequence=%llu\n",
+                p->person, p->vehicle, (unsigned long long)sequence);
+            log_line(text);
+        }
+    }
+    if (journey.flags == TFX_JOURNEY_AT_BUILDING && (p->onboard_worlds & bit)) p->arrived_worlds |= bit;
+    if ((p->last_journey[index].flags & TFX_JOURNEY_ONBOARD) && !(journey.flags & TFX_JOURNEY_ONBOARD)) {
         tfx_vehicle vehicle = {.struct_size = sizeof(vehicle)};
-        tfx_status vehicle_status = api.v4.v3.read_vehicle(context, last_journey[index].vehicle, &vehicle);
-        snprintf(text, sizeof(text), "pilot_left_vehicle world_id=%u vehicle=%d expected_alighting=%d vehicle_query_status=%u current_line=%d current_stop=%d\n",
-            journey.world_id, last_journey[index].vehicle, last_journey[index].alighting_stop,
+        tfx_status vehicle_status = api.v4.v3.read_vehicle(context, p->last_journey[index].vehicle, &vehicle);
+        snprintf(text, sizeof(text), "pilot_left_vehicle person=%d world_id=%u vehicle=%d expected_alighting=%d vehicle_query_status=%u current_line=%d current_stop=%d\n",
+            p->person, journey.world_id, p->last_journey[index].vehicle, p->last_journey[index].alighting_stop,
             vehicle_status, vehicle_status == TFX_OK ? vehicle.line : -1, vehicle_status == TFX_OK ? vehicle.stop_index : -1);
         log_line(text);
     }
-    if (memcmp(&journey, &last_journey[index], sizeof(journey))) {
-        snprintf(text, sizeof(text), "pilot_journey world_id=%u person=%d flags=%u destination=%d line=%d stops=%d,%d vehicle=%d\n",
-            journey.world_id, journey.person, journey.flags, journey.destination, journey.line,
+    if (memcmp(&journey, &p->last_journey[index], sizeof(journey))) {
+        snprintf(text, sizeof(text), "pilot_journey sequence=%llu world_id=%u person=%d flags=%u destination=%d line=%d stops=%d,%d vehicle=%d\n",
+            (unsigned long long)sequence, journey.world_id, journey.person, journey.flags, journey.destination, journey.line,
             journey.boarding_stop, journey.alighting_stop, journey.vehicle);
-        log_line(text); last_journey[index] = journey;
-    }
-    if ((arrived_worlds & 3u) == 3u) {
-        log_line("pilot_complete destination_building_observed_in_both_worlds=1\n"); pilot_done = 1;
+        log_line(text); p->last_journey[index] = journey;
     }
 }
 int tfx_pilot_complete(void) { return pilot_done != 0; }
@@ -118,8 +165,10 @@ static void evaluate(tfx_context context, uint64_t sequence) {
         status = api.v4.v3.v2.read_line_stop(context, v.line, v.stop_index, &arriving);
         if (status != TFX_OK) { error("arriving_stop", status); return; }
         uint32_t samples = person_count < 8 ? person_count : 8, attempted = 0;
-        for (uint32_t j = 0; j < samples && attempted < 2; ++j) {
+        int staged = 0;
+        for (uint32_t j = 0; j < samples && attempted < 1; ++j) {
             uint32_t pi = person_cursor++ % person_count;
+            if (selected_person(people[pi])) continue;
             tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
             status = api.v4.v3.v2.read_waiting_leg(context, people[pi], &leg);
             if (status == TFX_NOT_FOUND) continue;
@@ -136,7 +185,7 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             ++attempts; ++reasons[proposal.reason];
             if (proposal.reason == IT_CANDIDATE) ++accepted;
             /* Baseline S1/S3 in either direction on the same shared adjacent leg. */
-            if (!change_ticket && proposal.reason == IT_CANDIDATE &&
+            if (passenger_count < TFX_PASSENGER_LIMIT && proposal.reason == IT_CANDIDATE &&
                 ((proposal.expected.line == 98278 && proposal.proposed_line == 97743) ||
                  (proposal.expected.line == 97743 && proposal.proposed_line == 98278)) &&
                 proposal.expected.boarding_stop == 1 && proposal.expected.alighting_stop == 2) {
@@ -145,14 +194,18 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                     .line = proposal.proposed_line, .boarding_stop = proposal.boarding_stop,
                     .alighting_stop = proposal.alighting_stop, .candidate_vehicle = proposal.proposed_vehicle,
                     .revalidate = revalidate};
-                status = changes_api.request_waiting_leg_change(context, &request, &change_ticket);
-                if (status != TFX_OK) { error("request_change", status); return; }
-                changed_person = leg.person; expected_destination = leg.destination;
-                char staged[160]; snprintf(staged, sizeof(staged), "pilot_staged ticket=%llu person=%d sequence=%llu\n",
-                    (unsigned long long)change_ticket, changed_person, (unsigned long long)sequence);
-                log_line(staged);
+                pilot_passenger *p = &passengers[passenger_count];
+                status = changes_api.request_waiting_leg_change(context, &request, &p->ticket);
+                if (status != TFX_OK) { error("request_change", status); stop("request_rejected"); return; }
+                p->person = leg.person; p->destination = leg.destination;
+                p->line = request.line; p->vehicle = request.candidate_vehicle;
+                p->boarding_stop = request.boarding_stop; p->alighting_stop = request.alighting_stop;
+                ++passenger_count; staged = 1;
+                char message[192]; snprintf(message, sizeof(message), "pilot_staged ticket=%llu person=%d sequence=%llu ordinal=%u passenger_limit=%u\n",
+                    (unsigned long long)p->ticket, p->person, (unsigned long long)sequence, passenger_count, (unsigned)TFX_PASSENGER_LIMIT);
+                log_line(message);
             }
-            if (logged >= 80 || last_reason[pi][vi] == (unsigned char)(proposal.reason + 1)) continue;
+            if (!staged && (logged >= 80 || last_reason[pi][vi] == (unsigned char)(proposal.reason + 1))) continue;
             last_reason[pi][vi] = (unsigned char)(proposal.reason + 1);
             char text[768];
             snprintf(text, sizeof(text),
@@ -164,38 +217,53 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                 proposal.boarding_station, proposal.boarding_terminal, proposal.alighting_station,
                 proposal.alighting_terminal, proposal.observed_places_left, proposal.requires_engine_revalidation);
             log_line(text); ++logged;
-            if (change_ticket) return;
+            if (staged) return;
         }
-        return; /* At most one ready vehicle / two validations per callback. */
+        return; /* At most one ready vehicle / one validation per callback. */
     }
 }
 static void sample(tfx_context context, void *unused) {
     (void)unused;
+    if (pilot_done) return;
     tfx_observation observation = {.struct_size = sizeof(observation)};
-    if (api.v4.v3.v2.base.read_observation(context, &observation) != TFX_OK) return;
-    if (change_ticket) { track_change(context); return; }
-    if (failures < 8) {
-        discover(context, observation.dispatch_sequence);
-        if (failures < 8) evaluate(context, observation.dispatch_sequence);
+    if (api.v4.v3.v2.base.read_observation(context, &observation) != TFX_OK) {
+        stop("observation_unavailable"); return;
     }
-    if (observation.dispatch_sequence == TFX_OBSERVATION_LIMIT) {
-        char text[256];
-        snprintf(text, sizeof(text), "candidate_summary people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u\n",
-            person_count, vehicle_count, ready, attempts, accepted, failures);
-        log_line(text);
-        for (unsigned i = 0; i < IT_REASON_COUNT; ++i) if (reasons[i]) {
-            snprintf(text, sizeof(text), "candidate_reason name=%s count=%u\n", it_reason_name((it_reason)i), reasons[i]);
-            log_line(text);
-        }
+    uint64_t sequence = observation.dispatch_sequence;
+    /* Separate tracking and discovery budgets. Paired callback phases cover both
+     * alternating worlds; a pending boarding is tracked on EVERY callback. */
+    if (passenger_count && (boarding_pending() || passenger_count == TFX_PASSENGER_LIMIT ||
+            (sequence / 2) % 2 == 0 || sequence == TFX_OBSERVATION_LIMIT)) {
+        for (unsigned i = 0; i < passenger_count && !pilot_done; ++i)
+            track_change(context, &passengers[i], sequence);
+        unsigned arrived = 0;
+        for (unsigned i = 0; i < passenger_count; ++i) arrived += passengers[i].arrived_worlds == 3u;
+        if (!pilot_done && arrived == TFX_PASSENGER_LIMIT) stop("all_destinations_observed");
+    } else if (failures < 8 && sequence < TFX_OBSERVATION_LIMIT) {
+        discover(context, sequence);
+        if (failures < 8) evaluate(context, sequence);
     }
+    if (!pilot_done && failures >= 8) stop("query_errors");
+    if (!pilot_done && sequence == TFX_OBSERVATION_LIMIT) stop("callback_limit");
 }
 tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
+    if (!write_line) return TFX_INVALID_ARGUMENT;
     log_line = write_line;
+    passenger_count = pilot_done = summary_logged = 0;
+    scan_cursor = 0;
+    person_count = vehicle_count = vehicle_cursor = person_cursor = person_replacement_cursor = 0;
+    failures = attempts = accepted = logged = ready = 0;
+    memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
+    memset(last_reason, 0, sizeof(last_reason));
+    char text[160];
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1\n",
+        (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT);
+    log_line(text);
     tfx_status status = tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base);
     if (status != TFX_OK) return status;
     status = tfx_get_api(TFX_CHANGE_ABI_VERSION, &changes_api.v5.v4.v3.v2.base);
     if (status != TFX_OK) return status;
-    tfx_client client = {.struct_size = sizeof(client), .id = "research.interlining-one-passenger",
+    tfx_client client = {.struct_size = sizeof(client), .id = "research.interlining-bounded",
         .before_terminal_selection = sample};
     return api.v4.v3.v2.base.register_client(&client);
 }

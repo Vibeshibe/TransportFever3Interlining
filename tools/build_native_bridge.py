@@ -23,7 +23,11 @@ def main():
     parser.add_argument("--observe-destination", type=int, help="original destination ID for the observer")
     parser.add_argument("--observation-limit", type=int, default=3600,
                         help="pilot callback cap, 1..36000 (default: 3600); observer remains at 3600")
+    parser.add_argument("--passenger-limit", type=int, default=1,
+                        help="distinct passenger attempt cap, 1..5 (default: 1)")
     args = parser.parse_args()
+    if not 1 <= args.passenger_limit <= 5:
+        parser.error("--passenger-limit must be between 1 and 5")
     if not 1 <= args.observation_limit <= 36000:
         parser.error("--observation-limit must be between 1 and 36000")
     observer = (args.observe_person, args.observe_destination)
@@ -55,6 +59,7 @@ def main():
         "-DCMAKE_SYSTEM_NAME=Windows", f"-DCMAKE_C_COMPILER={compiler}",
         f"-DCMAKE_ASM_COMPILER={compiler}", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
         f"-DTFX_PILOT_OBSERVATION_LIMIT={args.observation_limit}",
+        f"-DTFX_PILOT_PASSENGER_LIMIT={args.passenger_limit}",
         f"-DTFX_OBSERVE_PERSON={args.observe_person if args.observe_person is not None else ''}",
         f"-DTFX_OBSERVE_DESTINATION={args.observe_destination if args.observe_destination is not None else ''}",
     ], check=True)

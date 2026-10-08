@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <string.h>
 #include "host.h"
+#include "probe_limits.h"
 
 static SRWLOCK lock = SRWLOCK_INIT;
 static tfx_client clients[TFX_MAX_CLIENTS];
@@ -22,7 +23,14 @@ static struct {
 } changes[CHANGE_HISTORY];
 static uint64_t ticket_counter, pending[TFX_MAX_CLIENTS];
 static uint32_t pending_count, engine_attempts;
-static int applying;
+static int applying, mutation_failed;
+/* IDs, not world-specific pointers: replicated passengers share identity. */
+static int32_t attempted_people[TFX_PASSENGER_LIMIT];
+static int person_attempted(int32_t person) {
+    for (unsigned i = 0; i < engine_attempts; ++i)
+        if (attempted_people[i] == person) return 1;
+    return 0;
+}
 static char current_client[TFX_CLIENT_ID_SIZE];
 static tfx_apply_change current_writer;
 static void *writer_user;
@@ -177,7 +185,8 @@ static tfx_status request_waiting_leg_change(tfx_context context, const tfx_wait
     if (status != TFX_OK) goto done;
     if (applying) { status = TFX_BUSY; goto done; }
     if (!current_writer) { status = TFX_QUERY_UNAVAILABLE; goto done; }
-    if (engine_attempts || pending_count == TFX_MAX_CLIENTS || ticket_counter == UINT64_MAX) {
+    if (mutation_failed || engine_attempts >= TFX_PASSENGER_LIMIT ||
+        person_attempted(request->expected.person) || pending_count == TFX_MAX_CLIENTS || ticket_counter == UINT64_MAX) {
         status = TFX_LIMIT_REACHED; goto done;
     }
     if (request->dispatch_sequence != sequence) { status = TFX_EXPECTED_STATE_CHANGED; goto done; }
@@ -306,10 +315,13 @@ tfx_status tfx_dispatch_with_writer(uint32_t delta_seconds_bits, tfx_reader *rea
     }
     /* No engine operation runs while a consumer is gathering its snapshot. */
     applying = 1;
+    uint32_t dispatch_attempts = 0;
     for (unsigned i = 0; i < pending_count; ++i) {
         unsigned slot = (unsigned)(pending[i] % CHANGE_HISTORY);
         if (changes[slot].result.status != TFX_PENDING) continue;
-        tfx_status status = engine_attempts ? TFX_LIMIT_REACHED : TFX_OK;
+        tfx_status status = mutation_failed || engine_attempts >= TFX_PASSENGER_LIMIT ||
+            person_attempted(changes[slot].request.expected.person) || dispatch_attempts
+            ? TFX_LIMIT_REACHED : TFX_OK;
         if (status == TFX_OK) {
             AcquireSRWLockExclusive(&lock);
             current_token = ++token_counter;
@@ -324,8 +336,13 @@ tfx_status tfx_dispatch_with_writer(uint32_t delta_seconds_bits, tfx_reader *rea
         uint32_t attempted = 0;
         if (status == TFX_OK)
             status = current_writer(reader, &changes[slot].request, changes[slot].raw, &attempted, writer_user);
-        /* Burn the process-wide allowance even if a postcondition failed. */
-        if (attempted) ++engine_attempts;
+        /* At most one engine attempt per dispatch, and once per person across
+         * worlds/clients. An uncertain postcondition blocks ALL later writes. */
+        if (attempted) {
+            attempted_people[engine_attempts++] = changes[slot].request.expected.person;
+            ++dispatch_attempts;
+            if (status != TFX_OK) mutation_failed = 1;
+        }
         changes[slot].result.status = status;
         changes[slot].result.engine_attempted = attempted;
     }

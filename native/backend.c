@@ -170,10 +170,10 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
 #ifdef TFX_OBSERVE_PERSON
     const char *mode = "read-only journey observer";
 #else
-    const char *mode = "one passenger change maximum";
+    const char *mode = "bounded passenger changes";
 #endif
     char banner[192];
-    snprintf(banner, sizeof(banner), "TPF shared bridge 0.6.4; %s; limit=%u; ABI=1,2,3,4,5,6\n",
+    snprintf(banner, sizeof(banner), "TPF shared bridge 0.7.0; %s; limit=%u; ABI=1,2,3,4,5,6\n",
         mode, (unsigned)TFX_OBSERVATION_LIMIT);
     log_line(banner);
     tfx_status status = TFX_UNSUPPORTED_BUILD;

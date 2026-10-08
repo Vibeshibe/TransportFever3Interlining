@@ -75,3 +75,8 @@ observers ran after restart. This supplies one checkpoint/transfer case, not
 blanket save compatibility or measured journey-time improvement. The next
 implementation milestone is a small bounded multi-passenger trial with fresh
 validation and duplicate-selection protection across worlds.
+
+Version 0.7.0 implements the bounded multi-passenger milestone with an explicit
+1–5 person cap (default one), host deduplication/failure latch, and consumer
+boarding/arrival tracking. Offline tests pass; live results are tracked in
+[the multi-passenger trial](../../docs/multi-passenger-trial.md).

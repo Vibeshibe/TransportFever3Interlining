@@ -1,6 +1,18 @@
 # Session handoff — 2026-10-08
 
-## Current outcome and recovery
+## Active work — five-passenger trial
+
+Version 0.7.0 is prepared in `analysis/native-bridge/build-v7a`, ABI 6 unchanged,
+`--passenger-limit 5 --observation-limit 18000`. Offline host/consumer/native tests
+passed. See [the trial record](../../docs/multi-passenger-trial.md) for bounds,
+commands, artifact hashes and remaining live validation. Expanded baseline backed
+up under `analysis/baselines/ce2e02d935da/`; user reports 40+ waiting people and
+confirmed restarted, loaded and paused. Preflight Linux26846 / Windows312 had no
+old bridge mapped. At this checkpoint loading is pending; do not claim live success.
+The host now permits an explicit bounded count, with once-per-person ledger and
+failure latch; older one-attempt descriptions below refer to completed 0.6 trials.
+
+## Previous outcome and recovery
 
 **Save/restart validation completed successfully.** Passenger **106847** switched
 from S1 to S3 over Wimborne→Melksham, was saved onboard, retained that state after

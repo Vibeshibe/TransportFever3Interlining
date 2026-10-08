@@ -1,8 +1,10 @@
-# Shared native bridge — experimental one-passenger pilot
+# Shared native bridge — bounded passenger pilot
 
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
-**Version 0.6 can change one passenger in the disposable baseline.** The native
+**Version 0.7 supports a build-time cap of 1–5 distinct passengers.**
+The default remains one; multi-passenger live validation is tracked in
+[the trial record](../docs/multi-passenger-trial.md). The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 
@@ -28,15 +30,16 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 directory and restart the game before testing a changed bridge.
 
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
-`candidate_tests.exe`, `journey_probe_tests.exe`, `journey_snapshot.exe`,
+`candidate_tests.exe`, `host_batch_tests.exe`, `pilot_tests.exe`,
+`journey_probe_tests.exe`, `journey_snapshot.exe`,
 `boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
 There is no production switch that bypasses executable verification.
 
 For sparse demand, `--observation-limit 18000` builds a pilot with a longer
 capture window; accepted values are 1–36,000 and the default remains 3,600.
-This changes only the callback cap for `tpf_shared_bridge.dll`. The one-attempt
-allowance, route checks and per-callback query limits stay unchanged. The optional
+This changes only the callback cap for `tpf_shared_bridge.dll`; it does not
+increase the passenger allowance. Route checks and per-callback budgets remain bounded. The optional
 read-only observer retains its own 3,600-callback cap. The configured cap is logged
 at startup. Build in a new directory and restart before loading a revised DLL.
 
@@ -72,19 +75,34 @@ may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It serializes no private state; changes
 to native passenger components are part of the game state. One onboard checkpoint
 and native onward transfer survived restart in [the save/reload trial](../docs/save-reload-trial.md).
-Version 0.6.4 registers `research.interlining-one-passenger`, which uses the same
-bounded discovery as the earlier read-only candidate client.
-It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
-vehicle IDs, replacing older person IDs as newly scanned people arrive once the
-32-entry allowance is full. Every eligibility check reads current state again.
-It checks up to four vehicles for a ready loading state. For one
-ready vehicle it considers up to eight remembered people and performs at most
-two complete candidate validations. It logs up to 80 changed results and prints
-aggregate rejection counts if discovery reaches the limit. Once the first eligible
-S1↔S3 adjacent Wimborne→Melksham proposal is staged, discovery stops and the
-consumer tracks its result and journey in each world. The pilot ends early after
-boarding and original-destination building presence in both worlds. Eight query
-errors stop discovery/tracking.
+Version 0.7 registers `research.interlining-bounded`. Build a five-person trial with:
+
+```sh
+rtk proxy python3 tools/build_native_bridge.py --build-dir analysis/native-bridge/NEW_BUILD \
+  --passenger-limit 5 --observation-limit 18000
+```
+
+The consumer scans at most 1,024 masks per discovery callback, remembers 32
+rolling person IDs and 16 vehicle IDs, checks up to four vehicles, and samples
+up to eight people for one ready vehicle. It performs at most one full candidate
+validation plus fresh host revalidation before a write. Tracking and discovery
+use separate callbacks to preserve query budgets.
+
+Eligibility remains S1↔S3, original stops 1→2 (Wimborne→Melksham), with identical
+accessible boarding/alighting terminals and all previous capacity/load checks.
+The next passenger is considered only after the previous passenger boarded the
+expected train, line and leg in both worlds. Selected IDs never re-enter discovery.
+Each journey retains its original destination and is tracked independently through
+native onward travel. The pilot ends on all configured passengers arriving, the
+callback cap, eight query errors, or an unexpected result, boarding or destination.
+A cap with fewer arrivals is an incomplete capture, not a success. Final summaries
+include each passenger's boarding and destination world masks.
+
+Run `host_batch_tests.exe` and `host_batch_tests.exe failure` in separate processes,
+plus `pilot_tests.exe`, alongside the existing suites. These cover multi-person
+host bounds, replica/client duplicate prevention, delayed boarding, fresh capacity,
+tracking and failure stops. `query_tests.exe` still exercises the default one-attempt
+host and actual mutation adapter against copied component fixtures.
 Missing former waiting records are expected after ordinary boarding.
 
 Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
@@ -282,7 +300,12 @@ code loaded until dispatch returns. Query budgets remain shared across this work
 The backend checks the entire staged native waiting value plus destination/place,
 opens a dedicated modification scope and performs notified engine remove/add.
 It closes the scope before original selection. Only three route integers change.
-One engine attempt is permitted per DLL lifetime, including failed postconditions.
+A build-time limit permits 1–5 distinct passenger attempts per DLL lifetime
+(default one). The host allows at most one engine attempt per dispatch, regardless
+of the number of clients. Attempted person IDs are retained across worlds and clients;
+they cannot be changed again, even if a replica still shows old waiting state.
+A failed postcondition latches all subsequent writes shut. These are host guards;
+the consumer additionally waits for both-world boarding before another proposal.
 There is no automatic rollback or retry after starting the engine operation.
 The generic service trusts the consumer's route revalidation; it does not expose
 raw memory writes or choose an alternate service itself.
