@@ -492,6 +492,15 @@
   Live trial is running. [Implementation, hashes and trial record](native-mutation-validation-2026-10-08.md).
   No successful gameplay change is claimed until the runtime result is recorded.
 
+### Trial selection adjustment
+
+The initial live run found valid S3→S1 candidates, excluded solely by the pilot's
+S1→S3 selection filter. No engine change had been attempted when preparing the
+revision. Built version0.6.1 separately under `build-v6b` to allow either S1/S3
+direction on the same adjacent shared leg. Eligibility, mutation operations and
+one-attempt cap are unchanged. User was asked to restart a disposable baseline
+for this revised trial; S2's different platform is retained as a negative control.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

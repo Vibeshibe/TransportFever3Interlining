@@ -97,3 +97,19 @@ Trial pending. Capture is bounded to 3,600 updates and stops early if the target
 is observed at its original destination building after boarding in both worlds.
 No installed Lua probe, shipped game file or save file was modified by the tools.
 The live engine operation, once performed, changes the disposable simulation.
+
+## Follow-up selection revision
+
+The first trial repeatedly observed a valid S3→S1 adjacent candidate (person
+114813 at sequences421 and2045), excluded only by the pilot's directional filter.
+Version0.6.1 permits S1↔S3 on the same adjacent Wimborne→Melksham segment.
+The full validator, mutation backend, request guards and one-attempt allowance
+are unchanged. This is a research-consumer selection change, not broader route
+support. It is built separately as `build-v6b`; the loaded `build-v6` is preserved.
+
+Revision build SHA-256:
+`81acaeacbaacaa59842bb01aac5000fcfd77e11f78c19b2b4a60fe31ce324f70`.
+It compiles with warnings as errors. The native operation, host and query code
+are unchanged from the passing test suites; only the research selection condition
+and version banner changed. User was asked to restart the same disposable baseline
+and retain the platform layout. S2's distinct platform remains a negative control.

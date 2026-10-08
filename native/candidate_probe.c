@@ -126,9 +126,10 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             if (status != TFX_OK) { error("validate", status); return; }
             ++attempts; ++reasons[proposal.reason];
             if (proposal.reason == IT_CANDIDATE) ++accepted;
-            /* First bounded behavior trial: baseline S1 -> S3 shared adjacent leg. */
+            /* Baseline S1/S3 in either direction on the same shared adjacent leg. */
             if (!change_ticket && proposal.reason == IT_CANDIDATE &&
-                proposal.expected.line == 98278 && proposal.proposed_line == 97743 &&
+                ((proposal.expected.line == 98278 && proposal.proposed_line == 97743) ||
+                 (proposal.expected.line == 97743 && proposal.proposed_line == 98278)) &&
                 proposal.expected.boarding_stop == 1 && proposal.expected.alighting_stop == 2) {
                 tfx_waiting_leg_change request = {.struct_size = sizeof(request),
                     .dispatch_sequence = sequence, .expected = proposal.expected,

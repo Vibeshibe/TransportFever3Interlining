@@ -61,14 +61,14 @@ two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.6 registers `research.interlining-one-passenger`, which uses the same
+Version 0.6.1 registers `research.interlining-one-passenger`, which uses the same
 bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
 vehicle IDs, and checks up to four vehicles for a ready loading state. For one
 ready vehicle it considers up to eight remembered people and performs at most
 two complete candidate validations. It logs up to 80 changed results and prints
 aggregate rejection counts if discovery reaches the limit. Once the first eligible
-S1→S3 adjacent Wimborne→Melksham proposal is staged, discovery stops and the
+S1↔S3 adjacent Wimborne→Melksham proposal is staged, discovery stops and the
 consumer tracks its result and journey in each world. The pilot ends early after
 boarding and original-destination building presence in both worlds. Eight query
 errors stop discovery/tracking.

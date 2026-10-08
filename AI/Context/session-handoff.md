@@ -43,6 +43,13 @@ Journey flags use RTTI onboard3cea960, moving3ceaa00, building3ceaa68. Building
 layout is not read; target/at-entity comes from Person+50. Verify resulting runtime
 state, replication, correct alighting and onward travel. Save/reload untested.
 
+Selection follow-up: first run repeatedly found eligible S3→S1 person114813,
+excluded only by the pilot's S1→S3 directional restriction. Revision0.6.1 built
+at `analysis/native-bridge/build-v6b/` permits either S1/S3 direction for the same
+adjacent segment, retaining all eligibility checks and the one-attempt cap.
+User restart request is pending; do not load until their restarted game is ready.
+Use loader `--list` again, not the earlier PID. Preserve the loaded v6 artifact.
+
 ## Previous implementation — 2026-10-07
 
 Bridge **0.5 / ABI 5** adds terminal passenger load/unload flags and entity presence.

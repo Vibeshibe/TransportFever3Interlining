@@ -62,8 +62,8 @@ Build and run `candidate_tests.exe` using the [native instructions](../../native
 
 ## One-passenger native trial
 
-Bridge 0.6 uses the validator in a behavior-changing consumer: the first eligible
-baseline S1→S3 adjacent Wimborne→Melksham proposal is submitted through ABI 6.
+Bridge 0.6.1 uses the validator in a behavior-changing consumer: the first eligible
+baseline S1↔S3 adjacent Wimborne→Melksham proposal is submitted through ABI 6.
 The host stages it until observers finish, invokes the consumer's full validator
 again, compares expected state and applies engine-owned remove/add in a dedicated
 scope. The host allows one engine attempt across all clients/worlds per load.
