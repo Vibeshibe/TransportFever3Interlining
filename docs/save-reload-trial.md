@@ -168,3 +168,39 @@ SHA-256 `04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`.
 The copy hash matched and source size/mtime were unchanged across copying.
 Its manifest records source modification time `2026-10-08T10:45:30.502598+00:00`.
 This preserves demand development; the switched-passenger checkpoint is pending.
+
+## Second switch and onboard checkpoint
+
+At sequence **1119**, the longer trial staged and applied one S1→S3 change for
+person **106847**, vehicle **97913**, shared stops **1→2**, destination **85882**,
+with 39 places remaining. Boarding station 97948 terminal 1 and alighting station
+97294 terminal 0 matched. Original arrival bits `0x2275e0`, destination and waiting
+place were preserved; the engine scope closed. Both worlds subsequently reported
+assigned waiting state and then onboard state on S3. One engine attempt was logged.
+
+User paused and saved `TPF3Interlining_after_switch_01`. Preserved copy:
+`analysis/baselines/f1b92fb2ec15/TPF3Interlining_after_switch_01.sav`, **78,144,391**
+bytes, SHA-256 `f1b92fb2ec1546ce305118464c6ab8f2faab796aedeba06f5efa93fef34146b1`.
+Source modification time: `2026-10-08T10:52:06.310719+00:00`. Source size/mtime
+were stable across copying and the copy hash matched.
+
+One-second read-only snapshots before and after the save handoff reported the
+same onboard state in both worlds: person 106847, S3, stops 1→2, vehicle 97913,
+destination 85882. Both snapshots accepted four repeated-read samples and exited
+3 because the original destination had not yet been reached. This is an onboard
+checkpoint, not a post-arrival save. The snapshots did not alter game state.
+
+Prepared the read-only observer under `analysis/native-bridge/reload-106847/`
+using `--observe-person 106847 --observe-destination 85882`. Build passed with
+warnings as errors; observer tracking tests and the actual DLL contract check
+passed (capabilities 95, unsupported executable refused). The observer retains
+a 3,600-callback limit and links no mutation backend. User was asked to restart
+into the saved checkpoint, paused. Only `tpf_journey_observer.dll` is to be loaded
+after that restart. Save/reload continuation remains pending.
+
+| Artifact under `analysis/native-bridge/` | SHA-256 |
+| --- | --- |
+| `build-v6e/pre-save-106847.log` | `4a132ac00c508db8fc25331aef4213d1620a03e18696167ab0969dda3ecfa6a3` |
+| `build-v6e/post-save-106847.log` | `4a132ac00c508db8fc25331aef4213d1620a03e18696167ab0969dda3ecfa6a3` |
+| `reload-106847/tpf_journey_observer.dll` | `4c904a5ab5b04c9bb0f256a7af6660d638fead19f17976ddda885765b4592662` |
+| `reload-106847/observer-validation.log` | `4c35883775d7c7688a112820b31fe6e7bb04dcba299d8d910e7b1d3135347e3a` |

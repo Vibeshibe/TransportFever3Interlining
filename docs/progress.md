@@ -580,6 +580,21 @@ Linux PID 42420 / Windows PID 312 with `tfx_start=0`. Log
 callback cap and observations in both worlds after user-confirmed unpause.
 Monitoring for a switched passenger and onboard save checkpoint; outcomes pending.
 
+### Second alternate boarding and saved checkpoint
+
+The longer trial switched S1 passenger 106847 to S3 vehicle 97913 at callback
+1,119, preserving destination 85882 and original arrival/waiting place. Both
+worlds reported subsequent boarding. One engine attempt; no query errors reported.
+User paused and saved `TPF3Interlining_after_switch_01`; preserved and verified its
+78,144,391-byte copy under `analysis/baselines/f1b92fb2ec15/`. Read-only snapshots
+around the save handoff both confirm the passenger remains onboard in both worlds.
+
+Built and tested a read-only observer specifically for person 106847/destination
+85882 under `analysis/native-bridge/reload-106847/`. It advertises no mutation
+capability and rejects the unsupported test executable. Requested restart into
+the saved checkpoint, paused, to test continuation without the mutation pilot.
+[Full evidence, hashes and remaining steps](save-reload-trial.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

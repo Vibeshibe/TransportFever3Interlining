@@ -1,22 +1,45 @@
 # Session handoff — 2026-10-08
 
-## Active longer trial
+## Current checkpoint: repeat switch succeeded; reload pending
 
-User confirmed the progressed warm-up save loaded and paused after restart.
-Linux PID 42420 / Windows PID 312 had no previous bridge mapping. Loaded 0.6.4
-from `analysis/native-bridge/build-v6e/tpf_shared_bridge.dll`; `tfx_start=0` and
-startup log confirms limit 18,000. Log:
+The 0.6.4 longer pilot switched person **106847** from S1 (`98278`) to S3
+(`97743`) at sequence **1119**, vehicle **97913**, stops **1→2**, destination
+**85882**, 39 places remaining. Boarding station 97948 terminal 1; alighting
+station 97294 terminal 0. One engine attempt succeeded, preserving arrival bits
+`0x2275e0`, destination and waiting place. Assigned waiting state and then onboard
+state were observed in both engine worlds. Log:
 `analysis/native-bridge/build-v6e/tpf-bridge-312-6954251.log`.
-User confirmed normal-speed unpause; callbacks arrived in both worlds on thread
-600. World 1 is `0x2d2f8580`, world 2 `0x2d2f78c0`. A bounded log watcher is active
-in the current turn. Do not overwrite/reload the DLL or reuse older world addresses.
 
-Preserved warm-up save: `analysis/baselines/04569232cb31/TPF3Interlining_warmup_01.sav`,
-SHA-256 `04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`,
-77,688,477 bytes. Copy hash and source stability checked; manifest beside it.
-This is a progressed baseline, not a switched-passenger save checkpoint.
-Monitor for applied replacement and boarding in both worlds, then ask user to
-pause and save under a new name for the read-only reload test.
+User paused and saved **TPF3Interlining_after_switch_01**. Preserved copy:
+`analysis/baselines/f1b92fb2ec15/TPF3Interlining_after_switch_01.sav`,
+78,144,391 bytes, SHA-256
+`f1b92fb2ec1546ce305118464c6ab8f2faab796aedeba06f5efa93fef34146b1`.
+The source was stable during copying and the copy hash matches. External read-only
+snapshots before/after the save handoff both observed passenger 106847 onboard
+S3 vehicle 97913 in both worlds, destination 85882 unchanged. Logs `pre-save-106847.log`
+and `post-save-106847.log` beside the pilot. Exit 3 means destination not yet reached
+within the one-second snapshots; all four accepted reads agreed on onboard state.
+
+**Next: user was asked to exit/restart, load this after-switch save, and leave it
+paused. Await readiness.** No watcher is currently running. Old process: Linux
+42420 / Windows 312, thread 600, worlds `0x2d2f8580` and `0x2d2f78c0`. Never reuse
+those addresses after restart. The mutation pilot has consumed its sole attempt.
+
+Prepared passenger-specific read-only DLL:
+`analysis/native-bridge/reload-106847/tpf_journey_observer.dll`, SHA-256
+`4c904a5ab5b04c9bb0f256a7af6660d638fead19f17976ddda885765b4592662`.
+Built from current 0.6.4 source with `--observe-person 106847 --observe-destination
+85882`; observer cap is 3,600. Observer fixtures and binary contract passed,
+including capabilities 95 and unsupported-build refusal. **Load this observer,
+not the tpf_shared_bridge.dll also built in that directory.** It has no mutation
+backend. Find fresh Windows PID, load, ask unpause, and monitor first onboard
+state through onward movement and original-destination arrival. Save/reload
+success remains unproven until those observations occur.
+
+Warm-up baseline preserved at
+`analysis/baselines/04569232cb31/TPF3Interlining_warmup_01.sav`, SHA-256
+`04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`, 77,688,477 bytes.
+All save copies/manifests and runtime artifacts remain ignored by Git.
 
 ## Previous repeat capture: complete, no changes
 
@@ -141,8 +164,8 @@ pilot's original stops 1→2 selection and one engine attempt remain unchanged.
 
 ## Next steps
 
-1. Monitor the active 0.6.4 `build-v6e` pilot for an onboard checkpoint;
-   ask for pause/save once both-world boarding is recorded.
+1. Await restarted after-switch save, then load only the passenger-specific
+   read-only observer and verify the saved onboard journey continues.
    Preserve the historical 0.6.1/0.6.2 DLLs and capture logs.
 2. Verify save/reload and repeat controlled replacements before broader rollout.
    No generic boarding/entry/platform trace needs repeating; those facts are proven.
