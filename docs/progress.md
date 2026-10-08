@@ -783,6 +783,20 @@ read monitor corroborates passenger/home changes alongside the native log.
 No policy guard has been relaxed; the home value and final outcome remain pending.
 Metadata and current process details are in the handoff and continuation guide.
 
+## 2026-10-08 — Bounded cleared-home handling prepared
+
+Implemented0.7.4 after static analysis identified native home=-1 removal paths.
+A cleared home pauses proposals for up to32 callbacks; only matching both-world
+removal after confirmed boarding permits continuation. Conflicting identity,
+arrival/invalidation, restored home and timeout remain stops. ABI, native writes,
+route eligibility and attempt limits unchanged. Consumer/reserve/host/contract
+suites pass; max40/64 queries. Build-v7e is NOT loaded.
+
+The current0.7.3 diagnostic run picked40365 instead of120770. Read-only monitoring
+still observed120770 removed alongside home construction without switching that
+passenger, but missed any transient home value. External monitor finished at600sec;
+native trial continues. See [evidence and implementation](home-clear-handling.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

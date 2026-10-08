@@ -125,3 +125,8 @@ Latest0.7.3 live trial: four switches/boardings, then home/identity guard stop;
 no fifth attempt or confirmed lifecycle resolution. Continuation remains unproven.
 Added and fixture-tested precise identity-stop diagnostics, not loaded into game.
 See the continuation guide for the paused snapshot, hashes and next evidence gap.
+
+Version0.7.4 prepared and fixture-tested: a cleared home pauses new proposals for
+up to32 callbacks awaiting confirmed removal; unknown changes still stop. Not
+loaded. See [cleared-home policy](../../docs/home-clear-handling.md). The separate
+0.7.3 diagnostic capture remains active; avoid mixing build outcomes.

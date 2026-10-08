@@ -10,6 +10,7 @@ static uint64_t sequence;
 static unsigned world, staged, boarded[5], arrived[5], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, query_error, wrong_destination;
 static unsigned missing_worlds[6], invalidated_worlds[6], life_error[6];
+static unsigned cleared_home_worlds[6];
 static unsigned lifecycle_calls[6], journey_calls[6];
 static unsigned changed_home, reassigned, bad_identity, baseline_unassigned;
 static tfx_waiting_leg_change requests[5];
@@ -112,6 +113,7 @@ static tfx_status lifecycle(tfx_context c, int32_t id, tfx_person_lifecycle *out
     if (missing_worlds[id - 100] & bit) out->flags = 1; /* ID reused by a non-person entity. */
     if (invalidated_worlds[id - 100] & bit) { out->target = 555; out->destinations[2] = -1; }
     if (reassigned) { out->target = 999; out->destinations[2] = 999; }
+    if (cleared_home_worlds[id - 100] & bit) out->destinations[0] = -1;
     return TFX_OK;
 }
 tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
@@ -136,6 +138,7 @@ static void reset(void) {
     changed_home = reassigned = bad_identity = baseline_unassigned = 0;
     memset(missing_worlds, 0, sizeof(missing_worlds)); memset(invalidated_worlds, 0, sizeof(invalidated_worlds));
     memset(life_error, 0, sizeof(life_error)); memset(lifecycle_calls, 0, sizeof(lifecycle_calls));
+    memset(cleared_home_worlds, 0, sizeof(cleared_home_worlds));
     memset(journey_calls, 0, sizeof(journey_calls));
     memset(boarded, 0, sizeof(boarded)); memset(arrived, 0, sizeof(arrived)); output[0] = 0;
     CHECK(tfx_register_candidate_probe(log_line) == TFX_OK);
@@ -160,6 +163,69 @@ static void stage_until(unsigned count) {
     }
     CHECK(staged == count);
 }
+static void home_clear_tests(void) {
+    first_boarded(); cleared_home_worlds[0] = 2; tick();
+    CHECK(!tfx_pilot_complete() && strstr(output, "pilot_home_pending person=100") &&
+        !strstr(output, "pilot_lifecycle_resolved"));
+    no_capacity = 0; ticks(8); CHECK(staged == 1);
+    cleared_home_worlds[0] = 3; ticks(2); CHECK(staged == 1);
+    missing_worlds[0] = 2; ticks(2); CHECK(staged == 1);
+    missing_worlds[0] = 3; ticks(2);
+    CHECK(!tfx_pilot_complete() && strstr(output, "pilot_lifecycle_resolved person=100") &&
+        strstr(output, "pilot_tracking_resumed"));
+    unsigned reads = lifecycle_calls[0], journeys = journey_calls[0];
+    cleared_home_worlds[0] = missing_worlds[0] = 0; life_error[0] = 1;
+    ticks(10); CHECK(staged == 2 && requests[1].expected.person != 100);
+    CHECK(lifecycle_calls[0] == reads && journey_calls[0] == journeys);
+
+    /* Clearing alone never closes a passenger or releases capacity; the first
+     * callback's deadline must not be refreshed by repeated cleared-home reads. */
+    first_boarded(); cleared_home_worlds[0] = 3; tick(); no_capacity = 0;
+    ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS - 1);
+    CHECK(!tfx_pilot_complete() && staged == 1);
+    tick(); CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=home_clear_timeout") &&
+        strstr(output, "outcome=unresolved home_cleared_world_mask=3") &&
+        !strstr(output, "pilot_lifecycle_resolved"));
+    first_boarded(); cleared_home_worlds[0] = 2; tick();
+    ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS - 1); missing_worlds[0] = 3; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "home_clear_timeout") &&
+        !strstr(output, "pilot_lifecycle_resolved"));
+
+    /* Neither restoration nor a different home can rebase a tracked identity. */
+    first_boarded(); cleared_home_worlds[0] = 2; tick(); cleared_home_worlds[0] = 0; ticks(2);
+    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
+    first_boarded(); cleared_home_worlds[0] = 2; tick(); changed_home = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
+    reset(); tick(); cleared_home_worlds[0] = 3; tick();
+    CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
+    first_boarded(); cleared_home_worlds[0] = 3; wrong_destination = 1; tick();
+    CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
+    first_boarded(); cleared_home_worlds[0] = 3; invalidated_worlds[0] = 3; tick();
+    CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
+
+    /* The other replica must not mix an arrival/invalidation into pending loss. */
+    first_boarded(); cleared_home_worlds[0] = 2; tick(); arrived[0] = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "arrival_lifecycle_disagreement"));
+    first_boarded(); cleared_home_worlds[0] = 2; tick(); invalidated_worlds[0] = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "home_clear_lifecycle_disagreement"));
+    first_boarded(); arrived[0] = 2; tick(); cleared_home_worlds[0] = 1; tick();
+    CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
+
+    /* Every pending passenger must resolve, with no release of permanent errors. */
+    reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
+    cleared_home_worlds[0] = cleared_home_worlds[1] = 3; ticks(4);
+    missing_worlds[0] = 3; ticks(2); no_capacity = 0; ticks(4); CHECK(staged == 2);
+    missing_worlds[1] = 3; ticks(10); CHECK(staged == 3 && strstr(output, "pilot_tracking_resumed"));
+    reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
+    cleared_home_worlds[0] = 3; ticks(4); life_error[1] = 1; tick();
+    missing_worlds[0] = 3; ticks(2); life_error[1] = 0; no_capacity = 0; ticks(10);
+    CHECK(staged == 2 && !strstr(output, "pilot_tracking_resumed"));
+
+    first_boarded(); sequence = TFX_OBSERVATION_LIMIT - 3;
+    cleared_home_worlds[0] = 2; tick(); missing_worlds[0] = 3; ticks(2);
+    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
+    puts("PASS: cleared-home quarantine blocks changes until both-world removal, retains IDs/attempts, expires at 32 callbacks and rejects identity/arrival/invalidation conflicts.");
+}
 #if TFX_RESERVE_LAST_FOR_LIFECYCLE
 static void reserve_tests(void) {
     reset(); stage_until(4);
@@ -167,6 +233,8 @@ static void reserve_tests(void) {
     ticks(20); CHECK(staged == 4 && !tfx_pilot_complete());
     for (unsigned i = 1; i < 4; ++i) arrived[i] = 3;
     ticks(8); CHECK(staged == 4); /* Arrivals alone do not release the reserved attempt. */
+    cleared_home_worlds[0] = 2; ticks(8);
+    CHECK(staged == 4 && !tfx_pilot_complete() && strstr(output, "pilot_home_pending"));
     missing_worlds[0] = 2; ticks(8); CHECK(staged == 4 && !tfx_pilot_complete());
     missing_worlds[0] = 3; ticks(10);
     CHECK(staged == 5 && !tfx_pilot_complete() && strstr(output, "pilot_tracking_resumed"));
@@ -288,6 +356,7 @@ int main(void) {
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
     puts("PASS: lifecycle continuation after both-world boarding/confirmation; permanent error block, all pending passengers, ID retention, mixed outcomes, no cap refund, disagreement and prior-arrival guards.");
 #endif
+    home_clear_tests();
     printf("PASS: consumer and real policy max fixture query allowance=%u/64.\n", max_queries);
     return 0;
 }

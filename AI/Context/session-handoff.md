@@ -1,5 +1,21 @@
 # Session handoff — 2026-10-08
 
+## Cleared-home implementation prepared — NOT loaded
+
+Version0.7.4 build-v7e adds a32-callback pending state for exactly home=-1 after
+both-world boarding, with original target/slots retained and no arrival or
+invalidation evidence. New switches pause; only both-world removal resolves it.
+Restoration/reassignment, mixed evidence and deadline expiry still stop. No cap
+refund, ID rebasing, query/ABI/mutation/route changes. Normal/reserved fixtures,
+host batch/failure and both DLL contract suites pass; peak40/64 queries.
+Mutable DLL7f136927850b…; full hashes/evidence in
+[home-clear handling](../../docs/home-clear-handling.md). Build-v7e is NOT loaded.
+
+Static function140b33470 explicitly removes when first destination(home)=-1.
+This supports the bounded observation policy but does not prove the previous
+identity stop's exact person/value. Current diagnostic run selected40365 instead
+of120770, so it has not reproduced that stop. Current run still uses0.7.3 below.
+
 ## Identity diagnostic capture running (latest)
 
 User restarted and loaded the correct before_multi_passenger baseline paused.
@@ -9,14 +25,18 @@ no previous bridge mappings. Loaded build-v7d-identity-log DLL SHA256
 (source a864a5e), tfx_start0. Log `tpf-bridge-308-19903924.log` confirms cap5/18000,
 reserve1. Adjacent live-run.json. **User confirmed normal-speed unpause.**
 Fresh world1 `0x37a25410`, world2 `0x37a260d0`, thread592. Log watcher89335.
-Read-only external monitor watch_identity.py samples four passengers/home87062
-for at most600sec (0.1sec intervals), stops5sec after native summary. Never reuse
-prior process/worlds below.
+External monitor65191 ended exit0 at600sec,17:18:36.890100Z (11,271 world
+samples/13 rejections).120770 lost SimPerson with home87062 Scaffold in both
+worlds at17:14:22Z, WITHOUT being switched in this run. No transient home value
+was captured. Identity-transition.jsonl hash1769b6c3412e… recorded in new guide.
+Native watcher89335 remains active. Never reuse prior process/worlds below.
 
 This build adds precise identity-stop logs only; all policy/limits unchanged.
 Monitor pilot_identity_error for passenger/home/sequence/world, then preserve
 post-stop read-only inventory. Do not infer missing home equals completed removal.
-No revised policy or live continuation proof yet. Original build-v7d preserved.
+Prepared revised policy above is not loaded; no live continuation proof yet.
+First three passengers120842/122261/40365 boarded at514/520/1095.122261 arrived
+at original72934 at2444/2445. Original build-v7d preserved.
 Targeted Ghidra export home-transition-dispatch.txt confirms caller14256b0c0
 invokes ApplySimPersonData14256da20; it does not identify this event's runtime cause.
 Ghidra process exited0, no debugger attached.

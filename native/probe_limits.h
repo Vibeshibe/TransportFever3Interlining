@@ -1,5 +1,7 @@
 #ifndef TFX_PROBE_LIMITS_H
 #define TFX_PROBE_LIMITS_H
+/* A cleared home is only pending evidence, never a resolved lifecycle outcome. */
+#define TFX_HOME_CLEAR_GRACE_CALLBACKS 32u
 /* Research bounds are explicit build inputs, never runtime API overrides. */
 #ifndef TFX_OBSERVATION_LIMIT
 #define TFX_OBSERVATION_LIMIT 3600
