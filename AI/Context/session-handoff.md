@@ -8,8 +8,13 @@ no old bridge mappings. Stdout load18:02:40Z, ready18:03:26Z. Loaded build-v7f
 0.7.5 mutable DLL (hash below), tfx_start0; cap5/18000, reserve1, grace32.
 Log `tpf-bridge-304-23489567.log`; metadata `build-v7f/live-run.json`.
 Watcher73040 active; world1 `0x2e7c3ca0`, world2 `0x2e7c4960`, thread592.
-No live outcome yet. Do not reinject; monitor confirmed
-home_invalidated followed by a different passenger's switch and boarding.
+Current checkpoint: four switches/boardings;122261→72934 arrived2160/2161,
+127558→120856 at5238/5239,122790→86009 at5782/5783.120842 removed at7189/7190,
+confirmed and resolved as passenger_removed; discovery resumed7190 with one
+attempt left. **No home_pending/home_invalidated event occurred.** Await fifth
+actual switch/boarding; continuation is not yet proved by resumption alone.
+Do not reinject; finish existing capture and audit. Home-specific handling remains
+fixture-only if no matching live case occurs; do not silently label it validated.
 
 ## Previous — 0.7.4 timed out; 0.7.5 prepared
 
