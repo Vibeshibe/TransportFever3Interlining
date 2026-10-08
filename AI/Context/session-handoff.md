@@ -1,5 +1,20 @@
 # Session handoff — 2026-10-08
 
+## 0.7.4 live trial requested — awaiting fresh paused baseline
+
+User authorized the next trial. Preflight found no running game; verified
+build-v7e mutable DLL7f136927850b… and preserved before_multi_passenger baseline
+ce2e02d935da… unchanged. Asked user to start the game, load a disposable copy of
+`TPF3Interlining_before_multi_passenger_01`, and leave it paused. Await readiness.
+No injection, new process/world IDs, or active watchers yet.
+
+Prepared ignored build-v7e/preflight.json, watch_trial.py and audit_trial.py.
+Watcher/audit read the new logfile name from live-run.json (create after loading).
+Audit checks no proposals while home/lifecycle is pending, removal within32
+callbacks, retained IDs/cap and a later actual distinct-passenger boarding.
+Require home_clear_continuation_proven, not just a resumption log. All existing
+bounds unchanged: cap5/18000, final attempt reserved. Do not rebuild pinned DLL.
+
 ## Latest result — exact home=-1 trigger captured; capture ended
 
 0.7.3 diagnostic build (a864a5e), loaded build-v7d-identity-log, stopped at7909:
