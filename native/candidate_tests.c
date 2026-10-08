@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../src/interlining/native_candidate.h"
+#include "pilot_cache.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static tfx_waiting_leg leg;
 static tfx_vehicle vehicle;
@@ -77,6 +78,19 @@ static void expect(it_reason reason) {
     CHECK(result.reason == reason && result.requires_engine_revalidation == 1);
 }
 int main(void) {
+    /* Regression: passengers discovered after the first full batch must remain
+     * observable, while remembering existing IDs must not churn the cache. */
+    int32_t ids[TFX_PILOT_PEOPLE] = {0}; uint32_t count = 0, cursor = 0;
+    for (int32_t id = 0; id < 96; ++id) {
+        int32_t slot = tfx_pilot_remember(ids, &count, &cursor, id);
+        CHECK(slot >= 0 && slot < 32 && ids[slot] == id && count <= 32);
+        uint32_t before = cursor;
+        CHECK(tfx_pilot_remember(ids, &count, &cursor, id) == -1 && cursor == before);
+        for (uint32_t a = 0; a < count; ++a)
+            for (uint32_t b = a + 1; b < count; ++b) CHECK(ids[a] != ids[b]);
+    }
+    CHECK(count == 32);
+    puts("PASS: bounded discovery admits later passengers and preserves existing IDs without duplicate slots.");
     fixture(); it_candidate result;
     CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
     CHECK(result.dispatch_sequence == 123 && result.proposed_line == 20 && result.boarding_stop == 2 && result.alighting_stop == 3);

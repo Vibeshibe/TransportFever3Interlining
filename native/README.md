@@ -28,7 +28,7 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 directory and restart the game before testing a changed bridge.
 
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
-`candidate_tests.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
+`candidate_tests.exe`, `journey_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
 There is no production switch that bypasses executable verification.
 
@@ -61,10 +61,12 @@ two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.6.1 registers `research.interlining-one-passenger`, which uses the same
+Version 0.6.2 registers `research.interlining-one-passenger`, which uses the same
 bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
-vehicle IDs, and checks up to four vehicles for a ready loading state. For one
+vehicle IDs, replacing older person IDs as newly scanned people arrive once the
+32-entry allowance is full. Every eligibility check reads current state again.
+It checks up to four vehicles for a ready loading state. For one
 ready vehicle it considers up to eight remembered people and performs at most
 two complete candidate validations. It logs up to 80 changed results and prints
 aggregate rejection counts if discovery reaches the limit. Once the first eligible
@@ -81,6 +83,16 @@ suppress logs only; they never authorize mutations or reuse engine pointers.
 The separate [native policy](../src/interlining/README.md) returns proposals and
 rejection reasons. A proposal alone does not reserve a seat or move a passenger;
 the new staged operation performs the bounded waiting-line replacement.
+
+For a read-only follow-up after auto-disable, `journey_snapshot.exe` accepts a
+Windows PID, the two hexadecimal world addresses from the just-completed capture,
+a person ID, expected destination ID and a duration of 1–120 seconds. Run it in the
+same Proton prefix. It opens the process for reading only, uses copied queries,
+and requires repeated reads to agree with no modification window at the endpoints.
+Do not reuse addresses after restart or save reload. This research reader assumes
+the pinned build already verified by the capture; it is not an atomic snapshot or
+a general discovery API. The first [complete alternate-line journey](../docs/native-mutation-validation-2026-10-08.md)
+was confirmed using this follow-up. No additional engine write was made.
 
 ## Client contract
 

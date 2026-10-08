@@ -462,8 +462,8 @@
   positives for the same observed pair, 12 unsupported-leg rejections and eight
   boarding mismatches. Zero query errors/rejected boundaries; auto-disabled.
 - At sequence 47, S1 person 22747 passed the checks for S3 vehicle 97959, stops
-  1→2: shared boarding station 97948 terminal1, matching alighting station97294
-  terminal0, destination86002 present and 40 places remaining. This is a proposal,
+  1→2: shared boarding station 97948 terminal 1, matching alighting station 97294
+  terminal 0, destination 86002 present and 40 places remaining. This is a proposal,
   not an actual alternate boarding. [Evidence and hashes](native-candidate-validation-2026-10-07.md).
 - Updated SDK/policy docs, adapter gates, tasks and handoff. Next implement the
   bounded engine-owned waiting replacement, then verify actual boarding,
@@ -496,10 +496,30 @@
 
 The initial live run found valid S3→S1 candidates, excluded solely by the pilot's
 S1→S3 selection filter. No engine change had been attempted when preparing the
-revision. Built version0.6.1 separately under `build-v6b` to allow either S1/S3
+revision. Built version 0.6.1 separately under `build-v6b` to allow either S1/S3
 direction on the same adjacent shared leg. Eligibility, mutation operations and
 one-attempt cap are unchanged. User was asked to restart a disposable baseline
 for this revised trial; S2's different platform is retained as a negative control.
+
+### First successful live switch
+
+Revision 0.6.1, Windows PID 312, sequence 2473: S1 passenger 72845 qualified for S3
+vehicle 97914 on Wimborne→Melksham stops 1→2. One staged request was revalidated
+and applied through notified engine operations. Arrival-time bytes, destination
+72405 and waiting place were preserved; the scope closed. Subsequent callbacks
+observed the passenger **onboard S3 vehicle 97914 in both engine worlds**. Only
+one engine attempt was logged. The capture subsequently observed alighting at
+planned S3 stop 2 and onward movement in both worlds. A read-only external
+follow-up then observed the person at original destination building 72405 in both
+worlds. Capture auto-disabled at
+3,600 callbacks with no query errors/rejected boundaries; no further changes
+were enabled. This establishes the first complete
+alternate-line journey; save/reload and broader stability remain untested.
+
+During the run, fixed bounded discovery retaining its first 32 IDs forever.
+Revision 0.6.2 (`build-v6c`) admits newer people through rolling replacement and
+passes a 96-ID regression plus candidate tests. This consumer-only revision is
+prepared, not runtime-tested; the live switch used unchanged revision 0.6.1.
 
 ## Ongoing workflow
 

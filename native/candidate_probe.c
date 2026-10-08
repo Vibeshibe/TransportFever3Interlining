@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "candidate_probe.h"
+#include "pilot_cache.h"
 #include "../src/interlining/native_candidate.h"
 static tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)};
 static tfx_api_v6 changes_api = {.v5.v4.v3.v2.base.struct_size = sizeof(changes_api)};
@@ -11,7 +12,7 @@ static uint32_t result_logged, arrived_worlds, onboard_worlds, pilot_done;
 static tfx_person_journey last_journey[4];
 static void (*log_line)(const char *);
 static int32_t scan_cursor, people[32], vehicles[16];
-static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor;
+static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor, person_replacement_cursor;
 static uint32_t failures, attempts, accepted, logged, ready;
 static uint32_t reasons[IT_REASON_COUNT];
 static unsigned char last_reason[32][16]; /* Zero is unseen; reason+1 otherwise. */
@@ -25,12 +26,19 @@ static void remember(int32_t *ids, uint32_t *count, uint32_t limit, int32_t id) 
     for (uint32_t i = 0; i < *count; ++i) if (ids[i] == id) return;
     if (*count < limit) ids[(*count)++] = id;
 }
+static void remember_person(int32_t person) {
+    int32_t slot = tfx_pilot_remember(people, &person_count, &person_replacement_cursor, person);
+    if (slot < 0) return;
+    /* Evict old discovery IDs instead of freezing the first 32 forever. Each
+     * eligibility check still re-reads current state; this is no route cache. */
+    memset(last_reason[slot], 0, sizeof(last_reason[slot]));
+}
 static void discover(tfx_context context, uint64_t sequence) {
     tfx_waiting_page page = {.struct_size = sizeof(page)};
     tfx_status status = api.v4.v3.v2.scan_waiting_people(context, scan_cursor, &page);
     if (status != TFX_OK) { error("scan", status); return; }
     scan_cursor = page.next_entity < 0 ? 0 : page.next_entity;
-    for (uint32_t i = 0; i < page.count; ++i) remember(people, &person_count, 32, page.persons[i]);
+    for (uint32_t i = 0; i < page.count; ++i) remember_person(page.persons[i]);
     static const int32_t lines[3] = {98278, 97742, 97743};
     int32_t line = lines[(sequence - 1) % 3];
     tfx_line_stop stop = {.struct_size = sizeof(stop)};

@@ -2,7 +2,9 @@
 
 Status: the [native bridge](../native/README.md) implements this entry boundary
 and ABI 6 staged engine-owned waiting replacement. Offline guard/operation tests
-pass; the [first live trial](native-mutation-validation-2026-10-08.md) is in progress.
+pass; the [first live trial](native-mutation-validation-2026-10-08.md) observed
+alternative boarding, planned alighting and original-destination arrival in both
+engine worlds for one passenger.
 
 ## Selected boundary
 
@@ -77,10 +79,12 @@ combines these for the restricted adjacent same-terminal case. Destination
 presence does not prove onward reachability; node fallback, fractional load
 limits and alternative terminals remain excluded. ABI 6 implements mutation
 bindings, full expected-state comparison, deferred conflict checks and one-attempt
-limits. Live journey continuation, replication and persistent save behavior still
-need evidence; postcondition failures stop further changes but cannot roll back.
+limits. One journey now has continuation and both-world propagation evidence.
+Repeated operation and persistent save behavior still need evidence; postcondition
+failures stop further changes but cannot roll back.
 Same-line stop remapping demonstrates replacement;
-cross-line replacement still needs a disposable-save write test. Removal/addition
+the first cross-line disposable-save write test completed an alternate journey.
+Removal/addition
 is not an established rollback transaction: reject expected failures before the
 first removal, and do not promise recovery from an engine assertion or allocator
 failure. Verify disabling, save/reload, transfers, and replica behavior before

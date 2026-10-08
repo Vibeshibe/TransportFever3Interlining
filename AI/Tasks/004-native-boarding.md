@@ -1,6 +1,6 @@
 # 004 — Trace native boarding and state transitions
 
-- Status: In progress — entry boundary selected and observed; cross-line write test pending
+- Status: In progress — first cross-line journey observed; broader lifecycle validation remains
 - Owner: Assistant
 - Dependencies: 003 identifies a capability missing from scripting
 
@@ -20,10 +20,10 @@ task skipped if existing scripting is sufficient.
       allocation are updated together through engine transitions.
 - [ ] Investigate thread ownership, callback timing, invalidation, and object lifetime.
 - [x] Define a minimal interception proposal with original-behavior fallback.
-- [ ] Verify the candidate through runtime observation on a disposable save
-      before calling it a supported implementation point.
+- [x] Verify the candidate through runtime observation on a disposable save
+      for the pinned build and one-passenger adjacent-leg pilot.
 
-## Validation and open questions
+## Investigation history
 
 Start with the anchors in [research notes](../../docs/interlining-research.md).
 The [scripting assessment](../../docs/scripting-hook-investigation.md) establishes
@@ -37,7 +37,7 @@ maintain the line/stop queue. The onboard transition copies the original line
 and stop indices with the selected vehicle and adds both onboard components.
 Neither a line-field write nor a widened vehicle list coordinates all this state.
 The done-waiting lead calls a private-driving helper, not a transit transition.
-No safe native intervention is verified. Revision 2 diagnostics supplied a same-terminal
+At this stage no native intervention had been verified. Revision 2 diagnostics supplied a same-terminal
 S1/S3 reference case in [Test 2](../../docs/test-run-2026-10-07-2.md). Use that
 case to investigate vehicle selection and eventual engine-owned transitions.
 
@@ -61,9 +61,16 @@ empty-window entry/return conditions, with alternating worlds. Person-system
 line-index removal and insertion helpers were traced. The
 [adapter proposal](../../docs/native-adapter-design.md) selects Update entry,
 with a separate modification scope finished before original candidate selection.
-No write-capable hook has been validated; the runtime acceptance item remains
-open until a controlled reassignment succeeds. Native bindings/extension work
-can proceed against this bounded candidate.
+These read-only observations supplied the bounded candidate for extension work;
+they did not yet validate writes.
+
+## Current validation
+
+The [ABI 6 trial](../../docs/native-mutation-validation-2026-10-08.md) subsequently
+applied one engine-owned S1→S3 replacement. Boarding, planned alighting and arrival
+at the original destination were observed in both worlds. The runtime criterion
+is met for this narrow pilot; repeated operation, save/reload, wider routing and
+failure recovery remain open under tasks 005–006.
 
 Research/tooling history: `git log -- tools/native_trace docs/native-boarding-investigation.md`.
 Planning history: `git log -- AI/Tasks/004-native-boarding.md`.
