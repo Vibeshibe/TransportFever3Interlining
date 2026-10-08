@@ -27,4 +27,5 @@ tfx_status tfx_query_presence(tfx_reader *, int32_t entity, tfx_entity_presence 
 /* Internal complete component snapshot for compare-and-replace, including padding. */
 tfx_status tfx_query_waiting_raw(tfx_reader *, int32_t person, unsigned char out[32]);
 tfx_status tfx_query_journey(tfx_reader *, int32_t person, tfx_person_journey *out);
+tfx_status tfx_query_lifecycle(tfx_reader *, int32_t person, tfx_person_lifecycle *out);
 #endif

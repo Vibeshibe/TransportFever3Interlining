@@ -17,6 +17,8 @@ static const uint32_t strides[7] = {32, 0x98, 40, 24, 12, 0x1e8, 0x58};
 static const uint64_t image = 0x140000000;
 static tfx_api_v2 api = {.base.struct_size = sizeof(api)};
 static tfx_context expired;
+static tfx_api_v7 v7 = {.v6.v5.v4.v3.v2.base.struct_size = sizeof(v7)};
+static int32_t person_destinations[3];
 static uint64_t unreadable;
 static unsigned char terminal[0x200], vehicle_system[0x200], onboard_system[0x200];
 static unsigned char terminal_dynamic[0xc0], vehicle_dynamic[0xc0], onboard_dynamic[0xc0];
@@ -88,6 +90,8 @@ static void fixture(void) {
     put32(data[0], 2); put32(data[0] + 4, 0); put32(data[0] + 8, 1);
     put64(data[0] + 16, UINT64_C(0x123456789abcdef0)); put32(data[0] + 24, UINT32_MAX);
     put32(data[1] + 0x50, 43210);
+    person_destinations[0] = 555; person_destinations[1] = -1; person_destinations[2] = 43210;
+    vector_at(data[1] + 8, person_destinations, sizeof(person_destinations));
     memset(data[4], 0xa5, 12);
     vector_at(data[2], stops, sizeof(stops));
     vector_at(data[3], stations, sizeof(stations));
@@ -315,6 +319,8 @@ static DWORD WINAPI wrong_thread(void *unused) {
     (void)unused;
     tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
     CHECK(api.read_waiting_leg(expired, 1, &leg) == TFX_WRONG_THREAD);
+    tfx_person_lifecycle life = {.struct_size = sizeof(life)};
+    CHECK(v7.read_person_lifecycle(expired, 1, &life) == TFX_WRONG_THREAD);
     tfx_vehicle v = {.struct_size = sizeof(v)};
     tfx_stop_vehicles list = {.struct_size = sizeof(list)};
     CHECK(v3.read_vehicle(expired, 4, &v) == TFX_WRONG_THREAD);
@@ -354,6 +360,57 @@ static void client(tfx_context context, void *unused) {
     CloseHandle(thread);
     for (unsigned i = 1; i < 64; ++i) CHECK(api.read_waiting_leg(context, 1, &leg) == TFX_OK);
     CHECK(api.read_waiting_leg(context, 1, &leg) == TFX_QUERY_BUDGET_EXHAUSTED);
+}
+
+static void lifecycle_tests(void) {
+    fixture(); tfx_reader r = reader(); r.world_id = 2;
+    tfx_person_lifecycle life = {.struct_size = sizeof(life)};
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_OK && life.world_id == 2 && life.person == 1 &&
+        life.flags == 3 && life.target == 43210 && life.destinations[0] == 555 && life.destinations[2] == 43210);
+    person_destinations[2] = -1; put32(data[1] + 0x50, 555);
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_OK && life.destinations[2] == -1 && life.target == 555);
+    /* A non-person entity is valid, but does not retain stale person output. */
+    CHECK(tfx_query_lifecycle(&r, 5, &life) == TFX_OK && life.flags == 1 && life.target == -1 && life.destinations[0] == -1);
+    CHECK(tfx_query_lifecycle(&r, 7, &life) == TFX_OK && !life.flags);
+    CHECK(tfx_query_lifecycle(&r, 8, &life) == TFX_OK && !life.flags);
+    tfx_person_lifecycle unchanged = life;
+    masks[7][0] = 2; /* Missing row is not evidence of retirement when the mask disagrees. */
+    CHECK(tfx_query_lifecycle(&r, 7, &life) == TFX_INVALID_STATE && !memcmp(&life, &unchanged, sizeof(life)));
+    fixture(); r = reader(); masks[1][0] &= ~2u;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE && !memcmp(&life, &unchanged, sizeof(life)));
+    fixture(); r = reader(); handles[1][2][0] = 1;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader(); handles[1][1][1] = -1;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader(); unreadable = address(person_destinations);
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE && !memcmp(&life, &unchanged, sizeof(life)));
+    fixture(); r = reader(); vector_at(data[1] + 8, person_destinations, 8);
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader(); put64(data[1] + 24, address(person_destinations) + 68);
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader(); person_destinations[1] = -2;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader(); put32(data[1], 1);
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE);
+    fixture(); r = reader();
+    memcpy(data[1] + 31 * 0x98, data[1], 0x98); handles[1][1][1] = 0x4000001f;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_OK && life.destinations[2] == 43210);
+    unchanged = life; handles[1][1][1] = 0x40000020;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_STATE && !memcmp(&life, &unchanged, sizeof(life)));
+    fixture(); r = reader(); r.bytes_left = 1;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_QUERY_BUDGET_EXHAUSTED);
+    r = reader(); r.queries_left = 0;
+    CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_QUERY_BUDGET_EXHAUSTED);
+    CHECK(tfx_query_lifecycle(&r, -1, &life) == TFX_INVALID_ARGUMENT);
+    life.struct_size = 0; CHECK(tfx_query_lifecycle(&r, 1, &life) == TFX_INVALID_ARGUMENT);
+}
+static void lifecycle_client(tfx_context c, void *unused) {
+    (void)unused;
+    tfx_person_lifecycle life = {.struct_size = sizeof(life)};
+    CHECK(v7.read_person_lifecycle(c, 1, &life) == TFX_OK && life.destinations[2] == 43210);
+    expired = c;
+    for (unsigned i = 1; i < 64; ++i) CHECK(v7.read_person_lifecycle(c, 1, &life) == TFX_OK);
+    CHECK(v7.read_person_lifecycle(c, 1, &life) == TFX_QUERY_BUDGET_EXHAUSTED);
 }
 
 static tfx_api_v6 v6 = {.v5.v4.v3.v2.base.struct_size = sizeof(v6)};
@@ -570,6 +627,7 @@ int main(void) {
     r = reader(); r.bytes_left = 1;
     CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_QUERY_BUDGET_EXHAUSTED);
     CHECK(tfx_get_api(2, &api.base) == TFX_OK);
+    CHECK(tfx_get_api(7, &v7.v6.v5.v4.v3.v2.base) == TFX_OK && v7.v6.v5.v4.v3.v2.base.capabilities == 255);
     CHECK(tfx_get_api(3, &v3.v2.base) == TFX_OK && v3.v2.base.capabilities == 7);
     CHECK(tfx_get_api(4, &v4.v3.v2.base) == TFX_OK && v4.v3.v2.base.capabilities == 15);
     CHECK(tfx_get_api(5, &v5.v4.v3.v2.base) == TFX_OK && v5.v4.v3.v2.base.capabilities == 31);
@@ -602,6 +660,14 @@ int main(void) {
     tfx_terminal t = {.struct_size = sizeof(t)};
     CHECK(v5.read_terminal(expired, 5, 1, &t) == TFX_STALE_CONTEXT);
     CHECK(v5.v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    lifecycle_tests(); fixture(); r = reader();
+    c.before_terminal_selection = lifecycle_client;
+    CHECK(v7.v6.v5.v4.v3.v2.base.register_client(&c) == TFX_OK);
+    CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    tfx_person_lifecycle life = {.struct_size = sizeof(life)};
+    CHECK(v7.read_person_lifecycle(expired, 1, &life) == TFX_STALE_CONTEXT);
+    CHECK(v7.v6.v5.v4.v3.v2.base.unregister_client(c.id) == TFX_OK);
+    puts("PASS: ABI7 copied lifecycle, row/mask consistency, absent/reused IDs, destination slots, shared storage, output preservation and context/thread/budget guards.");
     mutation_tests();
     puts("PASS: terminal load/unload flags, entity row/mask consistency, missing/shared data, ABI5 guards.");
     puts("PASS: platform edge membership, distinct worlds, missing/ambiguous systems, malformed/oversized results, ABI4 guards.");

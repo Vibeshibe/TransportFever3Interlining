@@ -174,7 +174,7 @@ The external monitor exited0. The loaded observer may continue read-only until
 its 3,600-callback cap and remains loaded until game exit; no more simulation is
 needed for this control. User was told the game can be paused or closed.
 
-## Next implementation gate
+## Implementation follow-up
 
 Add copied passenger identity/destination diagnostics to bounded journey tracking.
 Report **original destination reached**, **passenger removed**, **destination
@@ -184,3 +184,7 @@ Preserve the current stop, attempt cap and boarding policy while adding/testing
 classification. Only then design a fresh bounded trial with explicit handling
 of independently confirmed lifecycle outcomes. The other two original batch
 destinations remain unverified; no stable release is justified yet.
+
+Version0.7.2 now implements this diagnostic gate with passing offline tests;
+see [lifecycle tracking and the prepared live trial](lifecycle-tracking.md).
+Live classification and continuation after lifecycle events are not yet validated.

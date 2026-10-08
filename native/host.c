@@ -173,6 +173,14 @@ static tfx_status read_person_journey(tfx_context context, int32_t person, tfx_p
     return status;
 }
 
+static tfx_status read_person_lifecycle(tfx_context context, int32_t person, tfx_person_lifecycle *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_lifecycle(current_reader, person, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 static tfx_status request_waiting_leg_change(tfx_context context, const tfx_waiting_leg_change *request, uint64_t *ticket) {
     if (!request || !ticket || request->struct_size != sizeof(*request) || request->reserved ||
         request->expected.struct_size != sizeof(request->expected) || request->expected.reserved ||
@@ -232,12 +240,13 @@ static tfx_status read_change_result(tfx_context context, uint64_t ticket, tfx_c
 }
 
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version < TFX_ABI_VERSION || version > TFX_CHANGE_ABI_VERSION) return TFX_ABI_MISMATCH;
+    if (version < TFX_ABI_VERSION || version > TFX_LIFECYCLE_ABI_VERSION) return TFX_ABI_MISMATCH;
     size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
         version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) :
         version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) :
         version == TFX_PLATFORM_ABI_VERSION ? sizeof(tfx_api_v4) :
-        version == TFX_TERMINAL_ABI_VERSION ? sizeof(tfx_api_v5) : sizeof(tfx_api_v6);
+        version == TFX_TERMINAL_ABI_VERSION ? sizeof(tfx_api_v5) :
+        version == TFX_CHANGE_ABI_VERSION ? sizeof(tfx_api_v6) : sizeof(tfx_api_v7);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
@@ -265,7 +274,7 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         ((tfx_api_v5 *)out)->read_terminal = read_terminal;
         ((tfx_api_v5 *)out)->read_entity_presence = read_entity_presence;
     }
-    if (version == TFX_CHANGE_ABI_VERSION) {
+    if (version >= TFX_CHANGE_ABI_VERSION) {
         out->capabilities |= TFX_CAP_PERSON_JOURNEY;
 #ifndef TFX_READ_ONLY_BACKEND
         out->capabilities |= TFX_CAP_WAITING_LEG_CHANGE;
@@ -274,6 +283,10 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         v6->request_waiting_leg_change = request_waiting_leg_change;
         v6->read_change_result = read_change_result;
         v6->read_person_journey = read_person_journey;
+    }
+    if (version >= TFX_LIFECYCLE_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_PERSON_LIFECYCLE;
+        ((tfx_api_v7 *)out)->read_person_lifecycle = read_person_lifecycle;
     }
     return TFX_OK;
 }

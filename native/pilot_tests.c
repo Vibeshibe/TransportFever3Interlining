@@ -9,6 +9,7 @@ static tfx_client client;
 static uint64_t sequence;
 static unsigned world, staged, boarded[5], arrived[5], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, query_error, wrong_destination;
+static unsigned missing_worlds, invalidated_worlds, life_error, changed_home, reassigned, bad_identity, baseline_unassigned;
 static tfx_waiting_leg_change requests[5];
 static char output[32768];
 static void log_line(const char *s) { CHECK(strlen(output) + strlen(s) < sizeof(output)); strcat(output, s); }
@@ -98,16 +99,29 @@ static tfx_status journey(tfx_context c, int32_t id, tfx_person_journey *out) {
             boarded[index] & bit ? TFX_JOURNEY_ONBOARD : TFX_JOURNEY_WAITING};
     return TFX_OK;
 }
+static tfx_status lifecycle(tfx_context c, int32_t id, tfx_person_lifecycle *out) {
+    BEGIN(out);
+    if (life_error) return TFX_INVALID_STATE;
+    unsigned bit = 1u << (world - 1);
+    *out = (tfx_person_lifecycle){.struct_size = sizeof(*out), .world_id = world,
+        .person = bad_identity ? id + 1 : id, .flags = 3, .target = wrong_destination ? 999 : 777,
+        .destinations = {changed_home ? 998 : 555, -1, baseline_unassigned ? -1 : 777}};
+    if (missing_worlds & bit) out->flags = 1; /* ID reused by a non-person entity. */
+    if (invalidated_worlds & bit) { out->target = 555; out->destinations[2] = -1; }
+    if (reassigned) { out->target = 999; out->destinations[2] = 999; }
+    return TFX_OK;
+}
 tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
-    CHECK(version == 5 || version == 6);
-    base->abi_version = version; base->capabilities = version == 5 ? 31 : 127;
+    CHECK(version == 5 || version == 7);
+    base->abi_version = version; base->capabilities = version == 5 ? 31 : 255;
     base->register_client = registration; base->read_observation = observation;
     tfx_api_v5 *api = (tfx_api_v5 *)base;
     api->v4.v3.v2.read_waiting_leg = waiting; api->v4.v3.v2.scan_waiting_people = scan;
     api->v4.v3.v2.read_line_stop = stop; api->v4.v3.read_vehicle = vehicle;
     api->v4.v3.read_stop_vehicles = loading; api->v4.read_person_platforms = platforms;
     api->read_terminal = terminal; api->read_entity_presence = presence;
-    if (version == 6) {
+    if (version == 7) {
+        ((tfx_api_v7 *)base)->read_person_lifecycle = lifecycle;
         tfx_api_v6 *changes = (tfx_api_v6 *)base;
         changes->request_waiting_leg_change = request; changes->read_change_result = result;
         changes->read_person_journey = journey;
@@ -116,6 +130,7 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
 }
 static void reset(void) {
     sequence = staged = no_capacity = wrong_vehicle = fail_result = query_error = wrong_destination = 0;
+    missing_worlds = invalidated_worlds = life_error = changed_home = reassigned = bad_identity = baseline_unassigned = 0;
     memset(boarded, 0, sizeof(boarded)); memset(arrived, 0, sizeof(arrived)); output[0] = 0;
     CHECK(tfx_register_candidate_probe(log_line) == TFX_OK);
 }
@@ -156,6 +171,39 @@ int main(void) {
         strstr(output, "onboard_world_mask=0 destination_world_mask=0"));
     reset(); sequence = TFX_OBSERVATION_LIMIT - 1; tick();
     CHECK(tfx_pilot_complete() && staged == 0);
+    reset(); baseline_unassigned = 1; tick();
+    CHECK(tfx_pilot_complete() && staged == 0 && strstr(output, "lifecycle_baseline_unassigned"));
+    reset(); tick(); boarded[0] = 3; missing_worlds = 2; tick();
+    CHECK(!tfx_pilot_complete() && staged == 1 && strstr(output, "outcome=passenger_removed world_mask=2 confirmed=0"));
+    ticks(8); CHECK(staged == 1 && !tfx_pilot_complete()); /* One-world absence never resumes writes. */
+    missing_worlds = 3; ticks(2);
+    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=passenger_removed") &&
+        strstr(output, "destination_world_mask=0 removed_world_mask=3 invalidated_world_mask=0 outcome=passenger_removed"));
+    reset(); tick(); invalidated_worlds = 2; tick();
+    CHECK(!tfx_pilot_complete()); invalidated_worlds = 3; ticks(2);
+    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=destination_invalidated") &&
+        strstr(output, "destination_world_mask=0 removed_world_mask=0 invalidated_world_mask=3 outcome=destination_invalidated"));
+    reset(); tick(); missing_worlds = 2; tick(); invalidated_worlds = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "lifecycle_world_disagreement"));
+    reset(); tick(); missing_worlds = 2; tick(); missing_worlds = 0; ticks(2);
+    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
+    reset(); tick(); invalidated_worlds = 2; tick(); invalidated_worlds = 0; ticks(2);
+    CHECK(tfx_pilot_complete() && strstr(output, "destination_assignment_unresolved"));
+    reset(); tick(); changed_home = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
+    reset(); tick(); reassigned = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "destination_assignment_unresolved"));
+    reset(); tick(); bad_identity = 1; tick();
+    CHECK(tfx_pilot_complete() && strstr(output, "unexpected_lifecycle_identity"));
+    reset(); tick(); life_error = 1; ticks(8);
+    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=query_errors") &&
+        strstr(output, "pilot_lifecycle_error person=100") && !strstr(output, "outcome=passenger_removed"));
+    reset(); tick(); boarded[0] = 3; life_error = 1; tick(); life_error = 0; ticks(20);
+    CHECK(staged == 1 && !tfx_pilot_complete()); /* Even recovered reads cannot unlock mutation. */
+    reset(); tick(); boarded[0] = 3; no_capacity = 1; ticks(8); arrived[0] = 3; ticks(8);
+    missing_worlds = 3; ticks(8);
+    CHECK(!tfx_pilot_complete() && !strstr(output, "outcome=passenger_removed")); /* Completed journey stays complete. */
+    puts("PASS: lifecycle baseline, both-world removal/invalidation, disagreement, identity/reassignment guards, read errors, arrival preservation and irreversible write block.");
     printf("PASS: real policy/consumer with five distinct passengers, delayed replica boarding, fresh capacity, failed changes, destination guards, final cap and tracking; max fixture query allowance=%u/64.\n", max_queries);
     return 0;
 }

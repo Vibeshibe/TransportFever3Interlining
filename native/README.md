@@ -5,8 +5,9 @@ versioned C API with copied queries and a staged waiting-leg change operation.
 **Version 0.7 supports a build-time cap of 1–5 distinct passengers.**
 The default remains one. The first batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
-See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.1 improves
-diagnostics without loosening the stop or selection policy. The native
+See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 distinguishes
+passenger removal and cleared destination assignments from arrival and unresolved
+errors, without permitting further switches after either event. The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 
@@ -99,6 +100,16 @@ native onward travel. The pilot ends on all configured passengers arriving, the
 callback cap, eight query errors, or an unexpected result, boarding or destination.
 A cap with fewer arrivals is an incomplete capture, not a success. Final summaries
 include each passenger's boarding and destination world masks.
+
+Version 0.7.2 also records removal/invalidation masks and an explicit outcome.
+Before staging, it copies the passenger's home and original destination slots.
+During tracking, the first lifecycle anomaly or journey/lifecycle query error
+permanently blocks new requests in this capture. Read-only tracking continues to
+confirm removal or cleared slots in both worlds, then stops with that reason.
+Replica disagreement, changed home, reassigned destination or inconsistent identity
+stops as unresolved. Eight query errors and the callback cap remain in force.
+Previously observed arrivals are retained; lifecycle outcomes never add arrivals.
+See [implementation and next trial](../docs/lifecycle-tracking.md).
 
 Run `host_batch_tests.exe` and `host_batch_tests.exe failure` in separate processes,
 plus `pilot_tests.exe`, alongside the existing suites. These cover multi-person
@@ -323,6 +334,25 @@ Journey queries copy target/at-entity, component-state flags, current waiting or
 onboard line/stops/vehicle, and an opaque world ordinal. These observations do not
 establish save/reload compatibility or arbitrary onward-journey correctness.
 See [implementation and trial evidence](../docs/native-mutation-validation-2026-10-08.md).
+
+## Passenger lifecycle snapshots (ABI 7)
+
+Request `TFX_LIFECYCLE_ABI_VERSION` with a complete `tfx_api_v7`. It appends
+`read_person_lifecycle` and capability128. API1–6 layouts and capability masks
+are unchanged. API7 capabilities are255 for the mutable bridge,223 for the
+read-only observer (API6 still127/95 respectively).
+
+The copied result contains a world ordinal, requested entity ID, current component
+presence flags, target, and residence/shopping/work IDs. Destination slots use-1
+for unassigned. The query requires exactly three entries within a bounded vector,
+valid component storage and consistent entity row/mask data. Query errors leave
+the output untouched. A valid absence of SimPerson returns `TFX_OK`, with
+PERSON_PRESENT cleared and target/destinations set to-1; a reused non-person ID
+can still have ENTITY_PRESENT set. Callback/thread/budget rules apply unchanged.
+
+These are current-state diagnostics, not a stable entity generation, redevelopment
+notification or proof of natural removal. They must not independently authorize
+mutations. No game pointers or calls are exposed by this API.
 
 ## Interception and compatibility
 

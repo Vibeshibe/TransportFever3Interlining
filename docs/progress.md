@@ -691,6 +691,23 @@ code changed in this milestone. Next add explicit lifecycle classifications to
 journey diagnostics with fixtures, retaining mutation bounds and the stop until
 handling of these outcomes is validated. User can pause/close the control game.
 
+## 2026-10-08 — Implement lifecycle-aware journey diagnostics
+
+Version 0.7.2 adds ABI7 copied passenger presence and destination slots while
+preserving API1–6. The pilot captures an original home/destination baseline and
+separates arrivals, both-world removal, both-world invalidation and unresolved
+errors. The first tracking anomaly blocks further proposals permanently; neither
+lifecycle outcome increments arrivals. Existing mutation and eligibility bounds
+remain. No engine transition or raw memory write was added.
+
+Built separately under `analysis/native-bridge/build-v7c` (cap5/18,000 callbacks).
+Query, consumer, host batch/failure, registry/hook, candidate and binary contract
+suites passed in the isolated Wine prefix. Consumer fixture allowance peaks at
+40/64 queries. Final diagnostic log changes were rechecked. [Implementation,
+artifact hashes and prepared live trial](lifecycle-tracking.md). The build has
+not been loaded into the game; user was asked to restart/load the preserved
+pre-trial copy paused for the next test. Live classification remains pending.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

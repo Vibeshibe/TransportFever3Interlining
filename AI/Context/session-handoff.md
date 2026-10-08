@@ -1,5 +1,26 @@
 # Session handoff — 2026-10-08
 
+## Lifecycle diagnostics implemented — live test pending (latest)
+
+Version0.7.2 is built/tested in `analysis/native-bridge/build-v7c`; mutable DLL
+SHA256 `2f8ca09d693e9411327660a730e4278e17347e012e65cc0a4a0f3da3e3127ca0`.
+**Not loaded into the game.** Cap5,18,000 callbacks, same S1↔S3 stops1→2 rules.
+ABI7 adds copied SimPerson presence/home/shopping/work/target queries. Older ABI
+layouts/capabilities remain unchanged. Consumer captures pre-change baseline,
+blocks new proposals permanently on first anomaly, confirms removal/invalidation
+in both worlds and stops with explicit classification. These never count as
+arrivals; unresolved read/identity failures retain conservative stops.
+
+All query, pilot, host batch/failure, bridge/candidate and observer/mutable DLL
+contract tests passed. Max fixture allowance40/64. No running test sessions.
+Evidence and full trial procedure: [lifecycle tracking](../../docs/lifecycle-tracking.md).
+The user was asked asynchronously to restart, load a disposable copy of
+`TPF3Interlining_before_multi_passenger_01` and leave paused, or defer testing.
+**Await their readiness answer before loading.** Verify fresh game process/save;
+never reuse the old control PID/worlds. Load only the mutable build-v7c DLL for
+this trial after verification; ask to unpause after successful startup. Record
+outcomes and no further proposals after lifecycle evidence. No stable release.
+
 ## Completed read-only lifecycle control (latest)
 
 **Both lifecycle changes reproduced without interlining switches.** From the
@@ -26,10 +47,10 @@ Artifacts under ignored `analysis/native-bridge/lifecycle-v7b/`:
 Full hashes and timeline are in the investigation document. Preserve both save
 backups; do not replay this control merely to recover context.
 
-**Next implement lifecycle classification in copied journey diagnostics**, with
-fixtures separating original arrival, removed passenger, invalidated destination
-and unresolved identity/read failures. Maintain mutation stop/cap/eligibility
-while adding diagnostics. Missing state alone cannot justify more switching;
+**The lifecycle-classification implementation described above now addresses this
+next step**, with fixtures separating original arrival, removed passenger,
+invalidated destination and unresolved identity/read failures. Mutation limits
+and eligibility remain unchanged. Missing state alone cannot justify more switching;
 a lifecycle outcome is not a successful journey. Then plan a fresh bounded
 trial with explicit handling of confirmed lifecycle outcomes. Other two batch
 original destinations remain unverified. No stable release/autoload yet.

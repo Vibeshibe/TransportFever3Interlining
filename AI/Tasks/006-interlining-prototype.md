@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — four batch boardings; native lifecycle control complete; batch arrivals unverified
+- Status: In progress — four batch boardings; lifecycle diagnostics implemented; live classification and batch arrivals unverified
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -96,3 +96,10 @@ home/work building. Next implement copied lifecycle diagnostics and regression
 fixtures; distinguish removed/invalidated journeys from original arrival while
 retaining mutation bounds and current stop behavior. Broader batch validation
 and exact native causal tracing are still unproven.
+
+Version0.7.2 implements the copied ABI7 lifecycle query and consumer classifications
+with passing query, API contract, mutation and pilot regressions. First anomalies
+permanently block new proposals; confirmed removal/invalidation never adds an
+arrival. Prepared cap5/18,000-callback build-v7c, not loaded. Next run the documented
+[live classification trial](../../docs/lifecycle-tracking.md) from the restored
+pre-trial baseline after user confirms restart/load/paused readiness.

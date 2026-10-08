@@ -12,6 +12,8 @@ extern "C" {
 #define TFX_PLATFORM_ABI_VERSION 4u
 #define TFX_TERMINAL_ABI_VERSION 5u
 #define TFX_CHANGE_ABI_VERSION 6u
+#define TFX_LIFECYCLE_ABI_VERSION 7u
+#define TFX_CAP_PERSON_LIFECYCLE 128u
 #define TFX_CAP_WAITING_LEG_CHANGE 32u
 #define TFX_CAP_PERSON_JOURNEY 64u
 #define TFX_CAP_TERMINAL_OBSERVATION 1u
@@ -195,6 +197,20 @@ typedef struct tfx_api_v6 {
     tfx_status (*read_change_result)(tfx_context, uint64_t ticket, tfx_change_result *out);
     tfx_status (*read_person_journey)(tfx_context, int32_t person, tfx_person_journey *out);
 } tfx_api_v6;
+
+/* Current component identity only: no stable entity generation or removal cause.
+ * A valid absent SimPerson is TFX_OK with flags cleared, not a query failure.
+ * Destination slots are residence, shopping, work; -1 means unassigned. */
+#define TFX_LIFECYCLE_ENTITY_PRESENT 1u
+#define TFX_LIFECYCLE_PERSON_PRESENT 2u
+typedef struct tfx_person_lifecycle {
+    uint32_t struct_size, world_id, flags;
+    int32_t person, target, destinations[3];
+} tfx_person_lifecycle;
+typedef struct tfx_api_v7 {
+    tfx_api_v6 v6;
+    tfx_status (*read_person_lifecycle)(tfx_context, int32_t person, tfx_person_lifecycle *out);
+} tfx_api_v7;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

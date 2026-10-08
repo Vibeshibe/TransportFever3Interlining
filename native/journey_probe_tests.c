@@ -42,17 +42,24 @@ static void sample(unsigned world, unsigned flags, int destination) {
     client.before_terminal_selection(42, NULL);
 }
 int main(int argc, char **argv) {
-    if (argc == 2) {
+    if (argc == 2 || argc == 3) {
+        int mutable = argc == 3;
+        if (mutable) CHECK(!strcmp(argv[2], "--mutable"));
         HMODULE module = LoadLibraryA(argv[1]); CHECK(module);
         tfx_status (*get_api)(uint32_t, tfx_api *) = (void *)GetProcAddress(module, "tfx_get_api");
         DWORD (WINAPI *start)(void *) = (void *)GetProcAddress(module, "tfx_start");
         CHECK(get_api && start);
         tfx_api_v6 observer = {.v5.v4.v3.v2.base.struct_size = sizeof(observer)};
         CHECK(get_api(6, &observer.v5.v4.v3.v2.base) == TFX_OK);
-        CHECK(observer.v5.v4.v3.v2.base.capabilities == 95 && observer.read_person_journey);
+        CHECK(observer.v5.v4.v3.v2.base.capabilities == (mutable ? 127u : 95u) && observer.read_person_journey);
+        tfx_api_v7 life = {.v6.v5.v4.v3.v2.base.struct_size = sizeof(life)};
+        CHECK(get_api(7, &life.v6.v5.v4.v3.v2.base) == TFX_OK);
+        CHECK(life.v6.v5.v4.v3.v2.base.capabilities == (mutable ? 255u : 223u) && life.read_person_lifecycle);
+        tfx_person_lifecycle snapshot = {.struct_size = sizeof(snapshot)};
+        CHECK(life.read_person_lifecycle(0, 123, &snapshot) == TFX_STALE_CONTEXT);
         CHECK(start(NULL) == TFX_UNSUPPORTED_BUILD);
         FreeLibrary(module);
-        puts("PASS: observer DLL omits mutation capability and refuses the unsupported fixture executable.");
+        puts("PASS: DLL preserves ABI6/7 capability contract and refuses the unsupported fixture executable.");
     } else CHECK(argc == 1);
     CHECK(tfx_register_journey_probe(NULL, 123, 456) == TFX_INVALID_ARGUMENT);
     CHECK(tfx_register_journey_probe(write_line, -1, 456) == TFX_INVALID_ARGUMENT);

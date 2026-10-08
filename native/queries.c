@@ -447,19 +447,17 @@ tfx_status tfx_query_terminal(tfx_reader *r, int32_t station, int32_t terminal, 
     return TFX_OK;
 }
 
-tfx_status tfx_query_presence(tfx_reader *r, int32_t entity, tfx_entity_presence *out) {
-    if (!out || out->struct_size != sizeof(*out) || entity < 0) return TFX_INVALID_ARGUMENT;
-    TRY(begin_query(r));
+static tfx_status entity_masks(tfx_reader *r, int32_t entity, uint64_t actual[2]) {
     vector rows, entries, masks;
     TRY(entity_vector(r, &rows));
-    tfx_entity_presence result = {.struct_size = sizeof(result), .entity = entity};
-    if ((uint32_t)entity >= (rows.end - rows.begin) / 24) { *out = result; return TFX_OK; }
+    actual[0] = actual[1] = 0;
+    if ((uint32_t)entity >= (rows.end - rows.begin) / 24) return TFX_OK;
     TRY(read_bytes(r, rows.begin + (uint64_t)entity * 24, &entries, sizeof(entries)));
     if (!valid_vector(entries, 8, 128)) return TFX_INVALID_STATE;
     int32_t handles[128][2];
     size_t bytes = (size_t)(entries.end - entries.begin);
     if (bytes) TRY(read_bytes(r, entries.begin, handles, bytes));
-    uint64_t expected[2] = {0}, actual[2];
+    uint64_t expected[2] = {0};
     for (size_t i = 0; i < bytes / 8; ++i) {
         int32_t type = handles[i][0];
         if (type < 0 || type >= 128 || handles[i][1] < 0) return TFX_INVALID_STATE;
@@ -470,9 +468,46 @@ tfx_status tfx_query_presence(tfx_reader *r, int32_t entity, tfx_entity_presence
     TRY(read_bytes(r, r->world + 0xc0, &masks, sizeof(masks)));
     if (!valid_vector(masks, 16, ENTITY_LIMIT) ||
         (masks.end - masks.begin) / 16 < (rows.end - rows.begin) / 24) return TFX_INVALID_STATE;
-    TRY(read_bytes(r, masks.begin + (uint64_t)entity * 16, actual, sizeof(actual)));
+    TRY(read_bytes(r, masks.begin + (uint64_t)entity * 16, actual, sizeof(expected)));
     if (memcmp(expected, actual, sizeof(expected))) return TFX_INVALID_STATE;
-    result.has_components = bytes != 0;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_presence(tfx_reader *r, int32_t entity, tfx_entity_presence *out) {
+    if (!out || out->struct_size != sizeof(*out) || entity < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    uint64_t bits[2];
+    TRY(entity_masks(r, entity, bits));
+    tfx_entity_presence result = {.struct_size = sizeof(result), .entity = entity,
+        .has_components = (bits[0] | bits[1]) != 0};
+    *out = result;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_lifecycle(tfx_reader *r, int32_t person, tfx_person_lifecycle *out) {
+    if (!out || out->struct_size != sizeof(*out) || person < 0) return TFX_INVALID_ARGUMENT;
+    TRY(begin_query(r));
+    uint64_t bits[2];
+    TRY(entity_masks(r, person, bits));
+    tfx_person_lifecycle result = {.struct_size = sizeof(result), .world_id = r->world_id,
+        .person = person, .target = -1, .destinations = {-1, -1, -1}};
+    if (bits[0] | bits[1]) result.flags |= TFX_LIFECYCLE_ENTITY_PRESENT;
+    unsigned type = (unsigned)r->types[PERSON];
+    if (bits[type / 64] & (UINT64_C(1) << (type % 64))) {
+        unsigned char human[0x54];
+        TRY(component(r, person, PERSON, human, sizeof(human)));
+        if (i32(human) != 0) return TFX_INVALID_STATE;
+        vector destinations;
+        memcpy(&destinations, human + 8, sizeof(destinations));
+        if (!valid_vector(destinations, 4, 16) || destinations.end - destinations.begin != 12)
+            return TFX_INVALID_STATE;
+        TRY(read_bytes(r, destinations.begin, result.destinations, sizeof(result.destinations)));
+        result.target = i32(human + 0x50);
+        if (result.target < -1) return TFX_INVALID_STATE;
+        for (unsigned i = 0; i < 3; ++i)
+            if (result.destinations[i] < -1) return TFX_INVALID_STATE;
+        result.flags |= TFX_LIFECYCLE_PERSON_PRESENT;
+    }
     *out = result;
     return TFX_OK;
 }
