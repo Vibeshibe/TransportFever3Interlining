@@ -1,20 +1,41 @@
 # Session handoff — 2026-10-08
 
-## Latest — 0.7.5 live trial running
+## Latest — 0.7.5 completed; continuation after removal proven
 
-User restarted, loaded the correct before_multi_passenger baseline paused, then
-confirmed normal-speed unpause. Fresh Linux102810/start2320640, Windows304;
-no old bridge mappings. Stdout load18:02:40Z, ready18:03:26Z. Loaded build-v7f
-0.7.5 mutable DLL (hash below), tfx_start0; cap5/18000, reserve1, grace32.
-Log `tpf-bridge-304-23489567.log`; metadata `build-v7f/live-run.json`.
-Watcher73040 active; world1 `0x2e7c3ca0`, world2 `0x2e7c4960`, thread592.
-Current checkpoint: four switches/boardings;122261→72934 arrived2160/2161,
-127558→120856 at5238/5239,122790→86009 at5782/5783.120842 removed at7189/7190,
-confirmed and resolved as passenger_removed; discovery resumed7190 with one
-attempt left. **No home_pending/home_invalidated event occurred.** Await fifth
-actual switch/boarding; continuation is not yet proved by resumption alone.
-Do not reinject; finish existing capture and audit. Home-specific handling remains
-fixture-only if no matching live case occurs; do not silently label it validated.
+**Five switches/boardings, four original arrivals, one confirmed removal.**
+At13695 stopped automatically with all_outcomes_observed, query_errors0 and
+switching_blocked0. Wrapper forwards only; no further changes permitted.
+Watcher73040 exited0 at2026-10-08T18:53:18.205804Z. All watchers/readers ended.
+User told game may be paused/closed; no further runtime, checkpoint or restart
+needed for this completed test. Do not reinject while the DLL remains mapped.
+
+120842 S3→S1/97745 stage512 boarded514, removed7189/7190, arrival0.
+122261 same train stage518 boarded520, original72934 arrival2160/2161.
+122790 S1→S3/97914 stage2011 boarded2013, original86009 arrival5782/5783.
+127558 S3→S1/98398 stage2986 boarded2999, original120856 arrival5238/5239.
+86553 S1→S3/97914 stage9214 boarded9247, original86548 arrival13694/13695.
+Discovery resumed after removal confirmation7190 with one remaining attempt;
+86553 proves a later distinct switch/boarding and completed onward journey.
+
+Log audit PASSES, continuation_proven true. **No home_pending/home_invalidated
+event occurred**; home_invalidation_continuation_proven and home_clear_continuation_proven
+remain false. Home-specific handling is fixture-tested only. Do not attribute
+120842's exact removal cause or claim five arrivals/time savings/broad safety.
+No code/bounds changed during capture. Next proceed with bounded route-eligibility
+implementation beyond save-specific S1↔S3 stops1→2, retaining existing planned
+alighting/platform/capacity/lifecycle guards. User wants implementation next;
+do not automatically request another replay of this completed removal test.
+
+Loaded build-v7f0.7.5 source5a5b93e; startup10b5009/interim9e847ec pushed.
+DLL SHA25634ad73a8d3aaad513899327ebeaafe22167a47f3ef5d0c99668044f552685b60.
+Log `tpf-bridge-304-23489567.log` SHA256
+50f6f792028fe0ef4b4e67d033c9046067a0bff9a50299ad8e4beaf315915c4d.
+Audit SHA2561957a0824c518bd4d192aeaed5a4d387005cdb0cded81ca0166dfa6b2cc58c63.
+Ignored build-v7f/live-run.json has full completed metadata. Original baseline
+before_multi_passenger remains ce2e02d935da… /80,431,012bytes; no save overwritten.
+Historical Linux102810/start2320640, Windows304, thread592; worlds0x2e7c3ca0 /
+0x2e7c4960 expire on restart/reload. Fresh process/save verification always required.
+Full result/next scope: [home invalidation](../../docs/home-invalidation.md).
 
 ## Previous — 0.7.4 timed out; 0.7.5 prepared
 

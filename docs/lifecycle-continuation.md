@@ -1,5 +1,14 @@
 # Continue after confirmed lifecycle outcomes — 0.7.3
 
+## Latest live validation
+
+The completed0.7.5 trial proves continuation after confirmed removal: resolution
+at7190, later distinct switch9214 and boarding9247, then original arrival13695.
+Five boardings, four original arrivals, one removal; zero query errors and a
+passing log audit. No home-loss intermediate state was captured. See
+[full result and coverage limits](home-invalidation.md). Historical0.7.3 failures
+below remain unchanged; they are superseded for removal-continuation evidence.
+
 ## Implementation
 
 Version 0.7.2 ended the entire pilot after a confirmed removal or cleared

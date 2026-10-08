@@ -839,6 +839,21 @@ loaded build-v7f successfully. User confirmed normal-speed unpause. Capture
 retains cap5/18000, reserve1 and grace32; live outcomes are pending. Details in
 [home-invalidation evidence](home-invalidation.md) and the session handoff.
 
+## 2026-10-08 — Live continuation after removal validated
+
+0.7.5 completed five switches and both-world boardings: four original arrivals,
+one separately confirmed removal. After120842 removal at7190,86553 switched at
+9214, boarded9247 and reached original86548 at13694/13695. This proves actual
+continuation with unused allowance, followed by a complete onward journey.
+Stopped all_outcomes_observed, zero query errors; log audit passes, watcher ended.
+No home-loss intermediate state was captured, so home_invalidated remains
+fixture-tested only. No further running time or replay is needed for this result.
+
+Next implement broader shared-route eligibility while preserving planned alighting
+and existing mutation/lifecycle bounds. Full sequences, hashes and limitations in
+[the completed trial](home-invalidation.md). No code change during this capture;
+existing baseline is unchanged. No stable-release or timing-improvement claim.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

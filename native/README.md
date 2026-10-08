@@ -14,8 +14,10 @@ Version 0.7.4's live trial showed that cleared homes can persist while onboard;
 waiting32 callbacks for removal stopped the run. Version0.7.5 instead classifies
 matching both-world home loss as `home_invalidated`, retaining the consumed
 attempt and excluding the ID without claiming arrival/removal. One-world evidence
-keeps the32-callback deadline. It is fixture-tested and not yet loaded; see
-[home invalidation](../docs/home-invalidation.md).
+keeps the32-callback deadline. The 0.7.5 live trial confirmed five boardings,
+four original arrivals and one removal, followed by a later switch/boarding and
+arrival after that removal. No intermediate home loss occurred; that specific
+path remains fixture-tested only. See [completed validation](../docs/home-invalidation.md).
 The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.

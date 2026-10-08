@@ -59,13 +59,65 @@ worlds, home-bound targets and permanent error blocks. Host batch/failure and
 both mutable/read-only DLL contract suites also pass; peak allowance40/64 queries.
 Build warnings are errors.
 
-Prepared ignored build directory `analysis/native-bridge/build-v7f/`, cap5/18000,
-reserve enabled. Loaded after the user restarted into the verified before_multi_passenger baseline;
-loader returned0. Fresh Linux102810/start2320640, Windows304; log
-`tpf-bridge-304-23489567.log`. User confirmed normal-speed unpause; watcher73040
-is active. **Live outcomes remain pending.** No save was modified by our tools.
-Require home_invalidated confirmation, resumed discovery and an actual later
-different-person switch/boarding, with separate final journey outcomes.
+The completed live trial below validates continuation after confirmed removal.
+It did not capture home loss, so `home_invalidated` remains fixture-tested only.
+
+## Completed 0.7.5 live trial
+
+Loaded the verified build-v7f DLL after a fresh restart into the unchanged
+`TPF3Interlining_before_multi_passenger_01` baseline; loader returned 0. User
+confirmed normal-speed unpause. Limits of 5 passengers and 18,000 callbacks, reserved final attempt and the 32-callback
+home grace were unchanged. No new code or DLL was loaded during the capture.
+
+| Passenger | Switch / vehicle | Stage | Both-world boarding | Final outcome |
+| --- | --- | --- | --- | --- |
+| 120842 | S3→S1 /97745 | 512 | 514 | Removed at 7189/7190; no arrival |
+| 122261 | S3→S1 /97745 | 518 | 520 | Original destination 72934 at 2160/2161 |
+| 122790 | S1→S3 /97914 | 2011 | 2013 | Original destination 86009 at 5782/5783 |
+| 127558 | S3→S1 /98398 | 2986 | 2999 | Original destination 120856 at 5238/5239 |
+| 86553 | S1→S3 /97914 | 9214 | 9247 | Original destination 86548 at 13694/13695 |
+
+All five replaced the existing stops 1→2 leg and alighted from the substitute at
+planned stop 2. Both worlds reported 120842 removed; its tracking closed at 7190
+without an arrival claim, and discovery resumed with one attempt remaining.
+The later 86553 switch and both-world boarding prove actual continuation after
+confirmed removal. Its onward S2/98389 journey and connecting service 39045/79465
+then completed at the original destination. No full-trip timing improvement or
+specific cause of 120842's removal is established.
+
+At 13695 the pilot ended automatically with `all_outcomes_observed`, staged=5,
+query_errors=0 and switching_blocked=0. Final masks confirm **four original arrivals
+and one removal**, not five successful journeys. The wrapper explicitly forwards
+only and permits no further changes. Watcher 73040 exited 0 at
+2026-10-08T18:53:18.205804Z after 2,767.65 seconds. All observers/readers have ended;
+user was told the game may be paused or closed. No checkpoint or restart is needed
+to complete this trial. The DLL remains mapped until game exit.
+
+The final log audit passes: five unique engine attempts with preserved waiting
+age/destination/place and closed engine scopes; every expected boarding confirmed;
+no new mutation during unresolved lifecycle evidence; no later journey reads for
+the closed ID; fifth attempt follows lifecycle resolution. Audit flags are
+`continuation_proven=true`, `home_invalidation_continuation_proven=false` and
+`home_clear_continuation_proven=false`. No home_pending/home_invalidated event
+occurred, so the home-specific 32-callback path remains automated-test coverage.
+
+Historical process: Linux PID 102810/start token 2320640, Windows PID 304, thread 592; worlds
+`0x2e7c3ca0`/`0x2e7c4960`. Never reuse after restart/reload. Ignored metadata and
+complete evidence are `build-v7f/live-run.json`, `live-audit.json` and
+`tpf-bridge-304-23489567.log`. Baseline remains 80,431,012 bytes, SHA256
+`ce2e02d935da822e63fbd8a12fe24234cfef6a5698d841e4f978939ca3c80f84`.
+No save files were changed by our tools.
+
+## Next implementation
+
+Proceed with bounded route-eligibility expansion beyond the save-specific S1↔S3
+adjacent leg. Preserve each passenger's planned alighting stop; do not shorten
+through legs to manufacture transfers. Retain platform-access, capacity, current
+state/revalidation, attempt and lifecycle guards. Home-specific live coverage
+remains an explicit gap to exercise when a matching case occurs, rather than a
+reason to replay this completed removal test. Broader route support needs its own
+implementation and focused tests; no stable release, autoload installation,
+platform switching or preference/time optimization is claimed.
 
 ## Artifact hashes
 
@@ -80,3 +132,9 @@ Under `build-v7f/`:
 - Mutable DLL: `34ad73a8d3aaad513899327ebeaafe22167a47f3ef5d0c99668044f552685b60`.
 - Observer DLL: `c9e69dedeb4e870e5daaee60a003e1b9fa1dae7c40dbd2aef8fd96cc4745ac78`.
 - `home-invalidation-tests.json`: `b8c4506ae3f3c6f25493e44c6c272890cf46ab124ff714d32e2cdc3ba4a0bade`.
+
+Live evidence under `build-v7f/`:
+
+- Log23489567: `50f6f792028fe0ef4b4e67d033c9046067a0bff9a50299ad8e4beaf315915c4d`.
+- `live-audit.json`: `1957a0824c518bd4d192aeaed5a4d387005cdb0cded81ca0166dfa6b2cc58c63`.
+- Completed `live-run.json`: `3fe02395cbd7b1cc8616c6e88709437672e601df2c8ddb860a69827f3ee16e9a`.

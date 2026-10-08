@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — four batch boardings; five boardings, four original arrivals, live removal classification validated
+- Status: In progress — five boardings, four arrivals and actual continuation after removal validated; broader route eligibility next
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -141,3 +141,13 @@ at1981/1982; passenger still onboard over a minute later, then removed. Three
 boardings/no original arrivals observed.0.7.5 now classifies matching both-world
 home loss separately; fixture/host/contract tests pass, build-v7f NOT loaded.
 See [home invalidation](../../docs/home-invalidation.md). No active watchers.
+
+Completed0.7.5 live trial: five boardings, four original arrivals and one removal;
+after confirmed removal7190, the reserved fifth passenger switched9214,
+boarded9247 and arrived13695. All outcomes observed, zero query errors, audit
+passed; all watchers ended. **Continuation after removal is live-validated;
+home_invalidated remains fixture-only because no home-loss state was captured.**
+See [complete evidence](../../docs/home-invalidation.md). Next implement bounded
+shared-route eligibility beyond the save-specific adjacent pair, preserving the
+planned alighting stop and existing access/capacity/revalidation/lifecycle guards.
+No additional replay or save load is needed to finish this completed trial.
