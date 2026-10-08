@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — four batch boardings; lifecycle diagnostics implemented; live classification and batch arrivals unverified
+- Status: In progress — four batch boardings; five boardings, four original arrivals, live removal classification validated
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -103,3 +103,12 @@ permanently block new proposals; confirmed removal/invalidation never adds an
 arrival. Prepared cap5/18,000-callback build-v7c, not loaded. Next run the documented
 [live classification trial](../../docs/lifecycle-tracking.md) from the restored
 pre-trial baseline after user confirms restart/load/paused readiness.
+
+The version0.7.2 live trial is complete: five switches/boardings, four original
+arrivals and one separately classified both-world removal, zero query errors.
+A completed arrival survived later workplace invalidation in the tracker. No
+fifth arrival is claimed; removal cause is not attributed. Live result and
+coverage limits are in [the lifecycle trial](../../docs/lifecycle-tracking.md).
+Next bounded implementation may handle classified lifecycle outcomes explicitly,
+keeping unexplained identity/read errors as hard stops; route expansion remains
+separate. No active watcher or further running time is needed for this trial.

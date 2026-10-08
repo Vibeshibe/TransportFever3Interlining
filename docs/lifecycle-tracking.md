@@ -5,7 +5,8 @@
 The [read-only control](passenger-lifecycle-investigation.md) reproduced passenger
 removal and workplace invalidation without interlining. Version 0.7.2 makes these
 states distinguishable in the bounded pilot instead of reporting only missing
-journey data or an unexpected target. Live validation of this revision is pending.
+journey data or an unexpected target. The completed live trial below confirmed
+five boardings, four original arrivals and one separately classified removal.
 
 The shared bridge adds a copied lifecycle query through ABI 7; ABI 1–6 remain
 compatible. Before staging a change, the consumer records the current home and
@@ -70,7 +71,7 @@ Final mutable DLL:
 Observer DLL:
 `08a0273f59d6bfa0afd01bceed523f5d3aefde73f8a285fad936834c40c333aa`.
 
-## Prepared live trial
+## Live trial procedure
 
 1. Restart the game: the previous observer remains loaded until exit. Load a
    disposable copy of `TPF3Interlining_before_multi_passenger_01` and leave paused.
@@ -87,8 +88,8 @@ Observer DLL:
    preserve the pre-trial and earlier diagnostic backups.
 
 This trial validates the new classification, not unrestricted continuation after
-retirement, broader route eligibility or a stable release. No new DLL has been
-loaded into the game at this implementation checkpoint.
+retirement, broader route eligibility or a stable release. At the implementation checkpoint the DLL was not yet loaded; the startup and
+completed outcome are recorded below.
 
 ## Live startup — 2026-10-08
 
@@ -101,14 +102,81 @@ absence of previous bridge mappings were checked before loading.
 Linux64386 / start1139296, Windows308; `tfx_start=0`. User confirmed unpaused at
 normal speed. Log `build-v7c/tpf-bridge-308-11756348.log` confirms version0.7.2,
 cap5/18,000, lifecycle stop enabled, thread776; worlds1 `0x6748b7d0`,2 `0x6748ab10`.
-These addresses are valid only for this load/process. Capture is running; no live
-classification or boarding outcome is claimed at startup. Metadata and watcher
+These addresses are valid only for this load/process. The capture began normally;
+no live classification or boarding outcome was claimed at startup. Metadata and watcher
 are ignored artifacts beside the build. Preserve the loaded DLL unchanged.
 
-Live progress:120842 staged512/boarded514,122261 staged518/boarded520, both S3→S1
+Interim progress (superseded by the completed result below):120842 staged512/boarded514,122261 staged518/boarded520, both S3→S1
 vehicle97745. Person40365 staged1074/boarded1095, S1→S3 vehicle97912. Both-world
 alighting observations place replacement vehicles at stop2. Person122261 then
 used line79460/vehicle123296 and reached original destination72934 at2444/2445.
 Unlike earlier trials, original arrival preceded any observed workplace change;
 subsequent lifecycle changes must not invalidate that completed journey. Other
-outcomes and the complete run remain pending.
+outcomes were pending at that checkpoint.
+
+## Completed live result — 2026-10-08
+
+The pilot stopped at **callback 7670** with `reason=passenger_removed`, five
+staged passengers, zero query errors and `switching_blocked=1`. The final log
+confirms the wrapper forwards only. Watcher exited0 at15:17:46.912452Z after
+1,499.36 seconds of watching; this is wall time, not simulation time.
+
+| Person | Replacement | Vehicle | Stage / both-world boarding | Original destination | Final outcome |
+| --- | --- | --- | --- | --- | --- |
+| 120842 | S3→S1, stops1→2 | 97745 | 512 / 514 | 78804 | Removed before confirmed arrival,7670 |
+| 122261 | S3→S1, stops1→2 | 97745 | 518 / 520 | 72934 | Original arrival2444/2445 |
+| 40365 | S1→S3, stops1→2 | 97912 | 1074 / 1095 | 86033 | Original arrival4593/4596 |
+| 72701 | S3→S1, stops1→2 | 98594 | 4698 / 4706 | 72691 | Original arrival6854/6855 |
+| 73064 | S3→S1, stops1→2 | 98594 | 4711 / 4713 | 73063 | Original arrival6899/6900 |
+
+Every engine result was status0/attempted1, with original arrival-time,
+original-destination and waiting-place bytes preserved. Every substituted leg
+boarded in both worlds before the next proposal; all five alighted with their
+replacement vehicle at planned stop2. Native onward services were observed:
+120842 continued on S1/98610,122261 on79460/123296,40365 on S2/98301,72701 on
+79460/123294 and73064 on79461/123293. These are journey observations, not proof
+of a faster route or the unmodified counterfactual itinerary.
+
+120842 left its onward train at planned stop3 at7498/7499 and was moving toward
+78804 at7500/7501. At7669, world1 reported missing SimPerson;7670 confirmed the
+same in world2. Its arrival mask stayed0 and removal mask became3. Final repeated
+external inventories corroborate that120842 now has only an EcsOctreeNode
+component; original home75531 and destination78804 remain buildings. This is a
+new removed passenger compared with the earlier control. **Its specific removal
+cause was not traced**, and the earlier120770 control does not prove that cause.
+No arrival is inferred from disappearance.
+
+An independent read-only snapshot after122261's arrival found target122255 and
+slots[122255,75501,-1] in both worlds. The final tracker summary correctly kept its
+original arrival mask3 despite subsequent workplace invalidation. This is live
+coverage of preserving completed journeys, not of the pre-arrival invalidation
+stop branch; that branch remains fixture-tested only.
+
+The audit checked five distinct requests/results, preserved fields, both-world
+boarding before each next request, the attempt/callback bounds, confirmation
+masks and no requests after removal. The five-attempt cap was already exhausted
+before removal, so the live absence of later requests alone does not isolate the
+new blocking logic; the consumer fixtures cover that with remaining allowance.
+All logged boundary checks had rejected0. No six-passenger run, broad route policy,
+full batch arrival, natural cause attribution or stable release is claimed.
+
+Artifacts under ignored `analysis/native-bridge/build-v7c/`:
+
+- `tpf-bridge-308-11756348.log`, SHA-256
+  `64ff0426fc8bb1bd8514639fd263c4fa91d475af295e939679ac87e1203c5f69`.
+- `after-arrival-lifecycle.json`, SHA-256
+  `2fc406de8b4ff44723320f16958607e0f8a50f5d14eaa21ce43ec129ea07e83d`.
+- `final-entity-inventory.json`, SHA-256
+  `923e3718e268956957b816a03ffaed8c28676b8c2d6d05c1a22ff4d0090794c7`.
+- `live-audit.json`, `audit_trial.py`, `live-run.json`: checks and process metadata.
+- `last-vehicle-progress.jsonl`: bounded observational vehicle-state corroboration.
+
+External inventories are repeated copied reads with closed-window checks, not
+atomic transactions. All external readers/watchers have exited. User was told
+capture is complete and may pause the game. The DLL remains loaded, forwarding
+only, until exit. No new save checkpoint was requested or claimed.
+
+The diagnostic milestone is complete for removal classification and preserving
+arrivals through later invalidation. Further implementation should keep unknown
+identity/query failures as hard stops and handle classified lifecycle outcomes
+explicitly; do not silently turn them into successes or loosen route eligibility.

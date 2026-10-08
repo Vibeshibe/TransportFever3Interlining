@@ -722,6 +722,25 @@ Capture continues with the existing cap5/18,000. No lifecycle classification is
 claimed yet. See [live trial details](lifecycle-tracking.md). Log, process metadata
 and active watcher are recorded in the handoff; preserve the loaded DLL.
 
+## 2026-10-08 — Five-passenger lifecycle trial completed
+
+Version0.7.2 confirmed five distinct switches and both-world boardings, followed
+by four original-destination arrivals (122261,40365,72701,73064). All five left
+their substituted trains at planned stop2. Person120842 then continued on S1,
+alighted at its onward stop3, and lost SimPerson before a confirmed78804 arrival.
+Callbacks7669/7670 classified removal in both worlds without adding an arrival;
+the capture stopped with query_errors0 and switching_blocked1. The wrapper now
+forwards only. All external monitors exited; user can pause the game.
+
+Independent copied inventories corroborated120842's non-person state; its exact
+removal cause remains untraced. A separate snapshot found122261's later cleared
+work assignment/current home, while the final summary retained its earlier
+original arrival. This validates removal classification and post-arrival lifecycle
+handling live; pre-arrival invalidation remains fixture-tested. Since the five
+attempts preceded removal, fixtures establish blocking with unused allowance.
+The log audit passed; full outcomes, hashes and limitations are in the
+[lifecycle trial](lifecycle-tracking.md). No gameplay code changed in this record.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

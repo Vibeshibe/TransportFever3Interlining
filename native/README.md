@@ -7,7 +7,9 @@ The default remains one. The first batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
 See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 distinguishes
 passenger removal and cleared destination assignments from arrival and unresolved
-errors, without permitting further switches after either event. The native
+errors, without permitting further switches after either event. Its live trial
+confirmed five boardings, four original arrivals and one separate removal outcome;
+see [results and limits](../docs/lifecycle-tracking.md). The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 

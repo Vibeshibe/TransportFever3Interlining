@@ -1,32 +1,49 @@
 # Session handoff — 2026-10-08
 
-## Lifecycle diagnostics — live capture running (latest)
+## Lifecycle diagnostics — live trial completed (latest)
 
-Version0.7.2 is built/tested in `analysis/native-bridge/build-v7c`; mutable DLL
-SHA256 `2f8ca09d693e9411327660a730e4278e17347e012e65cc0a4a0f3da3e3127ca0`.
-**Loaded successfully; user confirmed unpaused at normal speed.**
-Cap5,18,000 callbacks, same S1↔S3 stops1→2 rules.
-ABI7 adds copied SimPerson presence/home/shopping/work/target queries. Older ABI
-layouts/capabilities remain unchanged. Consumer captures pre-change baseline,
-blocks new proposals permanently on first anomaly, confirms removal/invalidation
-in both worlds and stops with explicit classification. These never count as
-arrivals; unresolved read/identity failures retain conservative stops.
+Version0.7.2 implementation `935ef65` and startup/arrival checkpoint `45fafcb` are
+pushed. Build `analysis/native-bridge/build-v7c`, mutable DLL SHA256
+`2f8ca09d693e9411327660a730e4278e17347e012e65cc0a4a0f3da3e3127ca0`.
+**Five distinct switches/boardings, four original arrivals, one both-world removal.**
+At7670 the consumer stopped with `reason=passenger_removed`, query_errors0 and
+switching_blocked1. Final wrapper log says forwards only; no further changes.
+Log watcher session16151 finished exit0 at15:17:46.912452Z; all external readers
+have exited. User was told they may pause. No new saved checkpoint requested.
 
-All query, pilot, host batch/failure, bridge/candidate and observer/mutable DLL
-contract tests passed. Max fixture allowance40/64. No running test sessions.
-Evidence and full trial procedure: [lifecycle tracking](../../docs/lifecycle-tracking.md).
-Fresh Linux64386 (process start1139296) / Windows308; thread776,
-world1 `0x6748b7d0`, world2 `0x6748ab10`. Save initially mismatched; no DLL was
-loaded until the user switched to `TPF3Interlining_before_multi_passenger_01`,
-verified in stdout at14:49:51Z with ready at14:50:46Z. Hash ce2e02d935da… unchanged.
-`tfx_start=0`; log `build-v7c/tpf-bridge-308-11756348.log` confirms configured bounds.
-Metadata `build-v7c/live-run.json`. Local log watcher session16151 runs
-`build-v7c/watch_trial.py`; no debugger/external memory monitor. Continue this
-capture without requesting another unpause or loading a second DLL. Three switches
-confirmed both-world boarding:120842/122261 S3→S1,40365 S1→S3. At2444/2445,122261
-reached ORIGINAL72934 after native onward line79460. No lifecycle classification
-yet; this run reached work before invalidation. Other outcomes pending. World
-addresses expire on restart/reload. No stable release.
+Passengers:120842 S3→S1/97745, removed before confirmed78804 arrival;122261
+S3→S1/97745 reached72934;40365 S1→S3/97912 reached86033;72701 and73064
+S3→S1/98594 reached72691/73063. All substituted legs alighted at planned stop2;
+onward transfers were observed. Arrival sequences and limits are in the
+[complete trial record](../../docs/lifecycle-tracking.md).
+
+After122261's workplace arrival, independent copied reads confirmed its work
+slot cleared and target became its existing home122255. The final arrival mask
+correctly remains3. Person120842's missing SimPerson at7669/7670 was independently
+corroborated by an EcsOctreeNode-only inventory. **Its specific removal cause is
+not traced**; it differs from120770 in the earlier no-mutation control. Do not
+call this five successful journeys or assume a natural cause for this new event.
+
+ABI7 query/pilot/host/mutation/API suites passed; peak fixture allowance40/64.
+Live test covers removal classification and retaining completed arrivals through
+later invalidation. Pre-arrival invalidation remains fixture-only. Attempt cap5
+was exhausted before removal, so fixtures (with allowance remaining) establish
+the new permanent block independently. Policy is still S1↔S3 stops1→2 only.
+
+Historical process: Linux64386/start1139296 / Windows308; thread776,
+world1 `0x6748b7d0`, world2 `0x6748ab10`. These expire on restart/reload. DLL stays
+loaded until exit. Do not attach a second build or restart this completed capture.
+Log `build-v7c/tpf-bridge-308-11756348.log` SHA256
+`64ff0426fc8bb1bd8514639fd263c4fa91d475af295e939679ac87e1203c5f69`.
+Metadata/evidence: `live-run.json`, `live-audit.json`, `after-arrival-lifecycle.json`,
+`final-entity-inventory.json`, `last-vehicle-progress.jsonl`; full hashes in record.
+Preserved baseline remains ce2e02d935da…; no save files were changed by our tools.
+
+Next implementation can build on these explicit outcomes. Keep unknown read and
+identity failures as hard stops, separate lifecycle censoring from arrival, and
+retain route/attempt guards. Continuing after classified outcomes or expanding
+routes requires a distinct bounded change/test; neither is implemented here.
+No stable release/autoload or measured journey-time improvement is established.
 
 ## Completed read-only lifecycle control (latest)
 
