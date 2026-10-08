@@ -104,3 +104,14 @@ Ignored artifacts under `analysis/native-bridge/build-v7d/`:
 
 The preserved pre-trial save hash was rechecked unchanged before requesting the
 live load. No game process was modified during implementation or automated tests.
+
+## Live startup — 2026-10-08
+
+Implementation `6cab818` is pushed. Fresh Linux79516/start1873255 / Windows308;
+user corrected the initial save selection before any bridge injection. Stdout
+confirms loading `TPF3Interlining_before_multi_passenger_01` at16:50:20Z and ready
+at16:50:53Z. Process identity, absent previous bridge and DLL hash were verified.
+Loader returned0. Log `build-v7d/tpf-bridge-308-18964006.log` confirms0.7.3,
+cap5/18,000, continuation policy and reserve1. User has been asked to unpause at
+normal speed; live outcomes and world addresses are pending. Do not rebuild the
+loaded DLL. Process metadata is preserved in adjacent `live-run.json`.

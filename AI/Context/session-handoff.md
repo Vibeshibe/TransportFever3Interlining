@@ -1,9 +1,9 @@
 # Session handoff — 2026-10-08
 
-## Lifecycle continuation implemented — ready for fresh live test (latest)
+## Lifecycle continuation loaded — awaiting unpause (latest)
 
 User asked to finish implementation/automated tests before another game load.
-Version0.7.3 is complete in `analysis/native-bridge/build-v7d`, **not loaded**.
+Version0.7.3 (`6cab818`) is loaded from `analysis/native-bridge/build-v7d`; tfx_start0.
 Mutable DLL SHA256 `6c29dc15804889f319f471d81ff5b04f25b15a5047b51bc915d0b6562609b39c`.
 ABI7/query/mutation implementations unchanged. Five attempts/18,000 callbacks,
 same S1↔S3 stops1→2 eligibility; trial reserve enabled for the fifth attempt.
@@ -19,14 +19,19 @@ Normal/reserved consumer, host batch/failure, candidate and both DLL contract
 suites passed. Max fixture allowance40/64. Invalid reserve/cap1 rejected by CLI
 and CMake. No running test/watcher sessions. See [continuation guide](../../docs/lifecycle-continuation.md).
 
-Next: request readiness for one fresh restart/load of disposable
-`TPF3Interlining_before_multi_passenger_01` paused. Its ce2e02d935da… hash was
-rechecked unchanged. Previous0.7.2 may remain loaded until game exit. Verify
-fresh process/save, load only build-v7d mutable DLL, then ask to unpause. Require
-confirmed lifecycle resolution and a subsequent successful different-passenger
+Fresh Linux79516/start1873255 / Windows308. User corrected the initial save
+selection before injection: stdout confirms before_multi_passenger loaded at
+16:50:20Z and ready16:50:53Z. No earlier bridge mapped. Loaded successfully;
+log `build-v7d/tpf-bridge-308-18964006.log` confirms continuation policy and reserve1.
+Metadata `build-v7d/live-run.json`. **Asked user to unpause at normal speed; awaiting
+answer.** No watcher started yet; world addresses await first callbacks. Do not
+load again or rebuild the pinned DLL. Start monitoring this log on unpause.
+
+Require confirmed lifecycle resolution and a subsequent successful different-person
 change with remaining allowance; a resumption log alone is insufficient.
 If no lifecycle event occurs, cap expiry is inconclusive—do not expand it silently.
-Do not reuse historical PID/worlds below or overwrite loaded DLLs.
+All PID/world values from older trials below are stale. Current DLL stays loaded
+until game exit. No live continuation outcome is claimed yet.
 
 ## Lifecycle diagnostics — live trial completed (latest)
 
