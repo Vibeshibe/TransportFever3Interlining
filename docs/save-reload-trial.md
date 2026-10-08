@@ -1,5 +1,10 @@
 # Repeat journey and save/reload trial
 
+**Result: complete for this checkpoint.** Passenger 106847's alternate S3
+boarding survived an onboard save and game restart. With only read-only observers
+loaded afterward, the passenger transferred to S2 and reached original destination
+85882 in both engine worlds. See the final result below for hashes and limits.
+
 ## Purpose and limits
 
 Repeat the successful same-platform S1↔S3 switch using revision 0.6.2's rolling
@@ -114,8 +119,8 @@ seven unsupported-leg rejections and twenty boarding mismatches. There were zero
 query errors, rejected boundaries, staged requests or engine attempts. Discovery
 never filled its 32-person allowance, so this run did not exercise rolling eviction.
 No switched-passenger save checkpoint was available. User was asked to save the
-progressed simulation and restart into it for the longer trial; confirmation is
-pending.
+progressed simulation and restart into it for the longer trial; confirmation was
+pending at that stage.
 
 After capture ended, user reported an S1 arrival at Wimborne with a person waiting
 for S3. The new external `boarding_snapshot.exe` used read-only process access,
@@ -167,7 +172,7 @@ The warm-up save was copied into ignored
 SHA-256 `04569232cb31adfdec45d83745b21aeb9179944d745c436be6cc6897414644d5`.
 The copy hash matched and source size/mtime were unchanged across copying.
 Its manifest records source modification time `2026-10-08T10:45:30.502598+00:00`.
-This preserves demand development; the switched-passenger checkpoint is pending.
+This preserved demand development before the switched-passenger checkpoint below.
 
 ## Second switch and onboard checkpoint
 
@@ -196,7 +201,7 @@ warnings as errors; observer tracking tests and the actual DLL contract check
 passed (capabilities 95, unsupported executable refused). The observer retains
 a 3,600-callback limit and links no mutation backend. User was asked to restart
 into the saved checkpoint, paused. Only `tpf_journey_observer.dll` is to be loaded
-after that restart. Save/reload continuation remains pending.
+after that restart. Save/reload continuation was pending at this stage; the completed result is below.
 
 | Artifact under `analysis/native-bridge/` | SHA-256 |
 | --- | --- |
@@ -204,3 +209,116 @@ after that restart. Save/reload continuation remains pending.
 | `build-v6e/post-save-106847.log` | `4a132ac00c508db8fc25331aef4213d1620a03e18696167ab0969dda3ecfa6a3` |
 | `reload-106847/tpf_journey_observer.dll` | `4c904a5ab5b04c9bb0f256a7af6660d638fead19f17976ddda885765b4592662` |
 | `reload-106847/observer-validation.log` | `4c35883775d7c7688a112820b31fe6e7bb04dcba299d8d910e7b1d3135347e3a` |
+
+## Reload started: saved onboard state preserved
+
+User confirmed the game restarted and the after-switch checkpoint loaded paused.
+Fresh Linux PID **44947**, Windows PID **304**, with no pre-existing bridge mapped.
+Loaded only the recorded `reload-106847/tpf_journey_observer.dll`; `tfx_start=0`.
+User unpaused at normal speed. New capture:
+`analysis/native-bridge/reload-106847/tpf-bridge-304-7442601.log`.
+
+Callbacks **1 and 2** reported onboard state for person **106847**, S3 (`97743`),
+vehicle **97913**, stops **1→2**, original destination **85882**, in both worlds.
+Thread **592**, world 1 **0x2e7aa690**, world 2 **0x2e7ab350**. This agrees with the
+saved checkpoint and demonstrates persisted onboard route/vehicle/destination
+state after restart without loading the mutation pilot. Journey completion after
+reload was still pending at this stage.
+
+The pre-restart mutation log is finalized by process exit, SHA-256
+`85021f1a8550d3fd68563303a3c31fa3683499e1444ae4a7f63076791e274d64`.
+Its last periodic record was callback 1,200, not a final callback count; the capture
+was ended by the requested restart before its 18,000-callback limit.
+
+### Onward transfer after reload
+
+At callback 1,508 world 2 reported leaving onboard state; callbacks 1,509–1,510
+reported onward movement in both worlds. At 1,689–1,690 both worlds reported
+waiting on **S2 (`97742`), stops 2→3**, destination **85882** unchanged.
+S2 stop 2 is Melksham (station 97294). A read-only external platform inspection
+also read person 106847 at direct membership **97294:2**, consistent with that
+transfer. This external scan was partial: world 1 was unavailable and world 2
+was no longer idle at the end; it exited 3 with two errors. Treat the platform
+read as corroboration, not an atomic snapshot or a replacement for the valid
+callback observations. Log: `reload-106847/transfer-platform-106847.log`.
+
+The user did not see an alighting passenger in the animation. We reported the
+engine-state evidence and did not claim a visual verification. The user also
+asked whether taking an earlier train to wait for the original train elsewhere
+was new behavior. Clarified the implemented scope: it substitutes the passenger's
+**existing adjacent train leg**, not necessarily their entire journey. Before
+switching, this passenger was already booked on S1 stops 1→2 (Wimborne→Melksham).
+The observed next service is S2, not that original S1 service. The complete
+pre-switch itinerary was not captured, so whether S2 was already the original
+next connection remains unverified. No trip-time improvement has been measured,
+and no deliberate travel-ahead/wait-for-original-train policy was implemented.
+A through leg beyond the shared segment remains excluded by the current pilot.
+
+### Hook capture completed; external follow-up
+
+The read-only observer completed 3,600 callbacks with both worlds observed,
+destination mask 0, zero query errors/rejected boundaries and zero passenger
+changes. Passenger 106847 remained waiting for S2 stops 2→3. External bounded
+`journey_snapshot` follow-up then confirmed the same state in both worlds.
+No hook was re-enabled and no new injection or engine change was performed.
+Final arrival was still pending at the end of the hook capture.
+
+Final observer log SHA-256:
+`aaabc7d3906dba349840765a6055aa652a5a1427bfb35f7448543c6262ae6589`.
+Partial transfer-platform log SHA-256:
+`9364e4205388e622da59710571ce7f44d470fe11c8da89dcb0e482744a7a78ef`.
+
+External follow-up 01 accepted 428 samples and ended while the passenger waited
+for S2. Follow-up 02 accepted 439 samples and observed **onboard S2 vehicle 98390,
+stops 2→3, destination 85882**, in both worlds. This boarding occurred naturally
+with no mutation pilot loaded. A separate partial service snapshot during the
+wait observed an S2 vehicle at stop 0; it did not establish a missed matching
+boarding opportunity. Observation continued in follow-up 03. All snapshots are copied observations with repeated-read agreement,
+not atomic transactions across worlds.
+
+Follow-up 03 accepted 431 samples while the passenger remained onboard S2.
+Follow-up 04 accepted 430 samples and recorded onward movement (`flags=4`),
+vehicle/line cleared, original destination 85882 preserved in both worlds.
+Follow-up 05 began in that onward-moving state. Those movement flags alone
+do not establish walking mode or the exact S2 alighting location.
+
+## Completed result and recovery verification
+
+Follow-up **05** then recorded **at-building state (`flags=8`) at target/at-entity
+85882 in both worlds**, with matching repeated reads. Its final summary is
+`samples=413 destination_world_mask=3 observational_only=1`; helper exit **0**.
+The wrapper recorded completion at **2026-10-08T11:19:57.272457+00:00** and stopped;
+follow-ups 06–08 were not needed. No background watcher remains active.
+
+This establishes the full observed sequence for person 106847: original S1
+waiting leg → S3 boarding → onboard save/restart → restored S3 onboard state →
+onward movement → S2 waiting and boarding → onward movement → original-destination
+building. One engine change occurred before saving; all post-restart observation
+was read-only. The hook observed 3,600 valid callbacks with zero query errors or
+rejected boundaries. External observations used bounded copied reads and do not
+claim an atomic cross-world snapshot. The two partial platform/service scans are
+reported separately and do not weaken or replace the callback journey records.
+
+The user reported an unexpected power cut after completion. Recovery verified
+that final log and successful-exit metadata were present, both saved checkpoint
+copies matched their recorded hashes and sizes, `git fsck --no-dangling` passed,
+and `git diff --check` passed. Existing source milestones were already pushed;
+only the final evidence/policy documentation needed completing. No test replay
+or game-file repair was required.
+
+| Artifact under `analysis/native-bridge/reload-106847/` | SHA-256 |
+| --- | --- |
+| `followup-01.log` | `e88a21dd88e5f0f5ec06b4c83adfa08524ed3e6e7ebdb829dc79a56fff2376a1` |
+| `followup-02.log` | `810df5c0f95e2e53aa9006545a5b8c9147b911ee57094133f21d021a7b749284` |
+| `followup-03.log` | `171fac88ec7ac74a5e2f4ec6d0fd43eade8c81f40351c7b7699477bf74b6b4c0` |
+| `followup-04.log` | `b8ac3e4f7f0b106e27258ff6eed6b57eed1553e3b645e7cdc1b8ed6654f03b71` |
+| `followup-05.log` | `884ef7510df8b3009611ef85ee7c72d7c8a8ea8571659eedab09b583701475af` |
+| `transfer-service-check.log` | `41cc6536c44928808db0783a4100658a65d60e6ee1e61b08c7ac374a89eb4508` |
+
+The result covers one saved onboard checkpoint and one native onward transfer on
+the pinned game build. It does not establish arbitrary save compatibility,
+repeated changes within one process, line-edit handling, multi-mod coexistence,
+or improvements in travel time/fare/comfort. The complete original onward
+itinerary is unknown. Next implement and validate a small bounded multi-passenger
+trial while retaining fresh eligibility checks and preventing repeated selection
+of the same passenger across worlds. Broader route/timing policy is separate work.

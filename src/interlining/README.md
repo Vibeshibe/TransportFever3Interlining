@@ -33,8 +33,8 @@ indexes and explicit line/stop fields copied into onboard state. Migration must
 preserve all of them through verified engine transitions. See
 [the native trace](../../docs/native-boarding-investigation.md).
 
-Longer segments, loop wrap, alternative terminals, transfers, and varied
-preferences remain future work after correctness of the initial case.
+Longer segments, loop wrap, alternative terminals, planning new transfers, and
+varied preferences remain future work after correctness of the initial case.
 
 ## Native read-only validator
 
@@ -60,9 +60,25 @@ repeated proposals are not unique passengers or completed boardings.
 
 Build and run `candidate_tests.exe` using the [native instructions](../../native/README.md).
 
+## Shared leg versus final destination
+
+Eligibility preserves the passenger's existing planned alighting stop. The
+adjacent-stop restriction applies to that train leg; the final destination may
+require further travel. For example, an S1 leg from Wimborne to Melksham can be
+replaced by S3 over those same stops even when the game then continues on S2.
+The mod does not choose a new interchange, shorten a through leg, or deliberately
+send a passenger ahead to wait for their original train at another station.
+
+The [reload trial](../../docs/save-reload-trial.md) observed this native onward
+transfer after a saved S1→S3 switch. The complete original itinerary was not
+captured, so the pre-switch identity of the next connection is unverified.
+The pilot checks route compatibility; it does not yet compare downstream waits,
+whole-trip duration, fare or comfort. Earlier boarding alone is not evidence of
+earlier arrival. Broader preference and timing policy requires separate work.
+
 ## One-passenger native trial
 
-Bridge 0.6.1 uses the validator in a behavior-changing consumer: the first eligible
+Bridge 0.6.4 uses the validator in a behavior-changing consumer: the first eligible
 baseline S1↔S3 adjacent Wimborne→Melksham proposal is submitted through ABI 6.
 The host stages it until observers finish, invokes the consumer's full validator
 again, compares expected state and applies engine-owned remove/add in a dedicated

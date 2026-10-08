@@ -4,7 +4,9 @@ Status: the [native bridge](../native/README.md) implements this entry boundary
 and ABI 6 staged engine-owned waiting replacement. Offline guard/operation tests
 pass; the [first live trial](native-mutation-validation-2026-10-08.md) observed
 alternative boarding, planned alighting and original-destination arrival in both
-engine worlds for one passenger.
+engine worlds for one passenger. A [second trial](save-reload-trial.md) preserved
+onboard state through save/restart, then completed a native S2 transfer and
+original-destination arrival with only read-only observers loaded.
 
 ## Selected boundary
 
@@ -79,16 +81,17 @@ combines these for the restricted adjacent same-terminal case. Destination
 presence does not prove onward reachability; node fallback, fractional load
 limits and alternative terminals remain excluded. ABI 6 implements mutation
 bindings, full expected-state comparison, deferred conflict checks and one-attempt
-limits. One journey now has continuation and both-world propagation evidence.
-Repeated operation and persistent save behavior still need evidence; postcondition
+limits. Two single-passenger journeys have completion evidence; one persisted
+through an onboard save/restart and native onward transfer. Multiple changes
+within one process and broader save cases still need evidence; postcondition
 failures stop further changes but cannot roll back.
 Same-line stop remapping demonstrates replacement;
 the first cross-line disposable-save write test completed an alternate journey.
-Removal/addition
-is not an established rollback transaction: reject expected failures before the
-first removal, and do not promise recovery from an engine assertion or allocator
-failure. Verify disabling, save/reload, transfers, and replica behavior before
-expanding beyond the one-passenger experiment.
+Removal/addition is not an established rollback transaction: reject expected
+failures before the first removal, and do not promise recovery from an engine assertion or allocator
+failure. Preserve the tested restart/observer separation and validate each
+expansion with bounded operation counts, fresh requests and cross-world duplicate
+protection. One saved transfer journey does not settle all lifecycle cases.
 
 The extension should provide reusable scheduling and scoped services; interlining
 policy remains separate. See [the shared-extension draft](shared-extender-design.md).

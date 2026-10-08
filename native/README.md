@@ -69,7 +69,9 @@ This is not a game-tick count:
 two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
-The DLL is pinned until process exit. It does not save persistent state.
+The DLL is pinned until process exit. It serializes no private state; changes
+to native passenger components are part of the game state. One onboard checkpoint
+and native onward transfer survived restart in [the save/reload trial](../docs/save-reload-trial.md).
 Version 0.6.4 registers `research.interlining-one-passenger`, which uses the same
 bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
@@ -127,8 +129,11 @@ both first worlds ends the capture early; it does not imply boarding was observe
 after reload. It shares hook ownership with the pilot, so a restart separates them.
 Run `journey_probe_tests.exe PATH_TO_OBSERVER_DLL` in the isolated Wine prefix to
 check the observer contract, unsupported-build refusal and tracking fixtures.
-The preserved 0.6.2 pilot remains the next repeat-trial artifact; the 0.6.3 observer
-has offline validation only until a checkpoint is available.
+Revision 0.6.4 produced a second alternate boarding and an onboard checkpoint.
+Its passenger-specific
+read-only observer confirmed the saved line, vehicle, stops and destination after
+restart. Native S2 boarding and final arrival were subsequently observed in both
+worlds; see [the trial record](../docs/save-reload-trial.md) for evidence and limits.
 
 ## Client contract
 

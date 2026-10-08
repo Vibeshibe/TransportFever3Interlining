@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — one-passenger engine-owned change implemented; first complete alternate-line journey observed
+- Status: In progress — one-passenger engine-owned change implemented; repeat boarding and saved journey with native transfer completed
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -63,5 +63,15 @@ At sequence 2473 in revision 0.6.1, S1 person 72845 changed to S3 vehicle 97914 
 was observed onboard in both engine worlds. One attempt; expected arrival bytes,
 destination 72405 and waiting place preserved. Alighting at planned stop 2 and
 arrival at destination 72405 were subsequently observed in both worlds, with no
-second engine attempt. Revision 0.6.2's rolling discovery correction is built and
-regression-tested separately but not loaded. See the linked trial record for exact hashes and limitations.
+second engine attempt. Revision 0.6.2's rolling discovery correction passed
+regression tests and a later short capture without a mutation. Revision 0.6.4
+subsequently switched a second passenger and preserved an onboard save checkpoint.
+See [the repeat/reload trial](../../docs/save-reload-trial.md) for current evidence.
+
+The [repeat/save-reload trial](../../docs/save-reload-trial.md) is now complete for
+person 106847: S1→S3 boarding, saved onboard state restored after restart, native
+S2 transfer and original-destination arrival in both worlds. Only read-only
+observers ran after restart. This supplies one checkpoint/transfer case, not
+blanket save compatibility or measured journey-time improvement. The next
+implementation milestone is a small bounded multi-passenger trial with fresh
+validation and duplicate-selection protection across worlds.

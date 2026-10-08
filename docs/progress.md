@@ -595,6 +595,32 @@ capability and rejects the unsupported test executable. Requested restart into
 the saved checkpoint, paused, to test continuation without the mutation pilot.
 [Full evidence, hashes and remaining steps](save-reload-trial.md).
 
+### Onboard save/restart, native transfer and destination arrival verified
+
+Loaded only the passenger-specific read-only observer after user-confirmed
+restart into the onboard checkpoint. Fresh Linux PID 44947 / Windows PID 304;
+no old bridge mapped. Initial callbacks restored person 106847 onboard S3 vehicle
+97913, stops 1→2, destination 85882, in both worlds. The capture recorded alighting,
+onward movement and waiting for S2 stops 2→3, then auto-disabled at 3,600 callbacks
+with zero query errors/rejected boundaries and zero passenger changes.
+
+Bounded external read-only snapshots subsequently observed S2 boarding (vehicle
+98390), onward movement, and original-destination building 85882 in both worlds.
+Follow-up 05 exited successfully at 11:19:57 UTC; no watcher remains active.
+This completes a second alternate journey and one onboard save/restart with a
+native transfer. Partial platform/service snapshots are labeled separately.
+
+Clarified policy scope after the user's question: the adjacent-stop limit applies
+to the existing selected train leg, not final destination distance. The original
+leg already ended at Melksham; no travel-ahead/wait-for-original-train policy was
+added. The complete original onward itinerary and journey-time improvement remain
+unverified. Updated policy docs and tasks; next is a bounded multi-passenger trial.
+
+After the reported unexpected power cut, verified the final arrival log, successful
+exit metadata, both backup save hashes/sizes, Git object integrity and diff hygiene.
+The completed test survived; no replay was needed. Final documentation and handoff
+were recovered from working files. [Evidence and hashes](save-reload-trial.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
