@@ -1,37 +1,45 @@
 # Session handoff — 2026-10-08
 
-## Lifecycle continuation loaded — awaiting unpause (latest)
+## Lifecycle continuation trial stopped — identity guard (latest)
 
-User asked to finish implementation/automated tests before another game load.
-Version0.7.3 (`6cab818`) is loaded from `analysis/native-bridge/build-v7d`; tfx_start0.
-Mutable DLL SHA256 `6c29dc15804889f319f471d81ff5b04f25b15a5047b51bc915d0b6562609b39c`.
-ABI7/query/mutation implementations unchanged. Five attempts/18,000 callbacks,
-same S1↔S3 stops1→2 eligibility; trial reserve enabled for the fifth attempt.
+Version0.7.3 (`6cab818`, startup `0daf9c8`) loaded correctly from build-v7d.
+Fresh Linux79516/start1873255 / Windows308, thread800; worlds1 `0x2d468450`,
+2 `0x2d467790`. User unpaused, then paused after stop; game left open. These
+addresses expire on restart/reload. Original DLL remains loaded but forwards only.
 
-After both-world boarding and matching lifecycle confirmation, the affected
-passenger closes without an arrival or attempt refund; other passengers may be
-served once ALL pending lifecycle cases resolve. Any permanent query-error block
-remains. Unknown identity/reassignment/disagreement and lifecycle-before-boarding
-still stop. Closed IDs are never reselected or read again. Final mixed batch
-reason is all_outcomes_observed, distinct from all_destinations_observed.
+Four successful distinct switches and both-world boardings:120842/122261 S3→S1
+97745 at425/429;120770 S1→S3 97912 at1104;122790 S1→S3 97914 at1477. Then
+`passenger_identity_unresolved` after observation2100. Query_errors0; all four
+arrival/removal/invalidation masks0. No fifth attempt, lifecycle resolution or
+resumption. **Continuation remains unproven; no original arrivals verified.**
+Watcher47017 exited0 at16:59:12.566660Z. No watcher/readers/tests remain active.
 
-Normal/reserved consumer, host batch/failure, candidate and both DLL contract
-suites passed. Max fixture allowance40/64. Invalid reserve/cap1 rejected by CLI
-and CMake. No running test/watcher sessions. See [continuation guide](../../docs/lifecycle-continuation.md).
+Paused read-only inventory:120770 now EcsOctreeNode-only; other three retain
+original destination assignments. Source guard plus zero removal masks implies
+some still-present SimPerson's home changed, but old log lacks person/home/sequence.
+120770 is plausible, not proven. Do not equate later absence with a resolved
+pilot event or bypass the identity guard. `switching_blocked=0` is a separate
+latch field; pilot_done and forwards-only message confirm no more changes.
 
-Fresh Linux79516/start1873255 / Windows308. User corrected the initial save
-selection before injection: stdout confirms before_multi_passenger loaded at
-16:50:20Z and ready16:50:53Z. No earlier bridge mapped. Loaded successfully;
-log `build-v7d/tpf-bridge-308-18964006.log` confirms continuation policy and reserve1.
-Metadata `build-v7d/live-run.json`. **Asked user to unpause at normal speed; awaiting
-answer.** No watcher started yet; world addresses await first callbacks. Do not
-load again or rebuild the pinned DLL. Start monitoring this log on unpause.
+Evidence under ignored build-v7d: log18964006 SHA256
+`0832536ca8f81995a781809b11bdf765f9198f966f29ff4806a3ccbd865da812`,
+identity-stop-inventory.json SHA256
+`2e951d4fe6a541b4b8934cb86a53dee45c44120ecc0408cf554ba87f30bd6d21`,
+live-audit.json (log invariants passed, continuation false), live-run.json.
+Baseline before_multi_passenger remains ce2e02d935da…; no saves overwritten.
 
-Require confirmed lifecycle resolution and a subsequent successful different-person
-change with remaining allowance; a resumption log alone is insufficient.
-If no lifecycle event occurs, cap expiry is inconclusive—do not expand it silently.
-All PID/world values from older trials below are stale. Current DLL stays loaded
-until game exit. No live continuation outcome is claimed yet.
+Added diagnostic-only pilot_identity_error (person/sequence/world/home/slots/
+target/removal mask) before unchanged stop. Normal/reserved consumer fixtures
+pass. Separate build-v7d-identity-log DLL SHA256
+`95e3557e502cd5237cf4417896163283c3c0b171d853e07462c4438fd08a07d4`
+**not loaded**; tests evidence identity-log-tests.json adjacent. Do not reinject
+in current process. Loaded original DLL SHA2566c29dc158048… remains intact.
+
+Next capture exact home transition before deciding a bounded pending-lifecycle
+policy; keep unexplained identity changes/reuse as stops. No further restart/reload
+requested yet. Full scope/evidence: [continuation guide](../../docs/lifecycle-continuation.md).
+Five attempts/18,000 callbacks with fifth reserved for classified lifecycle;
+S1↔S3 stops1→2 only. No stable release or broad route/preference expansion.
 
 ## Lifecycle diagnostics — live trial completed (latest)
 

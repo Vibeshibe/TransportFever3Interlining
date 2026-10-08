@@ -759,6 +759,21 @@ batch/failure, candidate and DLL contract checks pass; peak allowance40/64.
 Invalid reserve/cap combinations reject in CLI and CMake. No live loading yet.
 [Behavior, hashes, validation and the next test](lifecycle-continuation.md).
 
+## 2026-10-08 — Continuation trial hit the home/identity guard
+
+Four passengers switched and boarded; the fifth remained reserved. The pilot
+stopped with passenger_identity_unresolved after observation2100, no query errors
+or confirmed original arrivals/lifecycle outcomes. Continuation is unproven.
+Paused read-only inspection found120770 no longer a SimPerson, with the other
+three retaining original destination assignments. A transient home change is
+implied by the guard, but the specific passenger/value was not logged at the stop.
+
+Added precise identity-stop logging with unchanged policy; normal and reserved
+consumer fixtures pass. Separate diagnostic build is not loaded. Current game
+bridge forwards only; watcher/readers ended. Full evidence and limitations in
+[lifecycle continuation](lifecycle-continuation.md). No save overwritten or new
+restart requested. Next establish the exact transition before changing policy.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

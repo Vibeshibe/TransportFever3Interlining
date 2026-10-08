@@ -269,7 +269,9 @@ int main(void) {
     first_boarded(); missing_worlds[0] = 2; tick(); arrived[0] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "arrival_lifecycle_disagreement"));
     reset(); tick(); changed_home = 1; tick();
-    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
+    CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved") &&
+        strstr(output, "pilot_identity_error person=100 sequence=") &&
+        strstr(output, "expected_home=555 observed_home=998 destinations=998,-1,777 target=777 removed_world_mask=0 outcome=unresolved"));
     reset(); tick(); reassigned = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "destination_assignment_unresolved"));
     reset(); tick(); bad_identity = 1; tick();

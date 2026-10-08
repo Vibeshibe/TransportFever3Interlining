@@ -119,3 +119,9 @@ failures retain their stops. Normal and reserved-attempt fixtures pass. Prepared
 build-v7d reserves the fifth attempt to demonstrate a later successful change
 following lifecycle resolution. Next perform the [fresh bounded trial](../../docs/lifecycle-continuation.md);
 no new game load or injection occurred during implementation.
+
+
+Latest0.7.3 live trial: four switches/boardings, then home/identity guard stop;
+no fifth attempt or confirmed lifecycle resolution. Continuation remains unproven.
+Added and fixture-tested precise identity-stop diagnostics, not loaded into game.
+See the continuation guide for the paused snapshot, hashes and next evidence gap.

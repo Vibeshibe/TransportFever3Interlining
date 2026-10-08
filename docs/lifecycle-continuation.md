@@ -79,7 +79,7 @@ For the live test:
    and the final per-person outcomes. A resumption log without an actual later
    successful change is not full continuation validation.
 
-Live validation is pending. No revised DLL has been loaded into the game.
+The live trial stopped on an identity guard; continuation remains unproven. Details follow.
 
 ## Completed automated validation
 
@@ -112,6 +112,63 @@ user corrected the initial save selection before any bridge injection. Stdout
 confirms loading `TPF3Interlining_before_multi_passenger_01` at16:50:20Z and ready
 at16:50:53Z. Process identity, absent previous bridge and DLL hash were verified.
 Loader returned0. Log `build-v7d/tpf-bridge-308-18964006.log` confirms0.7.3,
-cap5/18,000, continuation policy and reserve1. User has been asked to unpause at
-normal speed; live outcomes and world addresses are pending. Do not rebuild the
-loaded DLL. Process metadata is preserved in adjacent `live-run.json`.
+cap5/18,000, continuation policy and reserve1. User confirmed normal-speed unpause.
+World1 `0x2d468450`, world2 `0x2d467790`, thread800. First passengers120842/122261
+switched S3→S1 vehicle97745 and boarded in both worlds at425/429. Journey outcomes
+and live continuation remain pending. Do not rebuild the loaded DLL. Process
+metadata is preserved in adjacent `live-run.json`.
+
+## Live outcome — identity guard stopped the trial
+
+The user unpaused at normal speed. Four distinct changes applied with preserved
+arrival/destination/place state and both-world boarding:
+
+| Passenger | Change / vehicle | Staged | Both-world boarding | Original destination |
+| --- | --- | --- | --- | --- |
+| 120842 | S3→S1 / 97745 | 418 | 425 | 78804 |
+| 122261 | S3→S1 / 97745 | 427 | 429 | 72934 |
+| 120770 | S1→S3 / 97912 | 1074 | 1104 | 72649 |
+| 122790 | S1→S3 / 97914 | 1475 | 1477 | 86009 |
+
+After observation2100, the pilot stopped with `passenger_identity_unresolved`.
+All arrival/removal/invalidation masks remained0; query_errors0. No fifth attempt,
+confirmed lifecycle event or resumption occurred. The log audit checks the four
+changes and boarding order, but **continuation is not validated**. None of the
+four original destination arrivals was observed before the stop. The summary's
+`switching_blocked=0` describes the separate tracking/pending latch; `pilot_done`
+and the final forwards-only message establish that mutations have stopped.
+
+Watcher47017 exited0 at16:59:12.566660Z. The user then paused. Bounded read-only
+snapshots of the current process/worlds repeat-agreed with closed modification
+windows. ID120770 now has only EcsOctreeNode, no SimPerson. The other three retain
+the original destination assignments:120842 `[75531,78804,-1]`,122261
+`[122255,75501,72934]`,122790 `[101879,86009,-1]`. This is a later observational
+snapshot, not an atomic capture of the triggering callback.
+
+No removal mask had been set, so the source guard implies a changed home field
+while a SimPerson was still present. The original log does not identify which
+passenger or the observed home value.120770 is a plausible candidate given its
+later removal and the earlier no-mutation control, but that attribution and the
+exact transition are **not proven**. Do not bypass the home/identity guard or count
+later absence as this pilot's resolved lifecycle event.
+
+Preserved under ignored `analysis/native-bridge/build-v7d/`:
+
+- Log SHA-256 `0832536ca8f81995a781809b11bdf765f9198f966f29ff4806a3ccbd865da812`.
+- `identity-stop-inventory.json` SHA-256
+  `2e951d4fe6a541b4b8934cb86a53dee45c44120ecc0408cf554ba87f30bd6d21`.
+- `live-audit.json`, `audit_trial.py`, updated `live-run.json`.
+
+Added `pilot_identity_error` logging of passenger, sequence, world, expected and
+observed home, destination slots, target and removal mask before the unchanged
+stop. Normal and reserved consumer fixtures pass, including an assertion of the
+new diagnostic. A separate `build-v7d-identity-log` build succeeded with warnings
+as errors; its DLL hash is
+`95e3557e502cd5237cf4417896163283c3c0b171d853e07462c4438fd08a07d4`.
+It is **not loaded**; the original build-v7d remains intact and disabled in-game.
+No policy, ABI, attempt limits or native mutation logic changed in this follow-up.
+
+Next capture the precise home transition before choosing whether a bounded
+pending lifecycle classification is justified. Preserve hard stops for unexplained
+identity changes/reuse. No additional game restart or reload was requested in
+this session; no save was written by our tools. All watcher/reader processes ended.

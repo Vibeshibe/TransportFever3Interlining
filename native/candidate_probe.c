@@ -175,6 +175,10 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
         lifecycle_event(p, bit, 1, sequence); return;
     }
     if ((p->removed_worlds & bit) || life.destinations[0] != p->home) {
+        snprintf(text, sizeof(text), "pilot_identity_error person=%d sequence=%llu world_id=%u expected_home=%d observed_home=%d destinations=%d,%d,%d target=%d removed_world_mask=%u outcome=unresolved\n",
+            p->person, (unsigned long long)sequence, life.world_id, p->home, life.destinations[0],
+            life.destinations[0], life.destinations[1], life.destinations[2], life.target, p->removed_worlds);
+        log_line(text);
         stop("passenger_identity_unresolved"); return;
     }
     unsigned still_assigned = 0, cleared = 0;
