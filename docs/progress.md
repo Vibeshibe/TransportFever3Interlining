@@ -708,6 +708,20 @@ artifact hashes and prepared live trial](lifecycle-tracking.md). The build has
 not been loaded into the game; user was asked to restart/load the preserved
 pre-trial copy paused for the next test. Live classification remains pending.
 
+## 2026-10-08 — Lifecycle build live startup and first completed journey
+
+Loaded version0.7.2 (`935ef65`, build-v7c) only after verifying the corrected
+pre-trial save and fresh process. User confirmed normal-speed unpause. Three
+passengers switched and boarded in both worlds:120842/122261 S3→S1 and40365 S1→S3.
+All left the replacement trains at their planned alighting stop. At callbacks
+2444/2445,122261 was at original workplace72934 in both worlds, after its onward
+line79460 leg. This run therefore records an original-destination arrival before
+any tracked workplace invalidation; earlier runs must not be relabeled successful.
+
+Capture continues with the existing cap5/18,000. No lifecycle classification is
+claimed yet. See [live trial details](lifecycle-tracking.md). Log, process metadata
+and active watcher are recorded in the handoff; preserve the loaded DLL.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

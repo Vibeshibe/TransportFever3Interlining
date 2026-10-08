@@ -1,10 +1,11 @@
 # Session handoff — 2026-10-08
 
-## Lifecycle diagnostics implemented — live test pending (latest)
+## Lifecycle diagnostics — live capture running (latest)
 
 Version0.7.2 is built/tested in `analysis/native-bridge/build-v7c`; mutable DLL
 SHA256 `2f8ca09d693e9411327660a730e4278e17347e012e65cc0a4a0f3da3e3127ca0`.
-**Not loaded into the game.** Cap5,18,000 callbacks, same S1↔S3 stops1→2 rules.
+**Loaded successfully; user confirmed unpaused at normal speed.**
+Cap5,18,000 callbacks, same S1↔S3 stops1→2 rules.
 ABI7 adds copied SimPerson presence/home/shopping/work/target queries. Older ABI
 layouts/capabilities remain unchanged. Consumer captures pre-change baseline,
 blocks new proposals permanently on first anomaly, confirms removal/invalidation
@@ -14,12 +15,18 @@ arrivals; unresolved read/identity failures retain conservative stops.
 All query, pilot, host batch/failure, bridge/candidate and observer/mutable DLL
 contract tests passed. Max fixture allowance40/64. No running test sessions.
 Evidence and full trial procedure: [lifecycle tracking](../../docs/lifecycle-tracking.md).
-The user was asked asynchronously to restart, load a disposable copy of
-`TPF3Interlining_before_multi_passenger_01` and leave paused, or defer testing.
-**Await their readiness answer before loading.** Verify fresh game process/save;
-never reuse the old control PID/worlds. Load only the mutable build-v7c DLL for
-this trial after verification; ask to unpause after successful startup. Record
-outcomes and no further proposals after lifecycle evidence. No stable release.
+Fresh Linux64386 (process start1139296) / Windows308; thread776,
+world1 `0x6748b7d0`, world2 `0x6748ab10`. Save initially mismatched; no DLL was
+loaded until the user switched to `TPF3Interlining_before_multi_passenger_01`,
+verified in stdout at14:49:51Z with ready at14:50:46Z. Hash ce2e02d935da… unchanged.
+`tfx_start=0`; log `build-v7c/tpf-bridge-308-11756348.log` confirms configured bounds.
+Metadata `build-v7c/live-run.json`. Local log watcher session16151 runs
+`build-v7c/watch_trial.py`; no debugger/external memory monitor. Continue this
+capture without requesting another unpause or loading a second DLL. Three switches
+confirmed both-world boarding:120842/122261 S3→S1,40365 S1→S3. At2444/2445,122261
+reached ORIGINAL72934 after native onward line79460. No lifecycle classification
+yet; this run reached work before invalidation. Other outcomes pending. World
+addresses expire on restart/reload. No stable release.
 
 ## Completed read-only lifecycle control (latest)
 

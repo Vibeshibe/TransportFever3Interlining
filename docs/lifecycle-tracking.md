@@ -89,3 +89,26 @@ Observer DLL:
 This trial validates the new classification, not unrestricted continuation after
 retirement, broader route eligibility or a stable release. No new DLL has been
 loaded into the game at this implementation checkpoint.
+
+## Live startup — 2026-10-08
+
+Implementation milestone `935ef65` is pushed. User restarted, then corrected the
+initial save selection before any injection. Game stdout confirms loading the
+preserved `TPF3Interlining_before_multi_passenger_01` at14:49:51Z and ready at
+14:50:46Z. Source hash matches the baseline above. Fresh process identity and
+absence of previous bridge mappings were checked before loading.
+
+Linux64386 / start1139296, Windows308; `tfx_start=0`. User confirmed unpaused at
+normal speed. Log `build-v7c/tpf-bridge-308-11756348.log` confirms version0.7.2,
+cap5/18,000, lifecycle stop enabled, thread776; worlds1 `0x6748b7d0`,2 `0x6748ab10`.
+These addresses are valid only for this load/process. Capture is running; no live
+classification or boarding outcome is claimed at startup. Metadata and watcher
+are ignored artifacts beside the build. Preserve the loaded DLL unchanged.
+
+Live progress:120842 staged512/boarded514,122261 staged518/boarded520, both S3→S1
+vehicle97745. Person40365 staged1074/boarded1095, S1→S3 vehicle97912. Both-world
+alighting observations place replacement vehicles at stop2. Person122261 then
+used line79460/vehicle123296 and reached original destination72934 at2444/2445.
+Unlike earlier trials, original arrival preceded any observed workplace change;
+subsequent lifecycle changes must not invalidate that completed journey. Other
+outcomes and the complete run remain pending.
