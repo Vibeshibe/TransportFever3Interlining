@@ -521,6 +521,24 @@ Revision 0.6.2 (`build-v6c`) admits newer people through rolling replacement and
 passes a 96-ID regression plus candidate tests. This consumer-only revision is
 prepared, not runtime-tested; the live switch used unchanged revision 0.6.1.
 
+### Save/reload observer prepared
+
+Prepared revision 0.6.3 with an optional observer DLL for explicit passenger and
+original-destination IDs. It reuses the verified terminal boundary and copied
+queries, discovers world addresses after restart, and dispatches with no writer.
+The observer links neither the mutation backend nor candidate policy and omits
+the mutation capability. The existing 0.6.2 pilot artifact remains unchanged for
+the repeat trial. Added a [checkpoint procedure](save-reload-trial.md) distinguishing
+an onboard save from a weaker post-arrival reload check.
+
+Built under ignored `analysis/native-bridge/build-v6d/` with warnings as errors.
+Observer fixtures cover distinct worlds, wrong destination, mixed states,
+missing/invalid passengers, bounded errors and completion. A host regression
+checks that read-only dispatch refuses a change request before validation or
+engine operations. All four suites passed, including observer capability and
+unsupported-build refusal checks. Invalid build arguments were rejected. Runtime
+repeat and save/reload are pending; no new bridge has been loaded. The initial observer build's IDs are previous-trial test inputs.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

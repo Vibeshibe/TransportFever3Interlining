@@ -6,9 +6,13 @@
 #include <wchar.h>
 #include "host.h"
 #include "slot.h"
+#ifdef TFX_OBSERVE_PERSON
+#include "journey_probe.h"
+#else
 #include "candidate_probe.h"
 #include "mutation.h"
 #include "mutation_entries.h"
+#endif
 
 /* These bindings are private and pinned to a single research executable. */
 #define TERMINAL_UPDATE_RVA 0xb0db00u
@@ -25,7 +29,9 @@ void *tfx_original;
 extern void tfx_terminal_entry(void);
 static unsigned char *image;
 static volatile LONG start_state, enabled, simulation_thread, observed, rejected;
+#ifndef TFX_OBSERVE_PERSON
 static tfx_engine_changes change_operations;
+#endif
 static uint64_t world_addresses[4];
 static uint32_t world_count;
 static HANDLE ownership, log_file = INVALID_HANDLE_VALUE;
@@ -90,8 +96,10 @@ static int supported_memory(void) {
         nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC ||
         nt->OptionalHeader.SizeOfImage < TERMINAL_SLOT_RVA + sizeof(void *)) return 0;
     if (memcmp(image + TERMINAL_UPDATE_RVA, entry_bytes, sizeof(entry_bytes))) return 0;
+#ifndef TFX_OBSERVE_PERSON
     for (unsigned i = 0; i < sizeof(change_entries) / sizeof(change_entries[0]); ++i)
         if (memcmp(image + change_entries[i].rva, change_entries[i].bytes, 16)) return 0;
+#endif
     /* Adjacent lifecycle entries establish the expected table layout. */
     void **table = (void **)(image + TERMINAL_VTABLE_RVA);
     return table[0] == image + 0xb0c570 && table[4] == image + 0xb0c8b0 &&
@@ -126,16 +134,25 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     if (!world_id) {
         if (world_count == 4) { InterlockedExchange(&enabled, 0); log_line("Refused: world limit exceeded.\n"); return; }
         world_addresses[world_count++] = reader.world; world_id = world_count;
+        char line[128];
+        snprintf(line, sizeof(line), "world_registered world_id=%u world=%p\n", world_id, world);
+        log_line(line);
     }
     reader.world_id = world_id;
+#ifdef TFX_OBSERVE_PERSON
+    tfx_status status = tfx_dispatch_with_reader(bits, &reader);
+    int complete = tfx_journey_probe_complete();
+#else
     tfx_status status = tfx_dispatch_with_writer(bits, &reader, tfx_apply_waiting_change, &change_operations);
+    int complete = tfx_pilot_complete();
+#endif
     if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
         snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
                  count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
         log_line(line);
     }
-    if (count == OBSERVATION_LIMIT || tfx_pilot_complete()) {
+    if (count == OBSERVATION_LIMIT || complete) {
         InterlockedExchange(&enabled, 0);
         log_line("Pilot observation complete; hook forwards only. No further changes permitted.\n");
         FlushFileBuffers(log_file);
@@ -150,7 +167,11 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
-    log_line("TPF shared bridge 0.6.2; one passenger change maximum; limit=3600; ABI=1,2,3,4,5,6\n");
+#ifdef TFX_OBSERVE_PERSON
+    log_line("TPF shared bridge 0.6.3; read-only journey observer; limit=3600; ABI=1,2,3,4,5,6\n");
+#else
+    log_line("TPF shared bridge 0.6.3; one passenger change maximum; limit=3600; ABI=1,2,3,4,5,6\n");
+#endif
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);
@@ -165,12 +186,16 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
     status = TFX_SYSTEM_ERROR;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
                           (LPCWSTR)&tfx_start, &self)) goto fail;
+#ifdef TFX_OBSERVE_PERSON
+    status = tfx_register_journey_probe(log_line, TFX_OBSERVE_PERSON, TFX_OBSERVE_DESTINATION);
+#else
     change_operations = (tfx_engine_changes){
         (void (*)(void *))(image + 0x2bb4640),
         (void (*)(void *, int32_t, const void *, uint8_t))(image + 0x2bb7320),
         (void (*)(void *, int32_t, const void *, uint8_t, uint8_t))(image + 0xb21cd0),
         (void (*)(void *))(image + 0x2bb4d90), log_line};
     status = tfx_register_candidate_probe(log_line);
+#endif
     if (status != TFX_OK) goto fail;
     tfx_original = image + TERMINAL_UPDATE_RVA;
     status = tfx_replace_slot((void **)(image + TERMINAL_SLOT_RVA), tfx_original, &tfx_terminal_entry);

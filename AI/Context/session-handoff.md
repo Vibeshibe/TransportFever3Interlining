@@ -30,7 +30,7 @@ errors and zero rejected boundaries. It observed leaving S3 at current stop 2
 A separate external read-only `journey_snapshot` then observed at-building state
 (`flags=8`) at original target **72405** in both worlds. The follow-up log is
 `analysis/native-bridge/build-v6b/journey-followup-72845.log`; exact helper retained
-as `journey_snapshot-captured.exe`. The bridge was not re-enabled. Full hashes,
+as `journey_snapshot-captured.exe`. The bridge was not re-enabled. Full hashes
 and observation limits are in the trial record.
 
 ## Implementation and prepared revision
@@ -71,6 +71,23 @@ preconditions, call order/fifth argument, preserved bytes, postconditions, attem
 limit and copied journey states. API journey flags: waiting=1, onboard=2, moving=4,
 at-building=8. Person +0x50 is target/at-entity; onboard line/stops/vehicle at 0/4/8/12.
 Movement/building flags use masks, not guessed component layouts.
+
+## Save/reload preparation after the first trial
+
+Revision 0.6.3 adds an optional `tpf_journey_observer.dll` for a known passenger
+and destination. It discovers worlds afresh after restart and has no mutation
+backend. Build inputs are paired `--observe-person` and `--observe-destination`;
+see [the checkpoint procedure](../../docs/save-reload-trial.md). The initial
+`build-v6d` observer uses the previous passenger's IDs for offline validation only.
+Rebuild in a new directory using the repeat trial's actual IDs before loading it.
+The repeat write trial still uses the preserved 0.6.2 `build-v6c` artifact. All four
+offline suites passed, including the observer binary contract and read-only host
+regression. Observer and test-log hashes are in the checkpoint procedure.
+
+User agreed to open a disposable baseline and leave it paused. Host inspection
+found a game process (Linux PID 33922, Windows PID 312) without an existing bridge
+mapping. No new DLL has been loaded yet; wait for confirmation of the loaded,
+paused save before the repeat trial. Game PIDs may be reused after restarts.
 
 ## Next steps
 

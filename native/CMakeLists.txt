@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(tpf_shared_bridge VERSION 0.6.2 LANGUAGES C ASM)
+project(tpf_shared_bridge VERSION 0.6.3 LANGUAGES C ASM)
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Use a Windows x64 toolchain")
 endif()
@@ -16,3 +16,22 @@ target_link_options(bridge_loader PRIVATE -municode)
 add_executable(bridge_fixture fixture.c)
 target_link_options(bridge_fixture PRIVATE -municode)
 add_executable(journey_snapshot journey_snapshot.c queries.c)
+add_executable(journey_probe_tests journey_probe_tests.c journey_probe.c)
+
+# Optional research observer: target IDs are explicit, recorded build inputs.
+# No mutation backend or candidate consumer is linked into this DLL.
+set(TFX_OBSERVE_PERSON "" CACHE STRING "Passenger to observe after save/reload")
+set(TFX_OBSERVE_DESTINATION "" CACHE STRING "Original destination of that passenger")
+if(NOT TFX_OBSERVE_PERSON STREQUAL "" OR NOT TFX_OBSERVE_DESTINATION STREQUAL "")
+    foreach(value TFX_OBSERVE_PERSON TFX_OBSERVE_DESTINATION)
+        if(NOT "${${value}}" MATCHES "^(0|[1-9][0-9]*)$" OR "${${value}}" GREATER 2147483647)
+            message(FATAL_ERROR "${value} must be a nonnegative int32 entity ID")
+        endif()
+    endforeach()
+    add_library(tpf_journey_observer SHARED host.c backend.c queries.c journey_probe.c slot.c entry.S)
+    target_compile_definitions(tpf_journey_observer PRIVATE
+        TFX_READ_ONLY_BACKEND=1 TFX_OBSERVE_PERSON=${TFX_OBSERVE_PERSON}
+        TFX_OBSERVE_DESTINATION=${TFX_OBSERVE_DESTINATION})
+    target_link_libraries(tpf_journey_observer PRIVATE bcrypt)
+    set_target_properties(tpf_journey_observer PROPERTIES PREFIX "")
+endif()

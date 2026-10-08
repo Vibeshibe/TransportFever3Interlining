@@ -61,7 +61,7 @@ two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.6.2 registers `research.interlining-one-passenger`, which uses the same
+Version 0.6.3 registers `research.interlining-one-passenger`, which uses the same
 bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
 vehicle IDs, replacing older person IDs as newly scanned people arrive once the
@@ -93,6 +93,25 @@ Do not reuse addresses after restart or save reload. This research reader assume
 the pinned build already verified by the capture; it is not an atomic snapshot or
 a general discovery API. The first [complete alternate-line journey](../docs/native-mutation-validation-2026-10-08.md)
 was confirmed using this follow-up. No additional engine write was made.
+
+## Save/reload observer
+
+For a known passenger, build an additional DLL with paired `--observe-person ID`
+and `--observe-destination ID` options. See [the trial procedure](../docs/save-reload-trial.md).
+These are explicit build inputs, not a configuration file read by the game.
+Load `tpf_journey_observer.dll` only after restarting into the saved checkpoint.
+It uses the same verified hook and copied queries, dispatches without a writer,
+and links no mutation backend or candidate consumer. ABI 6 reports capabilities
+95 (no waiting-change capability); attempted changes in its callbacks are unavailable.
+
+The observer records the specified passenger's state in each newly discovered
+world, with a 3,600-callback/eight-error limit. Destination-building presence in
+both first worlds ends the capture early; it does not imply boarding was observed
+after reload. It shares hook ownership with the pilot, so a restart separates them.
+Run `journey_probe_tests.exe PATH_TO_OBSERVER_DLL` in the isolated Wine prefix to
+check the observer contract, unsupported-build refusal and tracking fixtures.
+The preserved 0.6.2 pilot remains the next repeat-trial artifact; the 0.6.3 observer
+has offline validation only until a checkpoint is available.
 
 ## Client contract
 

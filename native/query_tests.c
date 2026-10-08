@@ -431,6 +431,11 @@ static void change_client(tfx_context c, void *user) {
     CHECK(v6.v5.v4.v3.v2.base.read_observation(c, &obs) == TFX_OK);
     staged_request.dispatch_sequence = obs.dispatch_sequence;
     staged_context = c;
+    if (host_mode == 5) {
+        uint64_t sentinel = 999;
+        CHECK(v6.request_waiting_leg_change(c, &staged_request, &sentinel) == TFX_QUERY_UNAVAILABLE && sentinel == 999);
+        return;
+    }
     if (host_mode == 4) {
         uint64_t sentinel = 999;
         CHECK(v6.request_waiting_leg_change(c, &staged_request, &sentinel) == TFX_LIMIT_REACHED && sentinel == 999);
@@ -479,6 +484,11 @@ static void mutation_tests(void) {
         {.struct_size = sizeof(tfx_client), .id = "tests.change.a", .before_terminal_selection = change_client},
         {.struct_size = sizeof(tfx_client), .id = "tests.change.b", .before_terminal_selection = change_client, .user_data = (void *)1}
     };
+    journey_fixture(); host_mode = 5; host_readback = 0; validation_count = 0;
+    CHECK(v6.v5.v4.v3.v2.base.register_client(&clients[0]) == TFX_OK);
+    r = reader(); CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    CHECK(!engine_step && !validation_count);
+    CHECK(v6.v5.v4.v3.v2.base.unregister_client(clients[0].id) == TFX_OK);
     for (host_mode = 1; host_mode <= 4; ++host_mode) {
         journey_fixture(); validation_count = 0; host_readback = 0;
         CHECK(v6.v5.v4.v3.v2.base.register_client(&clients[0]) == TFX_OK);

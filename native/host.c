@@ -257,7 +257,10 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         ((tfx_api_v5 *)out)->read_entity_presence = read_entity_presence;
     }
     if (version == TFX_CHANGE_ABI_VERSION) {
-        out->capabilities |= TFX_CAP_WAITING_LEG_CHANGE | TFX_CAP_PERSON_JOURNEY;
+        out->capabilities |= TFX_CAP_PERSON_JOURNEY;
+#ifndef TFX_READ_ONLY_BACKEND
+        out->capabilities |= TFX_CAP_WAITING_LEG_CHANGE;
+#endif
         tfx_api_v6 *v6 = (tfx_api_v6 *)out;
         v6->request_waiting_leg_change = request_waiting_leg_change;
         v6->read_change_result = read_change_result;

@@ -19,7 +19,14 @@ def main():
                         help="download/verify LLVM-MinGW into ignored tools directories")
     parser.add_argument("--toolchain", type=Path, default=ROOT / "tools/vendor" / NAME)
     parser.add_argument("--build-dir", type=Path, default=ROOT / "analysis/native-bridge/build")
+    parser.add_argument("--observe-person", type=int, help="build an additional read-only journey observer for this ID")
+    parser.add_argument("--observe-destination", type=int, help="original destination ID for the observer")
     args = parser.parse_args()
+    observer = (args.observe_person, args.observe_destination)
+    if any(value is not None for value in observer) and any(
+        value is None or not 0 <= value <= 2147483647 for value in observer
+    ):
+        parser.error("--observe-person and --observe-destination must both be nonnegative int32 IDs")
     if args.fetch_toolchain:
         archive = ROOT / "tools/downloads" / f"{NAME}.tar.xz"
         archive.parent.mkdir(parents=True, exist_ok=True)
@@ -43,6 +50,8 @@ def main():
         "cmake", "-S", str(ROOT / "native"), "-B", str(build), "-G", "Ninja",
         "-DCMAKE_SYSTEM_NAME=Windows", f"-DCMAKE_C_COMPILER={compiler}",
         f"-DCMAKE_ASM_COMPILER={compiler}", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+        f"-DTFX_OBSERVE_PERSON={args.observe_person if args.observe_person is not None else ''}",
+        f"-DTFX_OBSERVE_DESTINATION={args.observe_destination if args.observe_destination is not None else ''}",
     ], check=True)
     subprocess.run(["cmake", "--build", str(build)], check=True)
 
