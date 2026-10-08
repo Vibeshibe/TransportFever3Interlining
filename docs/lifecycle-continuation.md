@@ -172,3 +172,19 @@ Next capture the precise home transition before choosing whether a bounded
 pending lifecycle classification is justified. Preserve hard stops for unexplained
 identity changes/reuse. No additional game restart or reload was requested in
 this session; no save was written by our tools. All watcher/reader processes ended.
+
+## Identity diagnostic capture started — 2026-10-08
+
+User requested continuation and restarted into the correct baseline paused.
+Linux82918/start1979449 / Windows308; stdout load17:05:36Z, ready17:06:27Z.
+Verified no prior bridge, unchanged baseline hash and diagnostic DLL hash above.
+Loaded build-v7d-identity-log (source a864a5e), tfx_start0; new log
+`tpf-bridge-308-19903924.log`. Cap5/18000 and reserve1 unchanged. User confirmed normal-speed unpause.
+Worlds1/2 `0x37a25410`/`0x37a260d0`, thread592. Native log watcher89335 and
+external read-only watcher65191 are active. The external monitor samples four
+passengers/home87062 at0.1sec intervals for at most600sec, stops5sec after native
+summary, rejects inconsistent reads and makes no engine calls. First two passengers
+120842/122261 boarded replacement S1/97745 at514/520; final outcomes pending. Existing control evidence does not contain the transient
+home value. Targeted export of PE-unwind-confirmed14256b0c0 into
+`analysis/native-boarding/home-transition-dispatch.txt` confirms the dispatcher
+calls ApplySimPersonData14256da20; this adds static call context, not runtime cause.

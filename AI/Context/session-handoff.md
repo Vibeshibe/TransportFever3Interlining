@@ -1,5 +1,26 @@
 # Session handoff — 2026-10-08
 
+## Identity diagnostic capture running (latest)
+
+User restarted and loaded the correct before_multi_passenger baseline paused.
+Fresh Linux82918/start1979449 / Windows308. Stdout load17:05:36Z, ready17:06:27Z;
+no previous bridge mappings. Loaded build-v7d-identity-log DLL SHA256
+`95e3557e502cd5237cf4417896163283c3c0b171d853e07462c4438fd08a07d4`
+(source a864a5e), tfx_start0. Log `tpf-bridge-308-19903924.log` confirms cap5/18000,
+reserve1. Adjacent live-run.json. **User confirmed normal-speed unpause.**
+Fresh world1 `0x37a25410`, world2 `0x37a260d0`, thread592. Log watcher89335.
+Read-only external monitor watch_identity.py samples four passengers/home87062
+for at most600sec (0.1sec intervals), stops5sec after native summary. Never reuse
+prior process/worlds below.
+
+This build adds precise identity-stop logs only; all policy/limits unchanged.
+Monitor pilot_identity_error for passenger/home/sequence/world, then preserve
+post-stop read-only inventory. Do not infer missing home equals completed removal.
+No revised policy or live continuation proof yet. Original build-v7d preserved.
+Targeted Ghidra export home-transition-dispatch.txt confirms caller14256b0c0
+invokes ApplySimPersonData14256da20; it does not identify this event's runtime cause.
+Ghidra process exited0, no debugger attached.
+
 ## Lifecycle continuation trial stopped — identity guard (latest)
 
 Version0.7.3 (`6cab818`, startup `0daf9c8`) loaded correctly from build-v7d.

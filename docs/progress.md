@@ -774,6 +774,15 @@ bridge forwards only; watcher/readers ended. Full evidence and limitations in
 [lifecycle continuation](lifecycle-continuation.md). No save overwritten or new
 restart requested. Next establish the exact transition before changing policy.
 
+## 2026-10-08 — Capture the exact home transition
+
+Loaded the tested diagnostic-only build after a fresh restart into the verified
+pre-trial baseline. Normal-speed run is active with cap5/18000 and the fifth
+attempt reserved. Two passengers have boarded so far. A bounded external copied
+read monitor corroborates passenger/home changes alongside the native log.
+No policy guard has been relaxed; the home value and final outcome remain pending.
+Metadata and current process details are in the handoff and continuation guide.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.
