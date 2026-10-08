@@ -3,6 +3,7 @@
 #include <string.h>
 #include "candidate_probe.h"
 #include "pilot_cache.h"
+#include "probe_limits.h"
 #include "../src/interlining/native_candidate.h"
 static tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)};
 static tfx_api_v6 changes_api = {.v5.v4.v3.v2.base.struct_size = sizeof(changes_api)};
@@ -177,7 +178,7 @@ static void sample(tfx_context context, void *unused) {
         discover(context, observation.dispatch_sequence);
         if (failures < 8) evaluate(context, observation.dispatch_sequence);
     }
-    if (observation.dispatch_sequence == 3600) {
+    if (observation.dispatch_sequence == TFX_OBSERVATION_LIMIT) {
         char text[256];
         snprintf(text, sizeof(text), "candidate_summary people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u\n",
             person_count, vehicle_count, ready, attempts, accepted, failures);

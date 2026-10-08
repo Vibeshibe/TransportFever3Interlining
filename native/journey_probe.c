@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "journey_probe.h"
+#include "probe_limits.h"
 static tfx_api_v6 api = {.v5.v4.v3.v2.base.struct_size = sizeof(api)};
 static void (*log_line)(const char *);
 static int32_t target_person, target_destination;
@@ -37,7 +38,7 @@ static void sample(tfx_context context, void *unused) {
             journey.alighting_stop, journey.vehicle, target_destination);
         log_line(text); previous[index] = journey;
     }
-    if ((destination_worlds & 3u) == 3u || observation.dispatch_sequence == 3600) {
+    if ((destination_worlds & 3u) == 3u || observation.dispatch_sequence == TFX_OBSERVATION_LIMIT) {
         snprintf(text, sizeof(text), "reload_summary observed_world_mask=%u destination_world_mask=%u query_errors=%u passenger_changes=0\n",
             observed_worlds, destination_worlds, failures);
         log_line(text); complete = 1;

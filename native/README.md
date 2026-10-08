@@ -28,9 +28,17 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 directory and restart the game before testing a changed bridge.
 
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
-`candidate_tests.exe`, `journey_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
+`candidate_tests.exe`, `journey_probe_tests.exe`, `journey_snapshot.exe`,
+`boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
 There is no production switch that bypasses executable verification.
+
+For sparse demand, `--observation-limit 18000` builds a pilot with a longer
+capture window; accepted values are 1–36,000 and the default remains 3,600.
+This changes only the callback cap for `tpf_shared_bridge.dll`. The one-attempt
+allowance, route checks and per-callback query limits stay unchanged. The optional
+read-only observer retains its own 3,600-callback cap. The configured cap is logged
+at startup. Build in a new directory and restart before loading a revised DLL.
 
 ## Explicit loading under Windows/Proton
 
@@ -55,13 +63,14 @@ loader times out, do not infer the target operation failed or unload its DLL.
 
 The bridge writes `tpf-bridge-WINDOWS_PID-UPTIME.log` beside the DLL. Start returns
 zero only after verifying the executable, live entry bytes, table layout, and
-hook ownership. Run the simulation to collect up to 3,600 accepted invocations;
-the first eight and final invocation are logged. This is not a game-tick count:
+hook ownership. Run the simulation to collect up to the configured callback cap
+(3,600 by default). The first eight, every 300th and final invocation are logged.
+This is not a game-tick count:
 two engine worlds can alternate. After the limit, the wrapper forwards without
 observation. `--stop` also disables future observations; an in-flight callback
 may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It does not save persistent state.
-Version 0.6.3 registers `research.interlining-one-passenger`, which uses the same
+Version 0.6.4 registers `research.interlining-one-passenger`, which uses the same
 bounded discovery as the earlier read-only candidate client.
 It scans at most 1,024 masks per callback, remembers up to 32 person IDs and 16
 vehicle IDs, replacing older person IDs as newly scanned people arrive once the
@@ -93,6 +102,14 @@ Do not reuse addresses after restart or save reload. This research reader assume
 the pinned build already verified by the capture; it is not an atomic snapshot or
 a general discovery API. The first [complete alternate-line journey](../docs/native-mutation-validation-2026-10-08.md)
 was confirmed using this follow-up. No additional engine write was made.
+
+`boarding_snapshot.exe WINDOWS_PID WORLD1_HEX WORLD2_HEX` performs a bounded
+read-only inspection of waiting people and loading vehicles for the baseline's
+S1/S2/S3 IDs. Use it with a paused disposable save and fresh world addresses from
+the verified capture. It scans at most 512 pages and 64 stops per line, reports
+repeated-read agreement and incomplete worlds, and never authorizes a change.
+It assumes the pinned build verified by the preceding capture. As with the journey
+snapshot, matching reads and idle endpoints do not establish an atomic snapshot.
 
 ## Save/reload observer
 

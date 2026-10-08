@@ -1,6 +1,29 @@
 # Session handoff — 2026-10-08
 
-## Current result
+## Latest repeat capture: complete, no changes
+
+The 0.6.2 pilot loaded into Windows PID 312 (`tfx_start=0`); user unpaused.
+Log: `analysis/native-bridge/build-v6c/tpf-bridge-312-5551718.log`. It completed
+3,600 callbacks, 28 candidate evaluations (one positive return-leg candidate,
+seven unsupported legs, twenty boarding mismatches), zero query errors/rejected
+boundaries, and **zero staged requests/engine attempts**. It is now forwarding
+only; the DLL remains pinned until process exit. There is no active watcher.
+
+User clarified the original baseline has young routes and sparse demand and
+asked to give it more time. Prepared 0.6.4 longer capture below. User was asked to
+save current progress as `TPF3Interlining_warmup_01`, restart, load it and pause;
+this action has not been confirmed. Do not discard simulation progress.
+
+After auto-disable, user reported S1 arriving at Wimborne with an S3 passenger.
+Read-only external snapshot found person 75515 waiting on S3 stops 1→4, destination
+86142, platform 97948:1. S1 vehicle 98594 was at stop 1/platform 1 with 40 free
+places, load_state=4. S3's intended stop 4 (station 97699) is absent from S1's
+route: this case requires onward replanning/transfer, outside the current pilot.
+User acknowledged the distinction. Only world 1 was readable; world 2 failed
+idle/system preconditions. No passenger or game state was changed. Evidence and
+hashes: [trial record](../../docs/save-reload-trial.md).
+
+## Previous completed result
 
 **First actual interlining switch succeeded.** Revision 0.6.1 applied one
 engine-owned S1→S3 waiting-component replacement and then observed the passenger
@@ -10,8 +33,8 @@ trial, not a stable release or an automatically installed mod.
 
 Read [the mutation trial record](../../docs/native-mutation-validation-2026-10-08.md)
 for evidence, hashes, native call signatures and test results. The user restarted,
-loaded a disposable baseline paused and then unpaused at normal speed. Current
-loaded artifact is `analysis/native-bridge/build-v6b/tpf_shared_bridge.dll`,
+loaded a disposable baseline paused and then unpaused at normal speed. That trial
+loaded artifact was `analysis/native-bridge/build-v6b/tpf_shared_bridge.dll`,
 Windows PID 312, log `tpf-bridge-312-3397243.log` beside it. DLL remains pinned
 until exit. Do not overwrite it or load a different bridge into the same process.
 The capture is complete and forwarding only. User was told they can pause/close.
@@ -56,7 +79,7 @@ one-direction pilot filter excluded them. It ended on restart with no engine
 attempt. Source commit `6abfdc3` implements mutation; `c819e21` permits either
 S1/S3 direction on the same adjacent shared segment. Both were pushed to dev.
 
-**Prepared but not loaded:** revision 0.6.2 at `analysis/native-bridge/build-v6c/`.
+**Now loaded for the repeat trial:** revision 0.6.2 at `analysis/native-bridge/build-v6c/`.
 Code review found the observer permanently retained its first 32 person IDs.
 `pilot_cache.h` now replaces older discovery IDs as new people arrive and clears
 log suppression for replaced slots. All eligibility reads remain fresh. A 96-ID
@@ -84,15 +107,25 @@ The repeat write trial still uses the preserved 0.6.2 `build-v6c` artifact. All 
 offline suites passed, including the observer binary contract and read-only host
 regression. Observer and test-log hashes are in the checkpoint procedure.
 
-User agreed to open a disposable baseline and leave it paused. Host inspection
-found a game process (Linux PID 33922, Windows PID 312) without an existing bridge
-mapping. No new DLL has been loaded yet; wait for confirmation of the loaded,
-paused save before the repeat trial. Game PIDs may be reused after restarts.
+Before loading the repeat pilot, host inspection found Linux PID 33922 / Windows
+PID 312 without a bridge mapping. The user then confirmed the save paused and
+authorized loading. See the active-trial section above. PIDs can be reused.
+
+## Longer capture prepared, not loaded
+
+User clarified the original baseline has young routes and low demand; give the
+simulation more time and retain eligibility rules. Revision 0.6.4 builds a longer
+pilot with `--observation-limit 18000` at `analysis/native-bridge/build-v6e/` and
+logs every 300 callbacks. The loaded 0.6.2 DLL has stopped at 3,600. No live cap or
+memory was patched. Preserve the progressed save before restarting into it with the longer capture. That warm-up save is not a
+switched-passenger checkpoint. The return-leg candidate is evidence only; the
+pilot's original stops 1→2 selection and one engine attempt remain unchanged.
 
 ## Next steps
 
-1. Use prepared revision 0.6.2 for the next trial after a game restart; its discovery
-   fix is regression-tested but not yet observed live. Preserve the loaded 0.6.1 DLL.
+1. Wait for the user to confirm saving/restarting into the progressed baseline,
+   then load the 0.6.4 `build-v6e` pilot and observe for an onboard checkpoint.
+   Preserve the historical 0.6.1/0.6.2 DLLs and capture logs.
 2. Verify save/reload and repeat controlled replacements before broader rollout.
    No generic boarding/entry/platform trace needs repeating; those facts are proven.
 3. Broaden from the adjacent same-terminal leg only after correctness is established.

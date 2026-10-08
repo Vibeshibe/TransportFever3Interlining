@@ -73,4 +73,81 @@ Prepared observer SHA-256:
 Offline validation log: `analysis/native-bridge/build-v6d/offline-validation.log`,
 SHA-256 `8eceb9ac837d16b552d44e9492ccf552d9940f9a2d61431994944f61fca026c6`.
 
-Runtime repeat and save/reload results are pending.
+## Completed repeat capture
+
+The user confirmed the disposable baseline loaded and paused. The preserved
+0.6.2 pilot loaded into Windows PID 312 with `tfx_start=0`; the log confirms the
+verified slot installation. Capture log:
+`analysis/native-bridge/build-v6c/tpf-bridge-312-5551718.log`.
+The user was asked to unpause at normal speed and stay ready for an onboard
+checkpoint. No replacement or reload result is established by initialization.
+The user confirmed normal-speed unpause; callbacks arrived in both worlds on
+thread 620. Early candidates were rejected for boarding mismatch. No mutation
+had yet been logged at that intermediate checkpoint.
+
+At callback 1958, passenger 108583 passed the full validator for S3→S1,
+vehicle 98610, with 40 places remaining. Existing S3 stops 5→6 matched proposed
+S1 stops 4→5, boarding station 97294 terminal 1 and alighting station 97948
+terminal 0, destination 75521. The pilot selected only original stops 1→2 and
+did not stage this return-leg candidate. A read-only inspection of the bridge's
+own counters then found 1,973 accepted callbacks and zero rejected boundaries.
+No debugger or memory write was used for that counter check.
+
+## Longer observation window
+
+The user clarified that this is the original baseline with recently established
+routes and sparse demand, and requested more time. Eligibility is unchanged.
+Prepared revision 0.6.4 at `analysis/native-bridge/build-v6e/` with
+`--observation-limit 18000`. The one-attempt cap and original S1/S3 stops 1→2
+selection remain unchanged. Every 300 callbacks now logs progress. The read-only
+reload observer keeps its default cap of 3,600.
+
+This build is separate from the now-disabled 0.6.2 DLL. Save the progressed
+simulation under a new name before restarting for the longer capture. Such a save develops demand; it is not a switched-passenger checkpoint.
+No live cap, instruction, engine field or guard was patched to extend the run.
+
+## Repeat result and reported Wimborne example
+
+The 0.6.2 run auto-disabled at 3,600 callbacks: 26 remembered people, 12 vehicles,
+86 ready-vehicle samples, 28 full evaluations, one accepted return-leg candidate,
+seven unsupported-leg rejections and twenty boarding mismatches. There were zero
+query errors, rejected boundaries, staged requests or engine attempts. Discovery
+never filled its 32-person allowance, so this run did not exercise rolling eviction.
+No switched-passenger save checkpoint was available. User was asked to save the
+progressed simulation and restart into it for the longer trial; confirmation is
+pending.
+
+After capture ended, user reported an S1 arrival at Wimborne with a person waiting
+for S3. The new external `boarding_snapshot.exe` used read-only process access,
+existing copied queries and fresh terminal-system lookup in the supplied worlds.
+World 1 completed a 112-page scan with 13 baseline-line waiting passengers and
+matching repeated waiting/vehicle reads; its modification scope was idle before
+and after. World 2 did not satisfy idle/system preconditions and was skipped;
+the helper exited 3 to report partial evidence. These are observations, not an
+atomic snapshot or callback-authorized candidate validation.
+
+In world 1, person **75515** waited on S3 (`97743`) stops **1→4**, destination
+**86142**, with direct platform membership **97948:1**. S1 vehicle **98594** was
+at stop 1 on the same platform, locked, state 2/load state 4, with 40 free places,
+zero onboard and zero reservations. S3 stop 4 is station **97699**, which is absent
+from S1's enumerated route. S1 cannot preserve this passenger's planned alighting
+stop; using it would need a transfer and onward replanning. The pilot's
+unsupported-leg rejection is therefore appropriate here. User acknowledged this
+was not the intended shared-leg example. No engine changes were made.
+
+## Additional artifacts and validation
+
+| Artifact under `analysis/native-bridge/` | SHA-256 |
+| --- | --- |
+| `build-v6c/tpf-bridge-312-5551718.log` | `366113708b5f98d48dc24a4ca80f641989969403fedfe3e06495936063a412ad` |
+| `build-v6e/tpf_shared_bridge.dll` | `5a649b0aa32b63f35f5d88646136452b6b837fb2d8cfb1cffc8bba414622c657` |
+| `build-v6e/offline-validation.log` | `c568189faf8363dcaa029cc11d286abb5d6c3c6494b763c4ed93396d9194fb78` |
+| `build-v6e/boarding_snapshot-captured.exe` | `e2173392a7f9ae7d2581f656dd60654d8bcbbb49e4dc0ef3e7de8bbdeb5774ac` |
+| `build-v6e/wimborne-opportunity-01.log` | `c8a3d64065a6ed8910466218564ee58484edbd52508b5542ab0a466fe73d16bd` |
+
+The longer pilot compiled with warnings as errors. Candidate and journey-observer
+suites passed; invalid observation limits 0, -1 and 36,001 were rejected and build
+flags confirm the pilot cap of 18,000. Eligibility, mutation backend and host
+attempt limit are unchanged from the passing 0.6.3 suites. No new live replacement
+or save/reload result is claimed. The captured external helper is preserved before
+adding its CMake target and tightening incomplete-scan/platform error reporting.

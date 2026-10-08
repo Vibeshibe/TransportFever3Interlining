@@ -539,6 +539,37 @@ engine operations. All four suites passed, including observer capability and
 unsupported-build refusal checks. Invalid build arguments were rejected. Runtime
 repeat and save/reload are pending; no new bridge has been loaded. The initial observer build's IDs are previous-trial test inputs.
 
+### Repeat pilot loaded
+
+After the user confirmed the disposable baseline loaded and paused, loaded the
+preserved 0.6.2 DLL into Windows PID 312. `tfx_start` returned zero; log
+`analysis/native-bridge/build-v6c/tpf-bridge-312-5551718.log` confirms verified slot
+installation. Requested normal-speed unpause with readiness to pause/save after
+boarding. Replacement and save/reload outcomes remain pending.
+
+### Sparse-demand capture completed; longer window prepared
+
+The user clarified the original baseline has recently established routes and
+asked to allow demand more time. The 0.6.2 capture auto-disabled after 3,600
+callbacks, 28 validations (one return-leg candidate excluded by the pilot's
+selection, seven unsupported legs, twenty boarding mismatches), with zero query
+errors/rejected boundaries and no staged request or engine attempt. Only 26
+person IDs were remembered, so rolling eviction was not exercised.
+
+Prepared 0.6.4 with an explicit bounded `--observation-limit` option, default
+3,600, maximum 36,000; `build-v6e` uses 18,000. Added progress logs every 300
+callbacks. Eligibility and the one-attempt cap remain unchanged. Build, candidate
+and observer tests passed; invalid limit arguments were rejected. No live memory
+or loaded DLL was patched. Asked the user to preserve progressed demand in a new
+save before restarting for the longer window.
+
+A subsequent user-reported Wimborne example was inspected with the external
+read-only `boarding_snapshot` helper. Person 75515 waited on S3 stops 1→4 beyond
+the shared leg; S1 vehicle 98594 shared the boarding platform but did not serve
+the planned alighting station. User acknowledged the distinction. One world was
+readable; the second was skipped, and the helper reported partial evidence.
+[Details, artifact hashes and remaining steps](save-reload-trial.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

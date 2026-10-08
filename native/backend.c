@@ -6,6 +6,7 @@
 #include <wchar.h>
 #include "host.h"
 #include "slot.h"
+#include "probe_limits.h"
 #ifdef TFX_OBSERVE_PERSON
 #include "journey_probe.h"
 #else
@@ -18,7 +19,6 @@
 #define TERMINAL_UPDATE_RVA 0xb0db00u
 #define TERMINAL_VTABLE_RVA 0x3702758u
 #define TERMINAL_SLOT_RVA   0x37027b0u
-#define OBSERVATION_LIMIT 3600
 static const unsigned char expected_hash[32] = {
     0x5e,0x72,0x0c,0xd7,0xfe,0xfd,0x68,0x8a,0x16,0x75,0xb6,0x1c,0x6e,0xec,0xaa,0xdf,
     0xd2,0x5c,0x17,0x1d,0xa9,0xe9,0xe9,0x38,0xaf,0x85,0xe5,0xef,0xae,0xbd,0x8a,0x35};
@@ -123,7 +123,7 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     LONG owner = InterlockedCompareExchange(&simulation_thread, thread, 0);
     if (owner && owner != thread) { InterlockedIncrement(&rejected); return; }
     LONG count = InterlockedIncrement(&observed);
-    if (count > OBSERVATION_LIMIT) return;
+    if (count > TFX_OBSERVATION_LIMIT) return;
     uint32_t bits;
     memcpy(&bits, &delta, sizeof(bits));
     tfx_reader reader;
@@ -146,13 +146,13 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     tfx_status status = tfx_dispatch_with_writer(bits, &reader, tfx_apply_waiting_change, &change_operations);
     int complete = tfx_pilot_complete();
 #endif
-    if (count <= 8 || count == OBSERVATION_LIMIT || status != TFX_OK) {
+    if (count <= 8 || count % 300 == 0 || count == TFX_OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
         snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
                  count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
         log_line(line);
     }
-    if (count == OBSERVATION_LIMIT || complete) {
+    if (count == TFX_OBSERVATION_LIMIT || complete) {
         InterlockedExchange(&enabled, 0);
         log_line("Pilot observation complete; hook forwards only. No further changes permitted.\n");
         FlushFileBuffers(log_file);
@@ -168,10 +168,14 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&tfx_start, &self) || !open_log(self))
         return TFX_SYSTEM_ERROR;
 #ifdef TFX_OBSERVE_PERSON
-    log_line("TPF shared bridge 0.6.3; read-only journey observer; limit=3600; ABI=1,2,3,4,5,6\n");
+    const char *mode = "read-only journey observer";
 #else
-    log_line("TPF shared bridge 0.6.3; one passenger change maximum; limit=3600; ABI=1,2,3,4,5,6\n");
+    const char *mode = "one passenger change maximum";
 #endif
+    char banner[192];
+    snprintf(banner, sizeof(banner), "TPF shared bridge 0.6.4; %s; limit=%u; ABI=1,2,3,4,5,6\n",
+        mode, (unsigned)TFX_OBSERVATION_LIMIT);
+    log_line(banner);
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }
     image = (unsigned char *)GetModuleHandleW(NULL);
