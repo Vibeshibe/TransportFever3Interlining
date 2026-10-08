@@ -2,7 +2,7 @@
 
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
-**Version 0.7 supports a build-time cap of 1–5 distinct passengers.**
+**Version 0.8 supports a build-time cap of 1–5 distinct passengers.**
 The default remains one. The first batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
 See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 validated
@@ -21,6 +21,12 @@ path remains fixture-tested only. See [completed validation](../docs/home-invali
 The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
+
+Version 0.8 removes the fixed S1↔S3 gate, discovers lines from waiting passengers
+and supports up to four forward stop intervals, including ordered express skips.
+Exact copied-route revalidation rejects intervening edits. Automated regressions
+pass; this expansion is not yet loaded into the game. See
+[route scope and validation](../docs/route-expansion.md).
 
 ## Build and isolated tests
 
@@ -89,7 +95,7 @@ may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It serializes no private state; changes
 to native passenger components are part of the game state. One onboard checkpoint
 and native onward transfer survived restart in [the save/reload trial](../docs/save-reload-trial.md).
-Version 0.7 registers `research.interlining-bounded`. Build a five-person trial with:
+The consumer registers `research.interlining-bounded`. Build a five-person trial with:
 
 ```sh
 rtk proxy python3 tools/build_native_bridge.py --build-dir analysis/native-bridge/NEW_BUILD \
@@ -97,13 +103,14 @@ rtk proxy python3 tools/build_native_bridge.py --build-dir analysis/native-bridg
 ```
 
 The consumer scans at most 1,024 masks per discovery callback, remembers 32
-rolling person IDs and 16 vehicle IDs, checks up to four vehicles, and samples
-up to eight people for one ready vehicle. It performs at most one full candidate
+rolling person IDs, 16 demand-line IDs and 16 vehicle IDs, checks up to four
+vehicles, and samples up to four people for one ready vehicle. It performs at most one full candidate
 validation plus fresh host revalidation before a write. Tracking and discovery
 use separate callbacks to preserve query budgets.
 
-Eligibility remains S1↔S3, original stops 1→2 (Wimborne→Melksham), with identical
-accessible boarding/alighting terminals and all previous capacity/load checks.
+Eligibility covers one to four forward intervals with original and substitute
+station order preserved; express skips are allowed. Identical accessible
+boarding/alighting terminals and all previous capacity/load checks still apply.
 The next passenger is considered only after the previous passenger boarded the
 expected train, line and leg in both worlds. Selected IDs never re-enter discovery.
 Each journey retains its original destination and is tracked independently through
@@ -136,9 +143,10 @@ tracking and failure stops. `query_tests.exe` still exercises the default one-at
 host and actual mutation adapter against copied component fixtures.
 Missing former waiting records are expected after ordinary boarding.
 
-Vehicle discovery cycles through the disposable baseline's S1/S2/S3 IDs `98278`,
-`97742`, `97743` and their stops. These are save-specific research inputs, not SDK
-defaults. Cached IDs are always re-read in the current callback. Result comparisons
+Vehicle discovery samples lines learned from waiting passengers and advances
+each line's stop cursor independently. Empty-demand services may be missed; this
+is bounded sampling, not full-network enumeration. Cached IDs are always re-read
+in the current callback. Copied leg records must still match at deferred validation. Result comparisons
 suppress logs only; they never authorize mutations or reuse engine pointers.
 The separate [native policy](../src/interlining/README.md) returns proposals and
 rejection reasons. A proposal alone does not reserve a seat or move a passenger;

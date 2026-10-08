@@ -9,6 +9,8 @@ static tfx_client client;
 static uint64_t sequence;
 static unsigned world, staged, boarded[5], arrived[5], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, query_error, wrong_destination;
+static int32_t source_line = 501, substitute_line = 902, leg_hops = 1, source_board = 1, substitute_board = 1;
+static unsigned route_changed, discovery_removed, screening_misses, busy_vehicles, active_stop_only, vehicle_missing, arriving_missing;
 static unsigned missing_worlds[6], invalidated_worlds[6], life_error[6];
 static unsigned cleared_home_worlds[6];
 static unsigned lifecycle_calls[6], journey_calls[6];
@@ -26,7 +28,9 @@ static tfx_status waiting(tfx_context c, int32_t id, tfx_waiting_leg *out) {
     /* Always return original waiting state, even for a changed person: discovery
      * must skip remembered passengers in a lagging replica without re-switching. */
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = id, .destination = 777,
-        .line = 98278, .boarding_stop = 1, .alighting_stop = 2, .vehicle = -1};
+        .line = id == 105 ? substitute_line : source_line, .boarding_stop = id == 105 ? substitute_board : source_board,
+        .alighting_stop = (id == 105 ? substitute_board : source_board) + leg_hops, .vehicle = -1};
+    if (screening_misses && id < 103) out->boarding_stop = 0;
     return TFX_OK;
 }
 static tfx_status scan(tfx_context c, int32_t first, tfx_waiting_page *out) {
@@ -36,25 +40,33 @@ static tfx_status scan(tfx_context c, int32_t first, tfx_waiting_page *out) {
     return TFX_OK;
 }
 static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
-    BEGIN(out); CHECK(id == 99);
-    *out = (tfx_vehicle){.struct_size = sizeof(*out), .vehicle = id, .line = 97743,
-        .stop_index = 1, .state = 2, .load_state = 3, .arrival_station_index = 0,
+    BEGIN(out); CHECK(id >= 96 && id <= 99);
+    if (vehicle_missing) return TFX_NOT_FOUND;
+    *out = (tfx_vehicle){.struct_size = sizeof(*out), .vehicle = id, .line = substitute_line,
+        .stop_index = substitute_board, .state = id == 99 ? 2 : 1, .load_state = 3, .arrival_station_index = 0,
         .arrival_terminal = 1, .arrival_locked = 1, .passenger_capacity = 10,
         .passengers_onboard = no_capacity ? 10 : staged, .passenger_places_left = no_capacity ? 0 : 10 - staged};
     return TFX_OK;
 }
 static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop *out) {
     BEGIN(out);
+    if (discovery_removed || (arriving_missing && index == substitute_board)) return TFX_NOT_FOUND;
+    int32_t position = index - (line == substitute_line ? substitute_board : source_board) + 1;
     *out = (tfx_line_stop){.struct_size = sizeof(*out), .line = line, .stop_index = index,
-        .stop_count = 6, .station_group = 1000 + index, .station_entity = 2000 + index,
+        .stop_count = 6, .station_group = 1000 + position, .station_entity = 2000 + position,
         .station_index = 0, .terminal = 1, .passenger_load_enabled = 1,
         .passenger_max_load_bits = 0x3f800000};
+    if (route_changed == 1 && line == substitute_line && index == 1 + leg_hops) out->terminal = 9;
+    if (route_changed == 2 && index == 2) out->station_group += 50;
     return TFX_OK;
 }
 static tfx_status loading(tfx_context c, int32_t line, int32_t index, tfx_stop_vehicles *out) {
     BEGIN(out);
     *out = (tfx_stop_vehicles){.struct_size = sizeof(*out), .line = line,
-        .stop_index = index, .count = 1, .vehicles = {99}}; return TFX_OK;
+        .stop_index = index, .count = line == substitute_line ? 1 : 0, .vehicles = {99}};
+    if (active_stop_only && index != 1) out->count = 0;
+    if (busy_vehicles && out->count) { out->count = 4; for (unsigned i = 0; i < 4; ++i) out->vehicles[i] = 96 + (int32_t)i; }
+    return TFX_OK;
 }
 static tfx_status platforms(tfx_context c, int32_t id, tfx_person_platforms *out) {
     BEGIN(out);
@@ -96,8 +108,8 @@ static tfx_status journey(tfx_context c, int32_t id, tfx_person_journey *out) {
     CHECK(index < staged);
     unsigned bit = 1u << (world - 1);
     *out = (tfx_person_journey){.struct_size = sizeof(*out), .world_id = world, .person = id,
-        .destination = wrong_destination ? 999 : 777, .line = 97743, .boarding_stop = 1,
-        .alighting_stop = 2, .vehicle = wrong_vehicle ? 88 : 99,
+        .destination = wrong_destination ? 999 : 777, .line = substitute_line, .boarding_stop = substitute_board,
+        .alighting_stop = substitute_board + leg_hops, .vehicle = wrong_vehicle ? 88 : 99,
         .flags = arrived[index] & bit ? TFX_JOURNEY_AT_BUILDING :
             boarded[index] & bit ? TFX_JOURNEY_ONBOARD : TFX_JOURNEY_WAITING};
     return TFX_OK;
@@ -137,6 +149,8 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
 static void reset(void) {
     sequence = staged = no_capacity = wrong_vehicle = fail_result = query_error = wrong_destination = 0;
     changed_home = reassigned = bad_identity = baseline_unassigned = home_target = 0;
+    source_line = 501; substitute_line = 902; leg_hops = 1; source_board = substitute_board = 1;
+    route_changed = discovery_removed = screening_misses = busy_vehicles = active_stop_only = vehicle_missing = arriving_missing = 0;
     memset(missing_worlds, 0, sizeof(missing_worlds)); memset(invalidated_worlds, 0, sizeof(invalidated_worlds));
     memset(life_error, 0, sizeof(life_error)); memset(lifecycle_calls, 0, sizeof(lifecycle_calls));
     memset(cleared_home_worlds, 0, sizeof(cleared_home_worlds));
@@ -405,6 +419,34 @@ int main(void) {
     puts("PASS: lifecycle continuation after both-world boarding/confirmation; permanent error block, all pending passengers, ID retention, mixed outcomes, no cap refund, disagreement and prior-arrival guards.");
 #endif
     home_clear_tests();
+    reset(); leg_hops = 4; tick(); CHECK(staged == 1);
+    CHECK(requests[0].expected.line == 501 && requests[0].line == 902 &&
+        requests[0].expected.alighting_stop == 5 && requests[0].alighting_stop == 5);
+    route_changed = 1; queries = 0;
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_POLICY_REJECTED);
+    CHECK(queries <= 64);
+    route_changed = 2; queries = 0; /* Both routes still match, but changed since staging. */
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);
+    CHECK(queries <= 64); route_changed = 0;
+    reset(); leg_hops = 4; screening_misses = busy_vehicles = 1; tick();
+    CHECK(staged == 1 && requests[0].expected.person == 103);
+    reset(); discovery_removed = 1; ticks(20);
+    CHECK(staged == 0 && !strstr(output, "candidate_query_error"));
+    discovery_removed = 0; stage_until(1);
+    CHECK(staged == 1); /* Removal/reappearance of demand lines is refreshed. */
+    reset(); source_board = 0; substitute_board = 2; leg_hops = 2;
+    tick(); CHECK(staged == 1 && requests[0].expected.boarding_stop == 0 &&
+        requests[0].expected.alighting_stop == 2 && requests[0].boarding_stop == 2 && requests[0].alighting_stop == 4);
+    boarded[0] = 3; ticks(2); CHECK(strstr(output, "pilot_boarded_both"));
+    reset(); active_stop_only = 1; stage_until(1); CHECK(sequence > 1);
+    CHECK(requests[0].line == substitute_line); /* Advances per-line stops despite alternating phases. */
+    reset(); arriving_missing = 1; ticks(20);
+    CHECK(staged == 0 && !strstr(output, "candidate_query_error"));
+    arriving_missing = 0; stage_until(1);
+    reset(); vehicle_missing = 1; ticks(20);
+    CHECK(staged == 0 && !strstr(output, "candidate_query_error"));
+    vehicle_missing = 0; stage_until(1);
+    puts("PASS: arbitrary demand-discovered line IDs, multi-stop staging/revalidation, stale-line exclusion/recovery and worst screening budget.");
     printf("PASS: consumer and real policy max fixture query allowance=%u/64.\n", max_queries);
     return 0;
 }

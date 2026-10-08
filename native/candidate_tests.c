@@ -6,12 +6,13 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static tfx_waiting_leg leg;
 static tfx_vehicle vehicle;
-static tfx_line_stop stops[4];
+static tfx_line_stop stops[16];
+static unsigned stop_count, query_count, fail_query;
 static tfx_person_platforms platforms;
 static tfx_terminal terminals[2];
 static uint32_t present, indexed;
 static tfx_status forced;
-#define BEGIN(out) do { CHECK(c == 7 && (out)->struct_size == sizeof(*(out))); if (forced) return forced; } while (0)
+#define BEGIN(out) do { CHECK(c == 7 && (out)->struct_size == sizeof(*(out))); ++query_count; if (forced || (fail_query && query_count == fail_query)) return forced ? forced : TFX_NOT_FOUND; } while (0)
 static tfx_status observation(tfx_context c, tfx_observation *out) {
     BEGIN(out); *out = (tfx_observation){sizeof(*out), 0x3e4ccccd, 123}; return TFX_OK;
 }
@@ -23,7 +24,7 @@ static tfx_status read_vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
 }
 static tfx_status read_stop(tfx_context c, int32_t line, int32_t stop, tfx_line_stop *out) {
     BEGIN(out);
-    for (unsigned i = 0; i < 4; ++i) if (stops[i].line == line && stops[i].stop_index == stop) {
+    for (unsigned i = 0; i < stop_count; ++i) if (stops[i].line == line && stops[i].stop_index == stop) {
         *out = stops[i]; return TFX_OK;
     }
     return TFX_NOT_FOUND;
@@ -49,6 +50,7 @@ static tfx_status loading(tfx_context c, int32_t line, int32_t stop, tfx_stop_ve
 static tfx_api_v5 api;
 static void fixture(void) {
     forced = TFX_OK; present = indexed = 1;
+    stop_count = 4; query_count = fail_query = 0;
     leg = (tfx_waiting_leg){.struct_size = sizeof(leg), .person = 42, .line = 10, .boarding_stop = 1,
         .alighting_stop = 2, .vehicle = -1, .destination = 777, .flags = TFX_HAS_TERMINAL_PLACE,
         .arrival_time_bits = UINT64_C(0x123456789abcdef0)};
@@ -77,6 +79,69 @@ static void expect(it_reason reason) {
     CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK);
     CHECK(result.reason == reason && result.requires_engine_revalidation == 1);
 }
+static void route_fixture(int hops) {
+    fixture();
+    tfx_line_stop old = stops[0], replacement = stops[2];
+    leg.alighting_stop = leg.boarding_stop + hops;
+    stop_count = 0;
+    for (int route = 0; route < 2; ++route) {
+        for (int i = 0; i <= hops; ++i) {
+            tfx_line_stop stop = route ? replacement : old;
+            stop.stop_index += i;
+            /* Both routes have consistent counts, including unused later stops. */
+            stop.stop_count = route ? 8 : 7;
+            stop.station_group = i == hops ? 2000 : 1000 + i;
+            stop.station_entity = i == hops ? 200 : 100 + i;
+            stop.terminal = i == hops ? 0 : 1;
+            stops[stop_count++] = stop;
+        }
+    }
+}
+static void route_tests(void) {
+    it_candidate result;
+    for (int hops = 1; hops <= IT_MAX_LEG_HOPS; ++hops) {
+        route_fixture(hops);
+        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+        CHECK(result.alighting_stop == 2 + hops && result.expected.alighting_stop == 1 + hops);
+        CHECK(query_count <= 18);
+        /* An express reaches the same endpoint with fewer stop intervals. */
+        stops[hops + 2] = stops[2 * hops + 1]; stops[hops + 2].stop_index = 3;
+        expect(IT_CANDIDATE);
+        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.alighting_stop == 3);
+    }
+    route_fixture(4); stops[6] = stops[7]; stops[6].stop_index = 3;
+    stops[7] = stops[9]; stops[7].stop_index = 4; /* A,C,E subsequence of A,B,C,D,E. */
+    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE && result.alighting_stop == 4);
+    route_fixture(3); stops[5].station_group = 9000; expect(IT_ROUTE_DIVERGENCE); /* Branch/detour. */
+    route_fixture(3); stops[5].station_group = 1002; stops[6].station_group = 1001;
+    expect(IT_ROUTE_DIVERGENCE); /* Same stations in reverse order. */
+    route_fixture(3); stops[5].station_group = 1000; expect(IT_ROUTE_DIVERGENCE); /* Returns to boarding. */
+    route_fixture(3); stops[2].station_group = stops[1].station_group; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(3); stops[3].station_group = stops[0].station_group; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(3); stops[5].station_group = 2000; stops[5].terminal = 9;
+    expect(IT_ALIGHTING_MISMATCH); /* Do not skip wrong-platform first visit for later matching visit. */
+    route_fixture(3); stops[7].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
+    route_fixture(3); for (unsigned i = 4; i < 8; ++i) stops[i].stop_count = 4;
+    expect(IT_ALIGHTING_MISMATCH); /* End of route; never wrap. */
+    route_fixture(3); stops[0].stop_count = leg.alighting_stop; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(3); leg.alighting_stop = 0; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(3); leg.boarding_stop = -1; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(3); stops[1].stop_count--;
+    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_INVALID_STATE);
+    route_fixture(3); stops[6].stop_count--;
+    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_INVALID_STATE);
+    /* Failure at every query, including the last one, preserves caller output. */
+    route_fixture(4);
+    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK);
+    unsigned total = query_count;
+    for (unsigned n = 1; n <= total; ++n) {
+        route_fixture(4); fail_query = n;
+        memset(&result, 0xa5, sizeof(result)); it_candidate before = result;
+        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_NOT_FOUND);
+        CHECK(!memcmp(&result, &before, sizeof(result)));
+    }
+    puts("PASS: bounded multi-stop/express routing, original endpoint, ordered stations, branches/loops/platform exclusions and late-read failure preservation.");
+}
 int main(void) {
     /* Regression: passengers discovered after the first full batch must remain
      * observable, while remembering existing IDs must not churn the cache. */
@@ -91,13 +156,22 @@ int main(void) {
     }
     CHECK(count == 32);
     puts("PASS: bounded discovery admits later passengers and preserves existing IDs without duplicate slots.");
+    int32_t small[16]; count = cursor = 0;
+    for (int32_t id = 0; id < 48; ++id)
+        CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, id) >= 0);
+    CHECK(count == 16);
+    for (unsigned i = 0; i < count; ++i) CHECK(small[i] >= 32);
+    small[7] = -1; uint32_t before_cursor = cursor;
+    CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, 99) == 7 && cursor == before_cursor);
+    CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, 99) == -1);
+    route_tests();
     fixture(); it_candidate result;
     CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
     CHECK(result.dispatch_sequence == 123 && result.proposed_line == 20 && result.boarding_stop == 2 && result.alighting_stop == 3);
     CHECK(result.observed_places_left == 3 && result.boarding_station == 100 && result.alighting_station == 200);
     CHECK(!memcmp(&result.expected, &leg, sizeof(leg))); /* Preserve destination, age and waiting place. */
     fixture(); leg.vehicle = 99; expect(IT_ALREADY_ASSIGNED);
-    fixture(); leg.alighting_stop = 4; expect(IT_UNSUPPORTED_LEG);
+    fixture(); leg.alighting_stop = 6; expect(IT_UNSUPPORTED_LEG);
     fixture(); leg.boarding_stop = INT32_MAX; expect(IT_UNSUPPORTED_LEG);
     fixture(); vehicle.line = 10; expect(IT_SAME_LINE);
     fixture(); vehicle.load_state = 5; expect(IT_VEHICLE_NOT_LOADING);

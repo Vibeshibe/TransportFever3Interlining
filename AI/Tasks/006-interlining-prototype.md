@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — five boardings, four arrivals and actual continuation after removal validated; broader route eligibility next
+- Status: In progress — 0.8.0 bounded route expansion implemented and fixture-tested; multi-stop live validation next
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -151,3 +151,12 @@ See [complete evidence](../../docs/home-invalidation.md). Next implement bounded
 shared-route eligibility beyond the save-specific adjacent pair, preserving the
 planned alighting stop and existing access/capacity/revalidation/lifecycle guards.
 No additional replay or save load is needed to finish this completed trial.
+
+Version 0.8.0 implements demand-driven line discovery and one-to-four-interval
+shared legs, with ordered express skips and exact copied-route revalidation.
+No hard-coded baseline line IDs or stops1→2 gate remain. Nine automated test
+invocations pass; worst consumer allowance 62/64. The ABI, native mutation path,
+attempt/lifecycle and platform/capacity guards remain. Build-v8a is NOT loaded.
+See [implementation and live test](../../docs/route-expansion.md). Multi-stop/express
+live coverage, extra-stop local substitutes, alternate platforms, preference/time
+comparison and broad edited-line/save validation remain open.

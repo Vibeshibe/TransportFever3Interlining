@@ -1,6 +1,48 @@
 # Session handoff — 2026-10-08
 
-## Latest — 0.7.5 completed; continuation after removal proven
+## Latest — 0.8.0 route expansion prepared, not loaded
+
+User authorized implementation after the completed 0.7.5 trial. Implemented
+bounded demand-line discovery (no baseline IDs) and multi-stop candidate matching:
+original legs span1–4 forward intervals; replacement follows an ordered subset
+through the ORIGINAL alighting stop, allowing express skips. Extra stops/detours,
+repeated original station groups, wrap and alternate endpoint platforms reject.
+S1↔S3/stops1→2 mutation gate is removed. Exact copied leg records are compared at
+deferred revalidation, rejecting even matching edits to both routes. ABI7, shared
+hook, engine mutation functions, cap and lifecycle policy are unchanged.
+
+Discovery:32 people/16 lines/16 vehicles with rolling replacement and reusable
+absent entries; one demand leg plus one line-stop sample per discovery callback.
+Independent stop cursors; no complete network enumeration. Services without
+observed waiting demand may be missed. Screens4 vehicles/4 people, one full
+validator; absent arriving route ends screening. Worst fixture62/64 queries.
+All9 invocations PASS: candidate, pilot, reserve, bridge, query/mutation,
+host batch/failure and both DLL contracts. Final tests exited; no watchers active.
+
+Prepared ignored `analysis/native-bridge/build-v8a/`, version0.8.0, cap5/18000,
+reserve OFF. Optional observer86553/destination86548 is built for contract tests,
+not simultaneous loading. **Mutable DLL NOT loaded; no game/save touched.**
+Mutable SHA256 37be1d7b68e71ed81d3f968c2d106ecc991e0e6018f8542a5c656fcf771aeb18.
+Test evidence SHA256 6090d0b0a9da68c1b225d6854934768c6e6f3819d3a82610398b9869aa5c8d6e.
+`route-expansion-hashes.json` has both DLL hashes; `route-expansion-tests.json`
+has all final results/executable hashes. Existing v7f artifacts preserved.
+
+Next fresh restart into disposable before_multi_passenger expanded baseline,
+paused; verify fresh PID/start/save before loading build-v8a. Do not reuse the
+historical process/worlds below. Await fresh-game readiness before loading.
+Prepared inactive watch_trial.py/audit_trial.py need a fresh live-run.json.
+Audit now reports multi_stop_boarding_observed / express_boarding_observed;
+an adjacent-only run does NOT validate the expansion. Five attempts, no reserved
+slot for this trial. Require a multi-stop planned shared leg and an express
+substitute for that separate case, same endpoint platforms; observe boarding,
+planned alighting and final outcomes. No automatic bounds increase or reload.
+
+See [route expansion](../../docs/route-expansion.md) for examples, limits, build,
+artifacts and test procedure. Existing home_invalidated remains fixture-only;
+0.7.5 proved removal continuation. Platform walking, extra-stop local substitutes,
+full-trip estimates/preferences, autoload and a stable release remain open.
+
+## Previous — 0.7.5 completed; continuation after removal proven
 
 **Five switches/boardings, four original arrivals, one confirmed removal.**
 At13695 stopped automatically with all_outcomes_observed, query_errors0 and

@@ -1,4 +1,3 @@
-#include <limits.h>
 #include "native_candidate.h"
 
 #define READ(call) do { tfx_status status_ = (call); if (status_ != TFX_OK) return status_; } while (0)
@@ -16,7 +15,7 @@ const char *it_reason_name(it_reason reason) {
         "alighting_mismatch", "actual_terminal_mismatch", "loading_disabled",
         "unloading_disabled", "unsupported_load_limit", "no_capacity",
         "no_platform_membership", "destination_missing", "not_in_loading_index",
-        "load_timer_pending"
+        "load_timer_pending", "route_divergence"
     };
     return reason >= 0 && reason < IT_REASON_COUNT ? names[reason] : "unknown";
 }
@@ -38,7 +37,8 @@ tfx_status it_validate_candidate(const tfx_api_v5 *api, tfx_context context, int
     READ(api->v4.v3.v2.read_waiting_leg(context, person, &result.expected));
     const tfx_waiting_leg *leg = &result.expected;
     if (leg->vehicle != -1) REJECT(IT_ALREADY_ASSIGNED);
-    if (leg->boarding_stop == INT32_MAX || leg->alighting_stop != leg->boarding_stop + 1)
+    if (leg->line < 0 || leg->boarding_stop < 0 || leg->alighting_stop <= leg->boarding_stop ||
+        leg->alighting_stop - leg->boarding_stop > IT_MAX_LEG_HOPS)
         REJECT(IT_UNSUPPORTED_LEG);
     tfx_vehicle v = {.struct_size = sizeof(v)};
     READ(api->v4.v3.read_vehicle(context, vehicle, &v));
@@ -47,20 +47,52 @@ tfx_status it_validate_candidate(const tfx_api_v5 *api, tfx_context context, int
     /* Pinned build: AT_TERMINAL=2; Loading=3. Arrived/Departing are not accepted. */
     if (v.state != 2 || v.load_state != 3 || v.user_stopped || v.line < 0 || v.stop_index < 0)
         REJECT(IT_VEHICLE_NOT_LOADING);
-    if (v.stop_index == INT32_MAX) REJECT(IT_UNSUPPORTED_LEG);
-    result.alighting_stop = v.stop_index + 1;
-    tfx_line_stop old_board = {.struct_size = sizeof(old_board)}, old_alight = {.struct_size = sizeof(old_alight)};
+    tfx_line_stop original[IT_MAX_LEG_HOPS + 1];
+    int32_t hops = leg->alighting_stop - leg->boarding_stop;
+    for (int32_t i = 0; i <= hops; ++i) {
+        original[i] = (tfx_line_stop){.struct_size = sizeof(original[i])};
+        READ(api->v4.v3.v2.read_line_stop(context, leg->line, leg->boarding_stop + i, &original[i]));
+        if (original[i].line != leg->line || original[i].stop_index != leg->boarding_stop + i ||
+            original[i].station_group < 0 ||
+            original[i].stop_count != original[0].stop_count) return TFX_INVALID_STATE;
+        if (i == 0 && original[i].stop_count <= leg->alighting_stop) REJECT(IT_UNSUPPORTED_LEG);
+        result.route.original[result.route.original_count++] = original[i];
+        /* Repeated stations make a turn/loop ambiguous. Never shorten that leg. */
+        for (int32_t j = 0; j < i; ++j)
+            if (original[j].station_group == original[i].station_group) REJECT(IT_UNSUPPORTED_LEG);
+    }
+    tfx_line_stop old_board = original[0], old_alight = original[hops];
     tfx_line_stop board = {.struct_size = sizeof(board)}, alight = {.struct_size = sizeof(alight)};
-    READ(api->v4.v3.v2.read_line_stop(context, leg->line, leg->boarding_stop, &old_board));
-    READ(api->v4.v3.v2.read_line_stop(context, leg->line, leg->alighting_stop, &old_alight));
     READ(api->v4.v3.v2.read_line_stop(context, v.line, v.stop_index, &board));
-    if (result.alighting_stop >= board.stop_count) REJECT(IT_UNSUPPORTED_LEG); /* No loop wrap. */
-    READ(api->v4.v3.v2.read_line_stop(context, v.line, result.alighting_stop, &alight));
-    if (old_board.station_group == old_alight.station_group) REJECT(IT_UNSUPPORTED_LEG);
+    if (board.line != v.line || board.stop_index != v.stop_index || board.stop_count <= v.stop_index)
+        return TFX_INVALID_STATE;
+    result.route.replacement[result.route.replacement_count++] = board;
     if (old_board.has_alternative_terminals || old_alight.has_alternative_terminals ||
-        board.has_alternative_terminals || alight.has_alternative_terminals) REJECT(IT_ALTERNATIVE_TERMINALS);
+        board.has_alternative_terminals) REJECT(IT_ALTERNATIVE_TERMINALS);
     if (!same_terminal(&old_board, &board)) REJECT(IT_BOARDING_MISMATCH);
-    if (!same_terminal(&old_alight, &alight)) REJECT(IT_ALIGHTING_MISMATCH);
+    if (v.stop_index == board.stop_count - 1) REJECT(IT_UNSUPPORTED_LEG); /* No loop wrap. */
+    /* A substitute follows an ordered subsequence of the original leg. Express
+     * services may skip intermediate stops; extra stops/detours are excluded.
+     * The first visit to the original alighting group must use its terminal. */
+    int32_t matched = 0;
+    for (int32_t offset = 1; offset <= hops; ++offset) {
+        if (offset >= board.stop_count - v.stop_index) REJECT(IT_ALIGHTING_MISMATCH);
+        READ(api->v4.v3.v2.read_line_stop(context, v.line, v.stop_index + offset, &alight));
+        if (alight.line != v.line || alight.stop_index != v.stop_index + offset ||
+            alight.stop_count != board.stop_count || alight.station_group < 0) return TFX_INVALID_STATE;
+        result.route.replacement[result.route.replacement_count++] = alight;
+        int32_t next = matched + 1;
+        while (next <= hops && original[next].station_group != alight.station_group) ++next;
+        if (next > hops) REJECT(hops == 1 ? IT_ALIGHTING_MISMATCH : IT_ROUTE_DIVERGENCE);
+        matched = next;
+        if (matched == hops) {
+            if (alight.has_alternative_terminals) REJECT(IT_ALTERNATIVE_TERMINALS);
+            if (!same_terminal(&old_alight, &alight)) REJECT(IT_ALIGHTING_MISMATCH);
+            result.alighting_stop = v.stop_index + offset;
+            break;
+        }
+    }
+    if (result.alighting_stop < 0) REJECT(IT_ALIGHTING_MISMATCH);
     result.boarding_station = board.station_entity; result.boarding_terminal = board.terminal;
     result.alighting_station = alight.station_entity; result.alighting_terminal = alight.terminal;
     /* Requiring the selected index to equal the configured index lets us compare

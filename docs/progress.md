@@ -854,6 +854,22 @@ and existing mutation/lifecycle bounds. Full sequences, hashes and limitations i
 [the completed trial](home-invalidation.md). No code change during this capture;
 existing baseline is unchanged. No stable-release or timing-improvement claim.
 
+## 2026-10-08 — Implement broader shared-route eligibility (0.8.0)
+
+Replaced fixed baseline IDs with bounded demand-line discovery and rolling
+line/vehicle caches. Removed the S1↔S3 stops1→2 mutation gate. Original legs may
+span one to four forward stop intervals; substitutes preserve the original
+alighting stop and ordered station sequence, including express skips. Detours,
+extra stops, loops and platform changes remain excluded. Exact copied-route
+comparison rejects edits between selection and deferred application.
+
+All nine test invocations pass: route candidates, normal/reserved consumers,
+shared host/slot, copied queries/mutation, batch/failure and both DLL contracts.
+Worst consumer fixture uses 62/64 queries. Native ABI, hook and mutation operation,
+five-person maximum and lifecycle guards are unchanged. Build-v8a is prepared,
+**not loaded or live-validated**. No game process or saves were touched.
+[Scope, examples, hashes and focused live test](route-expansion.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

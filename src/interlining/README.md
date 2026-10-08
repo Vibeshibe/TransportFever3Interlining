@@ -5,7 +5,7 @@ extender. It accepts copied snapshots and produces a proposal or a reason to
 retain the current journey. It is not loaded by the probe and cannot modify
 passenger state. The native read-only validator below uses the shared bridge SDK.
 
-The first scope is deliberately small: adjacent forward stops, matching boarding
+The historical Lua scope is deliberately small: adjacent forward stops, matching boarding
 and alighting station/terminal identifiers, an unassigned waiting passenger,
 the vehicle at the configured terminal, passenger loading enabled, and observed
 unused capacity within the load fraction. Same-line vehicles retain ordinary
@@ -33,8 +33,9 @@ indexes and explicit line/stop fields copied into onboard state. Migration must
 preserve all of them through verified engine transitions. See
 [the native trace](../../docs/native-boarding-investigation.md).
 
-Longer segments, loop wrap, alternative terminals, planning new transfers, and
-varied preferences remain future work after correctness of the initial case.
+The native implementation below now expands shared segments; this historical Lua
+prototype still tests adjacent legs. Loop wrap, alternative terminals, planning
+new transfers and varied preferences remain outside the current native policy.
 
 ## Native read-only validator
 
@@ -45,17 +46,20 @@ membership in the current callback. Query failures preserve the caller's output;
 ordinary policy exclusions return a named reason. Positive results carry the
 expected waiting snapshot, proposed line/stop indices and dispatch sequence.
 
-The native pilot accepts only an adjacent forward leg with identical boarding
-and alighting terminals, a locked vehicle in ready Loading state, no alternative
-terminals, load mode `LOAD_IF_AVAILABLE`, maximum load exactly 100%, and capacity
+Version 0.8 accepts forward legs of one to four stop intervals. The substitute
+must follow an ordered subset of the original station groups through its original
+alighting stop: express services may skip intermediate stops, but extra stops,
+repeated stations, branch detours and loop wrapping are excluded. Identical boarding
+and alighting terminals are required, along with a locked vehicle in ready Loading
+state, no alternative endpoint terminals, load mode `LOAD_IF_AVAILABLE`, maximum load exactly 100%, and capacity
 after onboard passengers and reservations. Unlike the offline Lua calculation,
 it rejects fractional load limits because native compartment allocation and
 rounding are unresolved. Empty direct platform membership also rejects.
 
 `requires_engine_revalidation` is always set. Destination presence and matching
 alighting terminals do not establish pathfinding success, save compatibility or
-safe cross-line mutation. ABI 5 provides read-only queries. The research observer
-in `native/candidate_probe.c` samples the baseline save and logs proposals;
+safe cross-line mutation. ABI 5 provides read-only queries. The consumer
+in `native/candidate_probe.c` discovers demand lines and logs proposals;
 repeated proposals are not unique passengers or completed boardings.
 
 Build and run `candidate_tests.exe` using the [native instructions](../../native/README.md).
@@ -63,7 +67,7 @@ Build and run `candidate_tests.exe` using the [native instructions](../../native
 ## Shared leg versus final destination
 
 Eligibility preserves the passenger's existing planned alighting stop. The
-adjacent-stop restriction applies to that train leg; the final destination may
+four-interval bound applies to that train leg; the final destination may
 require further travel. For example, an S1 leg from Wimborne to Melksham can be
 replaced by S3 over those same stops even when the game then continues on S2.
 The mod does not choose a new interchange, shorten a through leg, or deliberately
@@ -96,3 +100,16 @@ validation evidence.
 
 This remains an explicit development loader, with no persistent install or Lua
 binding. See [the trial record](../../docs/native-mutation-validation-2026-10-08.md).
+
+## Version 0.8 route expansion
+
+The save-specific line/stop gate is removed. Discovery learns lines from observed
+waiting passengers with bounded rolling caches and independent stop cursors.
+Candidate routes are copied and compared again before the deferred change;
+route edits invalidate the proposal. Four passenger screens keep the worst
+fixture at 62/64 queries without changing the shared SDK or mutation operation.
+The passenger cap, same-platform/capacity checks and lifecycle handling remain.
+
+Multi-stop/express, dynamic discovery, stale data and route-edit regressions pass.
+Build-v8a is prepared but not loaded into the game. See
+[scope, examples and trial instructions](../../docs/route-expansion.md).

@@ -1,4 +1,4 @@
-/* Save-specific discovery and logging; candidate policy uses only the SDK. */
+/* Demand-driven bounded discovery; candidate policy uses only the shared SDK. */
 #include <stdio.h>
 #include <string.h>
 #include "candidate_probe.h"
@@ -19,9 +19,14 @@ typedef struct pilot_passenger {
     tfx_person_journey last_journey[4];
 } pilot_passenger;
 static pilot_passenger passengers[TFX_PASSENGER_LIMIT];
+/* The consumer permits only one staged/unconfirmed boarding. Keep the route
+ * copies until the host's deferred validator runs; no cache authorizes a write. */
+static it_candidate pending_candidate;
 static uint32_t passenger_count, pilot_done, summary_logged, tracking_blocked;
 static void (*log_line)(const char *);
-static int32_t scan_cursor, people[32], vehicles[16];
+static int32_t scan_cursor, people[32], vehicles[16], lines[16];
+static uint32_t line_count, line_cursor, line_replacement_cursor, line_stops[16];
+static uint32_t discovery_cursor, vehicle_replacement_cursor;
 static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor, person_replacement_cursor;
 static uint32_t failures, attempts, accepted, logged, ready;
 static uint32_t reasons[IT_REASON_COUNT];
@@ -32,10 +37,6 @@ static void error(const char *operation, tfx_status status) {
     char text[160]; snprintf(text, sizeof(text), "candidate_query_error operation=%s status=%u\n", operation, status);
     log_line(text);
 }
-static void remember(int32_t *ids, uint32_t *count, uint32_t limit, int32_t id) {
-    for (uint32_t i = 0; i < *count; ++i) if (ids[i] == id) return;
-    if (*count < limit) ids[(*count)++] = id;
-}
 static void remember_person(int32_t person) {
     int32_t slot = tfx_pilot_remember(people, &person_count, &person_replacement_cursor, person);
     if (slot < 0) return;
@@ -43,28 +44,58 @@ static void remember_person(int32_t person) {
      * eligibility check still re-reads current state; this is no route cache. */
     memset(last_reason[slot], 0, sizeof(last_reason[slot]));
 }
-static void discover(tfx_context context, uint64_t sequence) {
+static int selected_person(int32_t person);
+static void discover(tfx_context context) {
     tfx_waiting_page page = {.struct_size = sizeof(page)};
     tfx_status status = api.v4.v3.v2.scan_waiting_people(context, scan_cursor, &page);
     if (status != TFX_OK) { error("scan", status); return; }
+    if (page.count > TFX_WAITING_PAGE_SIZE) { error("scan_count", TFX_INVALID_STATE); return; }
     scan_cursor = page.next_entity < 0 ? 0 : page.next_entity;
-    for (uint32_t i = 0; i < page.count; ++i) remember_person(page.persons[i]);
-    static const int32_t lines[3] = {98278, 97742, 97743};
-    int32_t line = lines[(sequence - 1) % 3];
+    for (uint32_t i = 0; i < page.count; ++i)
+        if (!selected_person(page.persons[i])) remember_person(page.persons[i]);
+    /* Learn one demand line per callback, including unrelated/unsupported legs.
+     * New lines/vehicles replace old IDs; every stop and proposal is read fresh.
+     * No full-network scan or save-specific entity IDs. */
+    if (person_count) {
+        uint32_t pi = person_count - 1 - discovery_cursor++ % person_count;
+        if (!selected_person(people[pi])) {
+            tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
+            status = api.v4.v3.v2.read_waiting_leg(context, people[pi], &leg);
+            if (status != TFX_OK && status != TFX_NOT_FOUND) { error("discovery_waiting", status); return; }
+            if (status == TFX_OK && leg.line >= 0) {
+                int32_t slot = tfx_pilot_remember_bounded(lines, &line_count, &line_replacement_cursor, 16, leg.line);
+                if (slot >= 0) line_stops[slot] = 0;
+            }
+        }
+    }
+    if (!line_count) return;
+    uint32_t li = line_cursor++ % line_count;
+    if (lines[li] < 0) return;
     tfx_line_stop stop = {.struct_size = sizeof(stop)};
-    status = api.v4.v3.v2.read_line_stop(context, line, 0, &stop);
+    status = api.v4.v3.v2.read_line_stop(context, lines[li], 0, &stop);
+    if (status == TFX_NOT_FOUND) { lines[li] = -1; return; }
     if (status != TFX_OK) { error("line", status); return; }
+    if (stop.stop_count <= 0) { error("line_count", TFX_INVALID_STATE); return; }
     tfx_stop_vehicles list = {.struct_size = sizeof(list)};
-    status = api.v4.v3.read_stop_vehicles(context, line, (int32_t)((sequence / 3) % (uint32_t)stop.stop_count), &list);
+    int32_t index = (int32_t)(line_stops[li]++ % (uint32_t)stop.stop_count);
+    status = api.v4.v3.read_stop_vehicles(context, lines[li], index, &list);
+    if (status == TFX_NOT_FOUND) return;
     if (status != TFX_OK) { error("stop_vehicles", status); return; }
-    for (uint32_t i = 0; i < list.count; ++i) remember(vehicles, &vehicle_count, 16, list.vehicles[i]);
+    if (list.count > TFX_STOP_VEHICLES_SIZE) { error("vehicle_count", TFX_INVALID_STATE); return; }
+    for (uint32_t i = 0; i < list.count; ++i) {
+        int32_t slot = tfx_pilot_remember_bounded(vehicles, &vehicle_count, &vehicle_replacement_cursor, 16, list.vehicles[i]);
+        if (slot >= 0)
+            for (unsigned p = 0; p < 32; ++p) last_reason[p][slot] = 0;
+    }
 }
 static tfx_status revalidate(tfx_context context, const tfx_waiting_leg_change *request) {
     it_candidate fresh;
     tfx_status status = it_validate_candidate(&api, context, request->expected.person, request->candidate_vehicle, &fresh);
     if (status != TFX_OK) return status;
     if (fresh.reason != IT_CANDIDATE) return TFX_POLICY_REJECTED;
-    if (memcmp(&fresh.expected, &request->expected, sizeof(fresh.expected)) ||
+    if (pending_candidate.expected.person != request->expected.person ||
+        memcmp(&fresh.route, &pending_candidate.route, sizeof(fresh.route)) ||
+        memcmp(&fresh.expected, &request->expected, sizeof(fresh.expected)) ||
         fresh.dispatch_sequence != request->dispatch_sequence || fresh.proposed_line != request->line ||
         fresh.boarding_stop != request->boarding_stop || fresh.alighting_stop != request->alighting_stop)
         return TFX_EXPECTED_STATE_CHANGED;
@@ -282,9 +313,10 @@ static void evaluate(tfx_context context, uint64_t sequence) {
     uint32_t checks = vehicle_count < 4 ? vehicle_count : 4;
     for (uint32_t i = 0; i < checks && failures < 8; ++i) {
         uint32_t vi = vehicle_cursor++ % vehicle_count;
+        if (vehicles[vi] < 0) continue;
         tfx_vehicle v = {.struct_size = sizeof(v)};
         tfx_status status = api.v4.v3.read_vehicle(context, vehicles[vi], &v);
-        if (status == TFX_NOT_FOUND) continue;
+        if (status == TFX_NOT_FOUND) { vehicles[vi] = -1; continue; }
         if (status != TFX_OK) { error("vehicle", status); return; }
         uint32_t timer = v.next_passenger_load_seconds_bits;
         if (v.state != 2 || v.load_state != 3 || v.line < 0 || v.stop_index < 0 ||
@@ -292,8 +324,9 @@ static void evaluate(tfx_context context, uint64_t sequence) {
         ++ready;
         tfx_line_stop arriving = {.struct_size = sizeof(arriving)};
         status = api.v4.v3.v2.read_line_stop(context, v.line, v.stop_index, &arriving);
+        if (status == TFX_NOT_FOUND) return; /* Keep at most one route-screening pass. */
         if (status != TFX_OK) { error("arriving_stop", status); return; }
-        uint32_t samples = person_count < 8 ? person_count : 8, attempted = 0;
+        uint32_t samples = person_count < 4 ? person_count : 4, attempted = 0;
         int staged = 0;
         for (uint32_t j = 0; j < samples && attempted < 1; ++j) {
             uint32_t pi = person_cursor++ % person_count;
@@ -305,19 +338,17 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             if (leg.line == v.line || leg.vehicle != -1) continue;
             tfx_line_stop board = {.struct_size = sizeof(board)};
             status = api.v4.v3.v2.read_line_stop(context, leg.line, leg.boarding_stop, &board);
+            if (status == TFX_NOT_FOUND) continue;
             if (status != TFX_OK) { error("waiting_stop", status); return; }
             if (board.station_group != arriving.station_group) continue;
             ++attempted;
             it_candidate proposal;
             status = it_validate_candidate(&api, context, leg.person, v.vehicle, &proposal);
+            if (status == TFX_NOT_FOUND) continue;
             if (status != TFX_OK) { error("validate", status); return; }
             ++attempts; ++reasons[proposal.reason];
             if (proposal.reason == IT_CANDIDATE) ++accepted;
-            /* Baseline S1/S3 in either direction on the same shared adjacent leg. */
-            if (passenger_count < TFX_PASSENGER_LIMIT && proposal.reason == IT_CANDIDATE &&
-                ((proposal.expected.line == 98278 && proposal.proposed_line == 97743) ||
-                 (proposal.expected.line == 97743 && proposal.proposed_line == 98278)) &&
-                proposal.expected.boarding_stop == 1 && proposal.expected.alighting_stop == 2) {
+            if (passenger_count < TFX_PASSENGER_LIMIT && proposal.reason == IT_CANDIDATE) {
                 tfx_waiting_leg_change request = {.struct_size = sizeof(request),
                     .dispatch_sequence = sequence, .expected = proposal.expected,
                     .line = proposal.proposed_line, .boarding_stop = proposal.boarding_stop,
@@ -336,6 +367,7 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                 for (unsigned d = 0; d < 3; ++d)
                     if (baseline.destinations[d] == leg.destination) p->destination_slots |= 1u << d;
                 if (!p->destination_slots) { stop("lifecycle_baseline_unassigned"); return; }
+                pending_candidate = proposal;
                 status = changes_api.request_waiting_leg_change(context, &request, &p->ticket);
                 if (status != TFX_OK) { error("request_change", status); stop("request_rejected"); return; }
                 p->person = leg.person; p->destination = leg.destination;
@@ -392,7 +424,7 @@ static void sample(tfx_context context, void *unused) {
         if (!pilot_done && finished == TFX_PASSENGER_LIMIT && !tracking_blocked)
             stop(arrived == TFX_PASSENGER_LIMIT ? "all_destinations_observed" : "all_outcomes_observed");
     } else if (!tracking_blocked && !lifecycle_pending() && !attempt_reserved() && failures < 8 && sequence < TFX_OBSERVATION_LIMIT) {
-        discover(context, sequence);
+        discover(context);
         if (failures < 8) evaluate(context, sequence);
     }
     if (!pilot_done && failures >= 8) stop("query_errors");
@@ -403,13 +435,16 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     log_line = write_line;
     passenger_count = pilot_done = summary_logged = tracking_blocked = 0;
     scan_cursor = 0;
+    line_count = line_cursor = line_replacement_cursor = discovery_cursor = vehicle_replacement_cursor = 0;
+    memset(line_stops, 0, sizeof(line_stops));
     person_count = vehicle_count = vehicle_cursor = person_cursor = person_replacement_cursor = 0;
     failures = attempts = accepted = logged = ready = 0;
+    memset(&pending_candidate, 0, sizeof(pending_candidate));
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));
-    char text[256];
-    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u\n",
-        (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS);
+    char text[384];
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=demand_lines\n",
+        (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS, (unsigned)IT_MAX_LEG_HOPS);
     log_line(text);
     tfx_status status = tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base);
     if (status != TFX_OK) return status;
