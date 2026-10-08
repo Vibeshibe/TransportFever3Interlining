@@ -817,6 +817,21 @@ returned0. Startup confirms cap5/18000, reserve1 and grace32. User confirmed
 normal-speed unpause; no live result yet. Process/log details in the handoff and
 [cleared-home guide](home-clear-handling.md). No policy or bound changes.
 
+## 2026-10-08 — Home loss persists onboard; classify it separately
+
+0.7.4 correctly blocked new switches after120770's home cleared in both worlds,
+then hit its32-callback deadline at2013. Three boardings, no original arrivals
+observed, no query errors. Copied follow-up over a minute later still found the
+passenger onboard with home=-1/target72649, then recorded both-world removal.
+The deadline assumption was insufficient; all watchers/readers have ended.
+
+Prepared0.7.5 closes matching both-world home loss as home_invalidated, preserving
+ID exclusion and consumed attempt without claiming removal/arrival. Pending
+one-world or mixed states retain the32-callback bound; unknown identity, arrival
+and query errors retain their guards. No native writes/ABI/routes/caps changed.
+Consumer/reserve/host/contract checks pass (max40/64). Build-v7f is NOT loaded;
+next prove actual continuation live. [Complete evidence and policy](home-invalidation.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

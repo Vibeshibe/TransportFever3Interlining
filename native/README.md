@@ -10,9 +10,12 @@ five boardings, four original arrivals and one separate removal outcome.
 Version 0.7.3 continues serving other passengers after a lifecycle outcome is
 confirmed in both worlds following confirmed boarding; unexplained failures
 retain their stops. See [continuation and its trial](../docs/lifecycle-continuation.md).
-Version 0.7.4 additionally waits up to32 callbacks for both-world removal after
-a narrowly validated cleared home, pausing new switches throughout. It is
-fixture-tested and not yet loaded; see [cleared-home handling](../docs/home-clear-handling.md).
+Version 0.7.4's live trial showed that cleared homes can persist while onboard;
+waiting32 callbacks for removal stopped the run. Version0.7.5 instead classifies
+matching both-world home loss as `home_invalidated`, retaining the consumed
+attempt and excluding the ID without claiming arrival/removal. One-world evidence
+keeps the32-callback deadline. It is fixture-tested and not yet loaded; see
+[home invalidation](../docs/home-invalidation.md).
 The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.

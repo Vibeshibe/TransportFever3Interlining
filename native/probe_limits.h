@@ -1,6 +1,6 @@
 #ifndef TFX_PROBE_LIMITS_H
 #define TFX_PROBE_LIMITS_H
-/* A cleared home is only pending evidence, never a resolved lifecycle outcome. */
+/* Bound unconfirmed home loss; both-world home invalidation is a separate outcome. */
 #define TFX_HOME_CLEAR_GRACE_CALLBACKS 32u
 /* Research bounds are explicit build inputs, never runtime API overrides. */
 #ifndef TFX_OBSERVATION_LIMIT

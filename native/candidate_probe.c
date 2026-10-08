@@ -110,7 +110,8 @@ static void summary(const char *reason) {
             p->person, p->destination, (unsigned long long)p->ticket, p->result_logged, p->onboard_worlds, p->arrived_worlds,
             p->removed_worlds, p->invalidated_worlds, p->arrived_worlds == 3u ? "original_destination_reached" :
             p->lifecycle_resolved && p->removed_worlds == 3u ? "passenger_removed" :
-            p->lifecycle_resolved && p->invalidated_worlds == 3u ? "destination_invalidated" : "unresolved", p->home_cleared_worlds);
+            p->lifecycle_resolved && p->invalidated_worlds == 3u ? "destination_invalidated" :
+            p->lifecycle_resolved && p->home_cleared_worlds == 3u ? "home_invalidated" : "unresolved", p->home_cleared_worlds);
         log_line(text);
     }
     for (unsigned i = 0; i < IT_REASON_COUNT; ++i) if (reasons[i]) {
@@ -119,6 +120,13 @@ static void summary(const char *reason) {
     }
 }
 static void stop(const char *reason) { pilot_done = 1; summary(reason); }
+static void resolve_lifecycle(pilot_passenger *p, uint64_t sequence, const char *outcome) {
+    p->lifecycle_resolved = 1;
+    char text[256];
+    snprintf(text, sizeof(text), "pilot_lifecycle_resolved person=%d sequence=%llu outcome=%s arrival=0 attempt_retained=1\n",
+        p->person, (unsigned long long)sequence, outcome);
+    log_line(text);
+}
 /* One-world evidence pauses discovery. Matching both-world outcomes close only
  * this journey after confirmed boarding; its ID and consumed attempt are retained.
  * Unexplained query failures use a separate permanent block. */
@@ -136,11 +144,7 @@ static void lifecycle_event(pilot_passenger *p, unsigned bit, int removed, uint6
     else if (p->arrived_worlds) stop("arrival_lifecycle_disagreement");
     else if (*mask == 3u) {
         if (p->onboard_worlds != 3u) { stop("lifecycle_before_confirmed_boarding"); return; }
-        p->lifecycle_resolved = 1;
-        char text[256];
-        snprintf(text, sizeof(text), "pilot_lifecycle_resolved person=%d sequence=%llu outcome=%s arrival=0 attempt_retained=1\n",
-            p->person, (unsigned long long)sequence, outcome);
-        log_line(text);
+        resolve_lifecycle(p, sequence, outcome);
     }
 }
 static void track_change(tfx_context context, pilot_passenger *p, uint64_t sequence) {
@@ -182,9 +186,9 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
     if (!(life.flags & TFX_LIFECYCLE_PERSON_PRESENT)) {
         lifecycle_event(p, bit, 1, sequence); return;
     }
-    /* A cleared home can precede native removal. Freeze new changes while
-     * observing this narrow transition; no identity rebasing or timeout refund.
-     * The other replica may still have its original home until its next update. */
+    /* Home loss can persist while onboard. Both-world clearing closes tracking
+     * as home_invalidated, without claiming removal, arrival or native cause.
+     * One-world evidence still freezes new changes under the original deadline. */
     if (!(p->removed_worlds & bit) && life.destinations[0] == -1 &&
         p->onboard_worlds == 3u && !p->arrived_worlds && !p->invalidated_worlds &&
         p->destination != p->home && life.target == p->destination) {
@@ -199,6 +203,12 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
                     p->person, (unsigned long long)sequence, life.world_id, p->home,
                     life.target, p->home_cleared_worlds, TFX_HOME_CLEAR_GRACE_CALLBACKS);
                 log_line(text);
+            }
+            if (p->home_cleared_worlds == 3u && !p->removed_worlds) {
+                snprintf(text, sizeof(text), "pilot_lifecycle person=%d destination=%d sequence=%llu outcome=home_invalidated world_mask=3 confirmed=1 arrival=0\n",
+                    p->person, p->destination, (unsigned long long)sequence);
+                log_line(text);
+                resolve_lifecycle(p, sequence, "home_invalidated");
             }
             return;
         }

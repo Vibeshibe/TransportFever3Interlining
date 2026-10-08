@@ -1,24 +1,43 @@
 # Session handoff — 2026-10-08
 
-## 0.7.4 trial running (latest)
+## Latest — 0.7.4 timed out; 0.7.5 prepared, NOT loaded
 
-User loaded the correct disposable before_multi_passenger baseline paused.
-Fresh Linux93030/start2190548 / Windows304, stdout load17:40:52Z, ready17:41:37Z.
-No previous bridge mappings. Loaded build-v7e mutable DLL SHA256
-7f136927850b48987d51299aad4f9118398e7f7823331ff9e0dcec4eeb57d2a1
-(source4d6e70a), tfx_start0. Log tpf-bridge-304-22022778.log confirms0.7.4,
-cap5/18000, reserve1 and home grace32. Metadata build-v7e/live-run.json.
-**User confirmed normal-speed unpause.** World1 `0x33227050`, world2
-`0x33227d10`, thread624; log watcher48734 active. No external memory reader.
-Do not inject again or rebuild the loaded DLL. Prior process/world IDs below stale.
+0.7.4 build-v7e trial stopped at2013 with home_clear_timeout, zero query errors,
+staged3, switching_blocked1.120770 home87062 cleared to-1 in worlds1/2 at1981/1982;
+target72649/assigned slot retained. Still present at32-callback deadline. All
+three boarded (120842/122261 S3→S1/97745 at425/429;120770 S1→S3/97914 at1477),
+no original arrivals observed, no fourth/fifth attempt or continuation proof.
 
-Watcher/audit scripts use live-run.json's log path. Check no proposals while
-home/lifecycle is pending, removal within32 callbacks, retained IDs/cap and a
-later actual distinct-passenger boarding. Require home_clear_continuation_proven,
-not just a resumption log. Do not expand grace/cap automatically. Original save
-hash ce2e02d935da… was verified during preflight. No new outcome claimed yet.
+Watcher48734 exited0 at17:50:14.650952Z. Read-only follow-up57459 started17:51:19Z:
+120770 still onboard in BOTH worlds with[-1,-1,72649], target72649. It became
+EcsOctreeNode-only at17:51:28.596278Z/17:51:28.800613Z. Follow-up ended exit0,
+165 accepted world samples/12 rejections; no alighting/exact removal call captured.
+**All watchers/readers/tests ended.** User told game no longer needs to run.
+Current0.7.4 forwards only, DLL remains mapped until process exit. Do not reinject.
+Last Linux93030/start2190548 / Windows304; world1 0x33227050/world2 0x33227d10,
+thread624; all expire on restart/reload. Evidence live-run.json/live-audit.json,
+log22022778 and home-timeout-followup.jsonl under ignored build-v7e.
 
-## Latest result — exact home=-1 trigger captured; capture ended
+Prepared0.7.5 build-v7f: both-world matching home loss closes as home_invalidated
+without arrival/removal claims; affected ID and attempt remain consumed. New
+proposals can resume once ALL pending cases resolve and no permanent error block.
+One-world evidence keeps32-callback deadline. Restored/reassigned homes, mixed
+arrival/invalidation and reappearance still stop. If any removal was seen, require
+both-world removal instead; no mixed-state home classification. No ABI/native
+write/route/cap changes. Normal/reserved consumer, host/failure and both contract
+suites PASS; peak40/64. **NOT loaded, continuation still requires live validation.**
+
+Mutable DLL SHA25634ad73a8d3aaad513899327ebeaafe22167a47f3ef5d0c99668044f552685b60.
+[Home invalidation guide](../../docs/home-invalidation.md) records full evidence,
+all artifact hashes, policy and next trial. Next restart into before_multi_passenger
+baseline paused, load ONLY build-v7f, and prove confirmed home_invalidated followed
+by an actual later different-person switch/boarding. No new restart requested yet.
+Prepared watch_trial.py/audit_trial.py under build-v7f read live-run.json. The
+audit accepts home_invalidated only with cleared mask3/removal0 and requires an
+actual later boarding for home_invalidation_continuation_proven. Separate original
+arrivals, removal and home/destination invalidation.
+
+## Previous diagnostic — exact home=-1 trigger captured; capture ended
 
 0.7.3 diagnostic build (a864a5e), loaded build-v7d-identity-log, stopped at7909:
 **person120842, world1, expected_home75531, observed_home-1, destinations

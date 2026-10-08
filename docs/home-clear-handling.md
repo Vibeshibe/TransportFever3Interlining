@@ -92,3 +92,17 @@ loader tfx_start0. Log `tpf-bridge-304-22022778.log` confirms cap5/18000, reserv
 and home-clear grace32. User confirmed normal-speed unpause; live outcome pending.
 World1 `0x33227050`, world2 `0x33227d10`, thread624; log watcher48734 active.
 Metadata is adjacent live-run.json; do not reuse older worlds/process identities.
+
+## Live result — deadline insufficient
+
+The0.7.4 trial stopped at2013:120770's home was cleared in both worlds at1981/1982,
+but SimPerson remained past32 callbacks. Three boardings, zero observed original
+arrivals, zero query errors, no fourth/fifth switch. A copied follow-up over a
+minute later still found the passenger onboard with home=-1 before observing
+removal in both worlds. All watchers/readers ended.
+
+Version0.7.5 now treats matching both-world home invalidation as a distinct
+non-arrival outcome; the32-callback limit for unconfirmed/mixed evidence remains.
+It is prepared and fixture-tested, not loaded. See [full result, revised policy
+and hashes](home-invalidation.md). This supersedes the earlier pending trial
+status without claiming0.7.4 continuation success.

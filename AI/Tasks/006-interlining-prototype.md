@@ -135,3 +135,9 @@ Diagnostic capture finished at7909:120842 home75531→-1, target78804 retained;
 later both-world absence confirmed. Four boardings/three original arrivals; no
 fifth or continuation.0.7.4 is prepared (4d6e70a), requires fresh live validation
 of its32-callback pending-removal window. All watchers/readers ended.
+
+Latest0.7.4 live result: home_clear_timeout at2013 despite matching clear state
+at1981/1982; passenger still onboard over a minute later, then removed. Three
+boardings/no original arrivals observed.0.7.5 now classifies matching both-world
+home loss separately; fixture/host/contract tests pass, build-v7f NOT loaded.
+See [home invalidation](../../docs/home-invalidation.md). No active watchers.
