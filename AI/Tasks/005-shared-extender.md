@@ -93,3 +93,16 @@ observers ran after restart. This supplies one checkpoint/transfer case, not
 blanket save compatibility or measured journey-time improvement. The next
 implementation milestone is a small bounded multi-passenger trial with fresh
 validation and duplicate-selection protection across worlds.
+
+Version 0.7 implements the bounded count expansion without changing ABI 6:
+1–5 distinct people, one engine attempt per dispatch, cross-world/client attempted
+ID ledger and failure latch. New host/consumer regressions pass. See
+[the multi-passenger trial](../../docs/multi-passenger-trial.md) for live evidence.
+
+Live version 0.7.0 confirmed four distinct replacements and both-world boardings,
+then auto-disabled after eight journey-not-found reads before a fifth attempt.
+Read-only diagnostics exposed missing simulation-person state for one entity and
+an unmatched at-building ID for another. Preserve bounds; next investigate
+lifecycle/identity semantics before another mutation trial. Original destinations
+for this batch remain unverified. Checkpoint/evidence are in the trial record;
+version 0.7.1 adds diagnostics only and has not been loaded into the game.

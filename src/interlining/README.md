@@ -76,14 +76,23 @@ The pilot checks route compatibility; it does not yet compare downstream waits,
 whole-trip duration, fare or comfort. Earlier boarding alone is not evidence of
 earlier arrival. Broader preference and timing policy requires separate work.
 
-## One-passenger native trial
+## Bounded native trials
 
-Bridge 0.6.4 uses the validator in a behavior-changing consumer: the first eligible
+Bridge 0.6.4 used the validator in a behavior-changing consumer: the first eligible
 baseline S1↔S3 adjacent Wimborne→Melksham proposal is submitted through ABI 6.
 The host stages it until observers finish, invokes the consumer's full validator
 again, compares expected state and applies engine-owned remove/add in a dedicated
-scope. The host allows one engine attempt across all clients/worlds per load.
-The consumer then tracks boarding and destination state; it does not switch again.
+scope. That revision allowed one engine attempt across all clients/worlds per load.
+
+Version 0.7 retains these eligibility rules and supports an explicit 1–5 passenger
+build cap, default one. The consumer waits for the expected train/leg boarding in
+both worlds before selecting the next person, never selects an already attempted
+person, and tracks each original destination through native onward travel.
+The host separately enforces distinct-person and per-dispatch bounds and stops
+future writes after failed postconditions. Capacity is queried again for every
+proposal and revalidation; discovery and tracking use separate callback budgets.
+See [the multi-passenger trial](../../docs/multi-passenger-trial.md) for current
+validation evidence.
 
 This remains an explicit development loader, with no persistent install or Lua
 binding. See [the trial record](../../docs/native-mutation-validation-2026-10-08.md).

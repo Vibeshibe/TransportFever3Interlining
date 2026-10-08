@@ -31,7 +31,12 @@ Copy returned snapshots; do not retain references into engine storage.
 The host implements ordering, context/thread rules, staged requests and explicit
 conflict outcomes. ABI 6 rejects all same-person contenders before applying any
 change and calls the requesting consumer again for eligibility revalidation.
-A process-wide one-attempt limit bounds this development pilot.
+Version 0.7 uses an explicit build-time cap of 1–5 distinct person attempts per
+DLL lifetime (default one), and at most one engine attempt per dispatch. An
+attempted-ID ledger prevents repeating a passenger across worlds or clients.
+Failed operation postconditions latch further writes shut. These host guards are
+separate from the interlining consumer's requirement to observe boarding in both
+worlds before selecting another passenger. [Trial details](multi-passenger-trial.md).
 
 Publish callback order explicitly and keep it deterministic by client identifier.
 Reject duplicate identifiers and registration changes during dispatch. Stage

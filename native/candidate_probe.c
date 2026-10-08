@@ -111,7 +111,11 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
     }
     tfx_person_journey journey = {.struct_size = sizeof(journey)};
     tfx_status status = changes_api.read_person_journey(context, p->person, &journey);
-    if (status != TFX_OK) { error("journey", status); return; }
+    if (status != TFX_OK) {
+        snprintf(text, sizeof(text), "pilot_journey_error person=%d destination=%d sequence=%llu status=%u\n",
+            p->person, p->destination, (unsigned long long)sequence, status);
+        log_line(text); error("journey", status); return;
+    }
     /* This research trial expects exactly the two known replica worlds. */
     if (!journey.world_id || journey.world_id > 2 || journey.person != p->person) {
         stop("unexpected_world_or_person"); return;

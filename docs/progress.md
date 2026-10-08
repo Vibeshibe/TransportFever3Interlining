@@ -639,6 +639,30 @@ Implementation committed/pushed as `cb7c91d`. Loaded successfully into the
 fresh paused game (`tfx_start=0`); startup log confirms configured bounds. The
 user has been asked to unpause; live switching/boarding/arrival are pending.
 
+## 2026-10-08 — Four-passenger live result and lifecycle stop
+
+Version 0.7.0 changed four distinct passengers: two S3→S1 on vehicle97745,
+then two S1→S3 on vehicles97912/97914. Every replacement preserved expected
+age/destination/place and boarded the proposed train/leg in both worlds before
+another switch. No repeated passenger or fifth attempt. After callback2118,
+eight journey-not-found responses triggered automatic disable; no original
+arrival had been recorded. This proves multiple boardings, not batch completion.
+
+Read-only follow-up identified person120770 with an extant entity but absent
+simulation-person/journey components in both mask and row handles. Person122261
+continued via line79460 then appeared at a building with a different target ID
+(122255 versus original72934). Cause and building-identity semantics remain
+unresolved. Other passengers continued naturally on S1 and S2. All readers ended.
+The user reports no vehicle/line edits, paused and saved; preserved verified
+pre-trial and diagnostic backups despite the game's reused save filename.
+
+Version 0.7.1 adds actionable per-person journey-error logs and read-only component
+diagnostics without loosening the stop or policy. Separate build succeeded and
+consumer regression passed; the new DLL was not loaded. Helper diagnostics ran
+read-only against the live missing record. Next investigate native lifecycle
+and destination/building identity before another mutation trial. [Evidence,
+checkpoint hashes and limitations](multi-passenger-trial.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

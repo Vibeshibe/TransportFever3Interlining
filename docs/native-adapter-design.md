@@ -80,10 +80,12 @@ terminal permission and entity-presence queries. A separate read-only validator
 combines these for the restricted adjacent same-terminal case. Destination
 presence does not prove onward reachability; node fallback, fractional load
 limits and alternative terminals remain excluded. ABI 6 implements mutation
-bindings, full expected-state comparison, deferred conflict checks and one-attempt
-limits. Two single-passenger journeys have completion evidence; one persisted
-through an onboard save/restart and native onward transfer. Multiple changes
-within one process and broader save cases still need evidence; postcondition
+bindings, full expected-state comparison and deferred conflict checks. Version 0.7
+adds an explicit 1–5 distinct-person cap (default one), one engine attempt per
+dispatch, cross-world/client duplicate prevention and a failure latch. Two single-passenger journeys have completion evidence; one persisted
+through an onboard save/restart and native onward transfer. The [multi-passenger trial](multi-passenger-trial.md) subsequently recorded four
+changes and both-world boardings in one process, then stopped on missing journey
+records. Batch destination correctness and broader save cases remain unverified; postcondition
 failures stop further changes but cannot roll back.
 Same-line stop remapping demonstrates replacement;
 the first cross-line disposable-save write test completed an alternate journey.

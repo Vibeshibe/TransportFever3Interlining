@@ -80,3 +80,11 @@ Version 0.7.0 implements the bounded multi-passenger milestone with an explicit
 1–5 person cap (default one), host deduplication/failure latch, and consumer
 boarding/arrival tracking. Offline tests pass; live results are tracked in
 [the multi-passenger trial](../../docs/multi-passenger-trial.md).
+
+Live version 0.7.0 confirmed four distinct replacements and both-world boardings,
+then auto-disabled after eight journey-not-found reads before a fifth attempt.
+Read-only diagnostics exposed missing simulation-person state for one entity and
+an unmatched at-building ID for another. Preserve bounds; next investigate
+lifecycle/identity semantics before another mutation trial. Original destinations
+for this batch remain unverified. Checkpoint/evidence are in the trial record;
+version 0.7.1 adds diagnostics only and has not been loaded into the game.

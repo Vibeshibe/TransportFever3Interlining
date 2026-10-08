@@ -3,8 +3,10 @@
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
 **Version 0.7 supports a build-time cap of 1–5 distinct passengers.**
-The default remains one; multi-passenger live validation is tracked in
-[the trial record](../docs/multi-passenger-trial.md). The native
+The default remains one. The first batch confirmed four switches/boardings, then
+stopped on missing journey records; original destination completion is unresolved.
+See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.1 improves
+diagnostics without loosening the stop or selection policy. The native
 policy in `src/interlining/` is a separate SDK consumer; its Lua prototype remains offline.
 This is a development loader, not an automatically installed game mod.
 
@@ -120,7 +122,9 @@ same Proton prefix. It opens the process for reading only, uses copied queries,
 and requires repeated reads to agree with no modification window at the endpoints.
 Do not reuse addresses after restart or save reload. This research reader assumes
 the pinned build already verified by the capture; it is not an atomic snapshot or
-a general discovery API. The first [complete alternate-line journey](../docs/native-mutation-validation-2026-10-08.md)
+a general discovery API. Version 0.7.1 logs changed query errors with entity presence
+and known component mask/row diagnostics; absence never counts as arrival. These
+additional diagnostic reads are explicitly non-atomic. The first [complete alternate-line journey](../docs/native-mutation-validation-2026-10-08.md)
 was confirmed using this follow-up. No additional engine write was made.
 
 `boarding_snapshot.exe WINDOWS_PID WORLD1_HEX WORLD2_HEX` performs a bounded

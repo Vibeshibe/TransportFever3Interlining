@@ -149,7 +149,8 @@ int main(void) {
     reset(); tick(); wrong_destination = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "destination_changed_before_arrival"));
     reset(); tick(); query_error = 1; ticks(8);
-    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=query_errors"));
+    CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=query_errors") &&
+        strstr(output, "pilot_journey_error person=100 destination=777"));
     reset(); tick(); sequence = TFX_OBSERVATION_LIMIT - 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "reason=callback_limit") &&
         strstr(output, "onboard_world_mask=0 destination_world_mask=0"));

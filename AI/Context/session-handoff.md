@@ -1,19 +1,54 @@
 # Session handoff — 2026-10-08
 
-## Active work — five-passenger trial
+## Current checkpoint — multi-passenger trial stopped for lifecycle investigation
 
-Version 0.7.0 is prepared in `analysis/native-bridge/build-v7a`, ABI 6 unchanged,
-`--passenger-limit 5 --observation-limit 18000`. Offline host/consumer/native tests
-passed. See [the trial record](../../docs/multi-passenger-trial.md) for bounds,
-commands, artifact hashes and remaining live validation. Expanded baseline backed
-up under `analysis/baselines/ce2e02d935da/`; user reports 40+ waiting people and
-confirmed restarted, loaded and paused. Preflight Linux26846 / Windows312 had no
-old bridge mapped. Implementation committed/pushed as `cb7c91d`. Loader returned `tfx_start=0`;
-`build-v7a/tpf-bridge-312-7795382.log` confirms five-passenger/18,000-callback
-startup. User asked to unpause at normal speed; no Update observations yet at
-this checkpoint. Monitor this log next; do not reload the DLL or claim live success.
-The host now permits an explicit bounded count, with once-per-person ledger and
-failure latch; older one-attempt descriptions below refer to completed 0.6 trials.
+Version 0.7.0 implementation `cb7c91d` and startup `a19a76b` are pushed on dev.
+Loaded `analysis/native-bridge/build-v7a/tpf_shared_bridge.dll`, passenger cap5,
+callback cap18000, ABI6 unchanged. Log `tpf-bridge-312-7795382.log`.
+**Four distinct passengers switched and boarded in both worlds**, no repeated
+attempts:120842/122261 S3→S1 vehicle97745;120770 S1→S3 vehicle97912;122790 S1→S3
+vehicle97914. All original stops1→2 Wimborne→Melksham. Ages/destinations/place
+bytes preserved. See [full trial evidence](../../docs/multi-passenger-trial.md).
+
+**Capture auto-disabled after eight journey TFX_NOT_FOUND(6) reads**, following
+callback2118, before a fifth switch. Exact stop sequence was not logged. All four
+boarding masks3, destination masks0. No watcher remains; the DLL forwards only.
+User paused and saved, reports no vehicle/line edits during capture. Current
+Linux26846 / Windows312, worlds1 `0x2d1de790`,2 `0x2d1df450`, thread592; these are
+historical inputs once the game restarts/reloads, never blindly reuse them.
+
+Read-only follow-ups found two unresolved lifecycle observations:
+- Person120770's entity still has components and destination72649 exists, but
+  simulation-person, waiting, onboard, moving and at-building components are
+  absent in both mask and row handles. Cause is unknown; do not label normal
+  retirement, arrival or mod corruption without evidence.
+- Person122261 transferred naturally via line79460/vehicle123296, then appeared
+  at-building flags8 with target/at-entity122255, not original destination72934.
+  Building identity/lifecycle mapping is unverified; do not claim arrival.
+Other two remained readable:120842 boarded S1vehicle98610 stops4→3 toward78804;
+122790 boarded S2vehicle98301 stops2→3 toward86009. Three120sec external readers
+exited3 (no original-destination proof), all closed. Prior completed single-person
+journeys remain valid historical evidence, not proof of this batch's endpoints.
+
+Preserved expanded pre-trial baseline:
+`analysis/baselines/ce2e02d935da/TPF3Interlining_multi_passenger_01.sav`
+(80,431,012bytes; fullhash in trial document).
+Diagnostic backup:`analysis/baselines/acca331ade37/TPF3Interlining_multi_passenger_diagnostic_01.sav`
+(81,236,125bytes;sha256`acca331ade37c604be598cd694e28cf15fc7e8bdef25ff5b71ae6e7be5b86219`).
+The user saved under the existing source name; backup copies preserve BOTH states.
+Adjacent manifests record stable source timestamps and verified hashes.
+
+Version 0.7.1 improves diagnostic logs only: person/destination/sequence on journey
+errors; external snapshot helper reports entity presence and known component
+mask/row agreement. Built `analysis/native-bridge/build-v7b`, **DLL NOT loaded**.
+Consumer regression passed after diagnostics change; new helper also exercised
+read-only against the missing entity. Do not overwrite loaded build-v7a artifacts.
+
+**Next investigate simulation-person removal and target/at-building ID semantics
+before another mutation trial.** Compare native lifecycle behavior using preserved
+baseline/checkpoint. Keep missing-record stop, bounds and eligibility unchanged;
+do not count absence or unmatched at-building ID as successful arrival. No fifth
+switch, complete batch journey validation, stable release or autoload is proven.
 
 ## Previous outcome and recovery
 
@@ -104,8 +139,9 @@ ABI 6 adds deferred waiting-leg requests, owner-scoped results and copied journe
 queries. APIs 1–5 retain layouts. All same-person request conflicts reject;
 revalidation uses a fresh callback token. Backend compares the entire 32-byte
 waiting component and public expected state, then invokes Begin/Remove/Add/End
-before original terminal selection. One engine attempt globally per DLL lifetime,
-even on a postcondition failure; no rollback promise.
+before original terminal selection. The historical 0.6 implementation allowed one engine attempt globally per DLL
+lifetime; version 0.7 adds bounded distinct-person attempts and a failure latch.
+No rollback promise.
 
 Bindings: Begin `0x142bb4640`, Remove `0x142bb7320`, Add `0x140b21cd0`, End
 `0x142bb4d90`, waiting RTTI `0x143cea8f0`. **Add has five arguments**: world, person,
@@ -121,12 +157,11 @@ logs. Observer cap remains 3600. SDK/mutation/query/candidate suites passed;
 passenger-specific observer fixtures and actual binary contract checks passed.
 Latest recovery edits are documentation only; no rerun of unchanged code needed.
 
-**Next implement a small bounded multi-passenger trial**, retaining fresh policy
-checks and guarding against repeated selection of a passenger across the two
-worlds. The current host still permits only one attempt: do not claim multiple
-changes in one process are tested. Keep eligibility expansion separate from
-operation-count changes. Native-client faults/hangs and multi-mod coexistence
-remain outside demonstrated coverage.
+The bounded multi-passenger implementation and four boardings are now recorded
+at the top of this handoff. The current gate is lifecycle/identity investigation,
+not another increase in passenger count. Keep eligibility expansion separate.
+Native-client faults/hangs and multi-mod coexistence remain outside demonstrated
+coverage.
 
 Longer shared legs, loop wrap, alternative terminals, fractional/full-load rules,
 line edits and broad save compatibility remain open. Task 007 preferences/time
