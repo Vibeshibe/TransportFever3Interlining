@@ -1086,3 +1086,30 @@ verification. Do not claim installation or gameplay validation without running i
   rejected. Native walking is a promising reuse point; alternate-platform path
   semantics, simulation timing and teleportation are not established. Recorded
   the focused follow-up in task006 without altering this run or claiming support.
+
+## 2026-10-09 — Research native alternative-platform boarding
+
+- User requested research during the active capture. Official manual specifies
+  vehicle selection at the last signal for trains, but does not describe
+  passenger transfer timing. Targeted read-only Ghidra exports, offline PE data
+  and assembly establish a short vehicle-entry walk and a direct boarding fallback.
+- Entry search uses transformed vehicle-model paths and a strict5-world-unit
+  distance threshold. Empty results return false and the assignment caller invokes
+  the common onboard handler. Successful approach creates ModelPerson walking
+  state; NoteWalkPersonsArrived completes boarding. Assembly corrects Ghidra's
+  inferred void return. No new SDK signature or native operation was introduced.
+- This does not prove universal alternative-platform teleportation. Earlier
+  passenger relocation/rerouting, route-cost accounting and missed-departure
+  recovery remain open. Retain platform guards; plan one isolated same-line
+  alternative-platform comparison after the current trial. Full findings,
+  addresses, artifact manifest hash and reproduction command are in
+  [alternative-platform behavior](alternative-platform-behavior.md).
+- All exports finished. No debugger attachment, game/save edits, build change or
+  second DLL. Existing0.9.1 capture continues: at6600,seven successful switches
+  and boardings,six original arrivals,one active sample,peak4,no pending or
+  unsampled boardings,no logged errors. Live >5-switch coverage is now achieved.
+  Discovery:123 indexed picks,920 fallbacks,1 stale hint rejection,802 station
+  mismatches/1043 screens,71 validations. No final summary or completion audit yet.
+- Validation: checked decompiled paths against boolean-return/caller/distance
+  assembly and decoded constant; verified documentation links and diff formatting.
+  Native tests were not rerun for documentation-only changes.

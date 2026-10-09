@@ -225,3 +225,16 @@ preserve a valid journey if the train departs or the platform changes again.
 Do not equate same station group with immediate platform access or merely remove
 the existing mismatch guard. Whole-trip time estimation remains a separate gap.
 See docs/native-boarding-investigation.md and src/interlining/native_candidate.c.
+
+Research completed2026-10-09: [alternative-platform behavior](../../docs/alternative-platform-behavior.md)
+records official vehicle-selection rules and verified native control flow.
+The vehicle-entry walk searches within5 world units; an empty result falls
+through to direct boarding. Walking arrival has its own onboard callback.
+Upstream platform relocation, full transfer costs and ordinary missed-departure
+handling remain unknown. Do not treat this short approach helper as a station
+pedestrian router or remove platform guards on its account. No live alternative
+case was introduced into the ongoing0.9.1 capture.
+
+Current0.9.1 checkpoint6600:seven boardings,six original arrivals,one active sample,
+zero logged errors. Live switching beyond five is demonstrated; unsampled
+boardings and broader route cases remain pending. Capture is not yet complete.

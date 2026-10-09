@@ -1,5 +1,30 @@
 # Session handoff — 2026-10-09
 
+## Latest — alternative-platform research; 0.9.1 still running
+
+User requested research while the existing trial runs. Completed read-only
+Ghidra/assembly investigation and official-manual lookup; see
+[alternative-platform behavior](../../docs/alternative-platform-behavior.md).
+Native assignment attempts a short vehicle-entry walk only when an entry is
+within 5 world units. Empty approach falls through to direct onboard transition
+(boolean return verified in assembly despite incorrect Ghidra void signature).
+Walking completion also reaches onboard through NoteWalkPersonsArrived. This
+does NOT prove that all alternative-platform passengers teleport: upstream
+relocation/rerouting, full walking cost and ordinary departure recovery remain
+unresolved. Keep current platform guards. Focused same-line native alternative
+test is later work; no restart, debugger or DLL change during this capture.
+All targeted Ghidra exports finished; ignored evidence manifest and addresses
+are recorded in the guide. Documentation only; native source/build unchanged.
+
+Latest live checkpoint6600:7 staged/applied/boarded,6 sampled original arrivals,
+1 active sample,peak4,0 pending/unsampled boardings, no logged errors.
+Discovery:123 indexed picks,920 fallbacks,1 rejected stale-station hint,
+802 station mismatches/1043 screens,71 validations. >5 switches now demonstrated;
+unsampled boardings and multi-stop/express live coverage remain pending. Seven
+boarded IDs:115753,93862,110796,99871,111528,125652,108250.125652 remains tracked.
+No summary yet. Existing log/watch details below remain applicable; no new DLL.
+This checkpoint supersedes older interim claims of no >5-switch evidence.
+
 ## Current running checkpoint — resume by reading the log
 
 User confirmed unpause; capture continues automatically, not complete. Watcher
