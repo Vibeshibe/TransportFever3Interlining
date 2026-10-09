@@ -43,8 +43,10 @@ into a vehicle at an excessively long platform. This is consistent with the
 distance-limited approach and direct-board fallback. No synchronized position,
 assignment or timing trace was taken, so it does not identify the exact branch
 or demonstrate zero simulation-time cost. The user's hypothesis that alternative
-platforms behave similarly is plausible through the same assignment handler;
-it remains a hypothesis until an alternative-platform case is observed.
+platforms behave similarly is plausible through the same assignment handler.
+The user clarified that they are certain of this behavior in **Transport Fever 2**.
+Treat that as predecessor-game precedent, not confirmation of TF3 alternative
+platform behavior; the latter remains unverified.
 
 The shipped `api/tealdef/api/engine.d.tl` describes `ModelPerson.path`, `pathPos`,
 `speed`, `topSpeed`, `stopped` and timing fields. The arrival callback shows that

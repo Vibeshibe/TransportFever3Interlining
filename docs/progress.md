@@ -1119,3 +1119,6 @@ verification. Do not claim installation or gameplay validation without running i
   from static evidence: consistent with the direct-board fallback, but no timed
   trace or observed alternative-platform case establishes the exact branch or
   simulation-time cost. Native policy and the running capture remain unchanged.
+- User clarified certainty about Transport Fever 2. Updated the evidence to
+  distinguish predecessor-game precedent from unverified TF3 alternative-platform
+  behavior; the TF3 static fallback finding is independent of that recollection.

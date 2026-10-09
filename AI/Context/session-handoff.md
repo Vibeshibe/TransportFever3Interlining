@@ -19,6 +19,9 @@ User subsequently reported apparent teleport boarding on an excessively long
 platform and suggested alternatives behave similarly. Recorded as visual user
 evidence consistent with the fallback, not a timed trace or confirmed alternative
 case. It strengthens the reuse hypothesis without proving walking-time handling.
+Latest clarification: user is certain of the behavior in Transport Fever 2.
+Keep TF2 precedent separate from TF3 static findings; do not label it a confirmed
+TF3 alternative-platform observation.
 
 Latest live checkpoint6600:7 staged/applied/boarded,6 sampled original arrivals,
 1 active sample,peak4,0 pending/unsampled boardings, no logged errors.
