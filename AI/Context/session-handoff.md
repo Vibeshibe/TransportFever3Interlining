@@ -1,6 +1,16 @@
-# Session handoff — 2026-10-08
+# Session handoff — 2026-10-09
 
-## Latest — 0.8.0 route expansion prepared, not loaded
+## Latest — 0.8.0 route trial running
+
+Fresh process and original baseline verified; user confirmed normal-speed unpause.
+Linux17502/start624621, Windows312; no prior bridge mappings. Stdout baseline
+load09:23:31Z, ready09:24:17Z. Loaded build-v8a mutable DLL, tfx_start0;
+cap5/18000, reserve OFF, route bound4. Log `tpf-bridge-312-6357383.log`;
+ignored live-run.json records hashes/process metadata. Watcher44054 active; worlds1/2 `0x3102c650`/`0x3102b990`, thread592.
+No live result yet. Do not reinject. Monitor multi-stop/express coverage, boardings and final outcomes.
+All historical addresses below expire on restart/reload.
+
+## Preparation — 0.8.0 route expansion
 
 User authorized implementation after the completed 0.7.5 trial. Implemented
 bounded demand-line discovery (no baseline IDs) and multi-stop candidate matching:

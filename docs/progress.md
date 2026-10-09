@@ -870,6 +870,14 @@ five-person maximum and lifecycle guards are unchanged. Build-v8a is prepared,
 **not loaded or live-validated**. No game process or saves were touched.
 [Scope, examples, hashes and focused live test](route-expansion.md).
 
+## 2026-10-09 — 0.8.0 route trial started
+
+Verified the unchanged original baseline, fresh process and tested DLL hash.
+Loaded build-v8a successfully; user confirmed normal-speed unpause. Limits remain
+five attempts/18,000 callbacks, four route intervals, reserve OFF. Capture is
+running; multi-stop/express coverage and final outcomes remain pending. Process
+and log details are recorded in the handoff and ignored live-run.json.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

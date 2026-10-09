@@ -72,8 +72,9 @@ retain home invalidation, removal, identity and continuation coverage.
 
 Shared bridge, copied query/mutation, host batch/failure and both DLL contract
 suites also run in the isolated `tools/runtime/bridge-test` Wine prefix. Build
-warnings are errors. This evidence is automated; **0.8.0 is not loaded or validated
-in the game yet**. Earlier live results apply to 0.7.5's narrower policy.
+warnings are errors. Automated evidence passes; the first live capture below is
+running, with outcomes still pending. Earlier completed live results apply to
+0.7.5's narrower policy.
 
 ## Prepared build and next live trial
 
@@ -117,3 +118,12 @@ express boarding coverage separately and honors whether the fifth was reserved.
 - `tpf_shared_bridge.dll`: `37be1d7b68e71ed81d3f968c2d106ecc991e0e6018f8542a5c656fcf771aeb18`.
 - `tpf_journey_observer.dll`: `88032fd550eb130c5ba118c2089d02de8d0acdbe5cf74e3c4a9385f2786ee859`.
 - `route-expansion-tests.json`: `6090d0b0a9da68c1b225d6854934768c6e6f3819d3a82610398b9869aa5c8d6e`.
+
+## Live trial startup — 2026-10-09
+
+The user restarted into the verified original baseline and confirmed normal-speed
+unpause after loading. Linux PID17502/start624621, Windows PID312; no previous
+bridge mappings. Startup returned0 and confirms version0.8.0, cap5/18000,
+reserve OFF and route bound4. Log `build-v8a/tpf-bridge-312-6357383.log`;
+adjacent `live-run.json` records full metadata. Capture is active; no outcome
+or multi-stop/express validation is claimed yet. Do not reload another DLL.
