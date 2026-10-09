@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.8.0 adjacent live journey completed; 0.8.1 discovery-sentinel correction prepared; multi-stop validation pending
+- Status: In progress — 0.8.1 live capture running, one adjacent journey completed; multi-stop validation pending
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -167,3 +167,11 @@ identifies the last failed candidate. Prepared0.8.1 copies known-2/-3 but exclud
 both from mutation, retaining unknown-state stops. All nine regressions pass;
 no active observers and new DLL not loaded. Multi-stop/express coverage is still
 pending. [Sentinel evidence and correction](../../docs/waiting-sentinels.md).
+
+0.8.1 live checkpoint9600: one adjacent S3→S1 switch/boarding and original
+destination arrival, zero query errors. Sentinel exclusions and multi-stop/express
+boarding have not appeared. Capture continues under its original5/18000 bounds.
+The [next capacity plan](../../docs/passenger-capacity-plan.md) separates an attempt
+ledger, one boarding confirmation and four detailed journey samples. It is a
+proposal, not a higher-capacity implementation or authorization to change the
+running trial's bounds.

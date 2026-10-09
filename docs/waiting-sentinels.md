@@ -69,8 +69,8 @@ lifecycle, host, mutation/query and DLL-contract regressions are retained.
 Prepared version 0.8.1 under ignored `analysis/native-bridge/build-v8b/`: cap 5,
 18,000 callbacks, route bound 4, lifecycle reserve OFF. The optional observer targets
 40365/destination 86033 for contract testing only. The fresh live capture below is now running; outcomes remain pending.
-The current 0.8.0 DLL remains mapped until exit, so a revised trial needs a fresh
-restart into a disposable `TPF3Interlining_before_multi_passenger_01` baseline.
+The user restarted out of 0.8.0 into a disposable
+`TPF3Interlining_before_multi_passenger_01` baseline for this corrected trial.
 Keep the same route scope and validate known-sentinel exclusions separately from
 multi-stop boarding. An adjacent-only result cannot validate the broader policy.
 
@@ -98,4 +98,8 @@ Final evidence under ignored `build-v8b/`:
 Fresh Linux30963/start797666, Windows304; original baseline hash unchanged and
 no prior bridge mappings. Loaded build-v8b0.8.1, tfx_start0; user confirmed
 normal-speed unpause. Log `tpf-bridge-304-8080293.log`, with adjacent live-run.json.
-Cap5/18000, route4, reserve OFF. Capture is active; no live outcome is claimed yet.
+Cap5/18000, route4, reserve OFF. At callback9600, passenger122261 has completed
+an adjacent S3→S1 replacement and original72934 journey: staged418, both-world
+boarding427, planned stop2 exit1609/1612, native onward line79460/vehicle123296,
+original arrival2436/2437. Zero query errors, no special waiting exclusion or
+multi-stop/express boarding yet. Capture remains active; four attempts are unused.

@@ -903,6 +903,19 @@ route bound4 and reserve OFF remain. Runtime sentinel exclusion and broader-rout
 coverage are pending. Fresh log/process metadata is recorded in the handoff and
 ignored live-run.json; no policy change during this capture.
 
+## 2026-10-09 — Corrected trial checkpoint and capacity design
+
+0.8.1 reached9600 callbacks without query errors. One adjacent S3→S1 switch,
+both-world boarding and original72934 arrival for122261; four attempts remain.
+No special waiting exclusions or multi-stop/express boarding observed yet.
+Capture continues unchanged to its existing bound; this is not a final result.
+
+Reviewed the host attempt ledger, result ring and consumer tracking scheduler.
+Documented a [proposed bounded capacity implementation](passenger-capacity-plan.md):
+separate32-attempt ledger, one pending boarding, four concurrent journey samples,
+aggregate reporting and explicit query/failure bounds. No runtime change, build,
+injection or save modification was made for this design work.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

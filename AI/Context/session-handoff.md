@@ -8,8 +8,15 @@ no prior bridge mappings. Stdout load09:52:21Z, ready09:53:10Z. Loaded build-v8b
 0.8.1 mutable DLL, tfx_start0; cap5/18000, route4, reserve OFF. Log
 `tpf-bridge-304-8080293.log`; ignored live-run.json records fresh metadata.
 Watcher59201 active; worlds1/2 `0x304d3520`/`0x304d2860`, thread592.
-No live outcome yet. Do not reinject; watch pilot_waiting_excluded and query
-errors, multi-stop/express coverage, boarding and separate final outcomes.
+Checkpoint at callback9600: one adjacent replacement, zero query errors.
+122261 switched S3→S1/97745 at418, both-world boarding427, left at planned stop2
+at1609/1612, transferred natively to79460/123296 and reached original72934
+at2436/2437. Four attempts remain unused. No special waiting exclusion,
+multi-stop or express boarding observed yet. Do not reinject; continue to the
+existing bound and audit the completed log. Watcher59201 remains active.
+Prepared a [capacity implementation plan](../../docs/passenger-capacity-plan.md)
+while monitoring; proposed32 attempts/one pending/four diagnostic samples is NOT
+implemented or loaded. All current limits and source binaries remain unchanged.
 Historical process/world addresses below must not be reused.
 
 ## Previous — 0.8.0 stopped; 0.8.1 sentinel correction prepared
