@@ -28,13 +28,28 @@ static int32_t scan_cursor, people[32], vehicles[16], lines[16];
 static uint32_t line_count, line_cursor, line_replacement_cursor, line_stops[16];
 static uint32_t discovery_cursor, vehicle_replacement_cursor;
 static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor, person_replacement_cursor;
-static uint32_t failures, attempts, accepted, logged, ready;
+static uint32_t failures, attempts, accepted, logged, ready, special_waiting_samples;
 static uint32_t reasons[IT_REASON_COUNT];
 static unsigned char last_reason[32][16]; /* Zero is unseen; reason+1 otherwise. */
 
 static void error(const char *operation, tfx_status status) {
     if (failures++ >= 8) return;
     char text[160]; snprintf(text, sizeof(text), "candidate_query_error operation=%s status=%u\n", operation, status);
+    log_line(text);
+}
+static void waiting_error(const char *operation, tfx_status status, int32_t person, uint64_t sequence) {
+    if (failures++ >= 8) return;
+    char text[192];
+    snprintf(text, sizeof(text), "candidate_query_error operation=%s status=%u person=%d sequence=%llu\n",
+        operation, status, person, (unsigned long long)sequence);
+    log_line(text);
+}
+static void excluded_waiting(const tfx_waiting_leg *leg, uint64_t sequence) {
+    if (leg->vehicle >= -1) return;
+    if (special_waiting_samples++ >= 8) return;
+    char text[192];
+    snprintf(text, sizeof(text), "pilot_waiting_excluded person=%d sequence=%llu vehicle_sentinel=%d reason=unsupported_waiting_state\n",
+        leg->person, (unsigned long long)sequence, leg->vehicle);
     log_line(text);
 }
 static void remember_person(int32_t person) {
@@ -45,7 +60,7 @@ static void remember_person(int32_t person) {
     memset(last_reason[slot], 0, sizeof(last_reason[slot]));
 }
 static int selected_person(int32_t person);
-static void discover(tfx_context context) {
+static void discover(tfx_context context, uint64_t sequence) {
     tfx_waiting_page page = {.struct_size = sizeof(page)};
     tfx_status status = api.v4.v3.v2.scan_waiting_people(context, scan_cursor, &page);
     if (status != TFX_OK) { error("scan", status); return; }
@@ -61,7 +76,8 @@ static void discover(tfx_context context) {
         if (!selected_person(people[pi])) {
             tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
             status = api.v4.v3.v2.read_waiting_leg(context, people[pi], &leg);
-            if (status != TFX_OK && status != TFX_NOT_FOUND) { error("discovery_waiting", status); return; }
+            if (status != TFX_OK && status != TFX_NOT_FOUND) { waiting_error("discovery_waiting", status, people[pi], sequence); return; }
+            if (status == TFX_OK) excluded_waiting(&leg, sequence);
             if (status == TFX_OK && leg.line >= 0) {
                 int32_t slot = tfx_pilot_remember_bounded(lines, &line_count, &line_replacement_cursor, 16, leg.line);
                 if (slot >= 0) line_stops[slot] = 0;
@@ -132,8 +148,8 @@ static void summary(const char *reason) {
     if (summary_logged) return;
     summary_logged = 1;
     char text[384];
-    snprintf(text, sizeof(text), "pilot_summary reason=%s staged=%u passenger_limit=%u people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u switching_blocked=%u\n",
-        reason, passenger_count, (unsigned)TFX_PASSENGER_LIMIT, person_count, vehicle_count, ready, attempts, accepted, failures, (tracking_blocked || lifecycle_pending()));
+    snprintf(text, sizeof(text), "pilot_summary reason=%s staged=%u passenger_limit=%u people=%u vehicles=%u ready_samples=%u attempts=%u accepted=%u query_errors=%u switching_blocked=%u special_waiting_samples=%u\n",
+        reason, passenger_count, (unsigned)TFX_PASSENGER_LIMIT, person_count, vehicle_count, ready, attempts, accepted, failures, (tracking_blocked || lifecycle_pending()), special_waiting_samples);
     log_line(text);
     for (unsigned i = 0; i < passenger_count; ++i) {
         const pilot_passenger *p = &passengers[i];
@@ -334,7 +350,8 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             tfx_waiting_leg leg = {.struct_size = sizeof(leg)};
             status = api.v4.v3.v2.read_waiting_leg(context, people[pi], &leg);
             if (status == TFX_NOT_FOUND) continue;
-            if (status != TFX_OK) { error("waiting", status); return; }
+            if (status != TFX_OK) { waiting_error("waiting", status, people[pi], sequence); return; }
+            excluded_waiting(&leg, sequence);
             if (leg.line == v.line || leg.vehicle != -1) continue;
             tfx_line_stop board = {.struct_size = sizeof(board)};
             status = api.v4.v3.v2.read_line_stop(context, leg.line, leg.boarding_stop, &board);
@@ -424,7 +441,7 @@ static void sample(tfx_context context, void *unused) {
         if (!pilot_done && finished == TFX_PASSENGER_LIMIT && !tracking_blocked)
             stop(arrived == TFX_PASSENGER_LIMIT ? "all_destinations_observed" : "all_outcomes_observed");
     } else if (!tracking_blocked && !lifecycle_pending() && !attempt_reserved() && failures < 8 && sequence < TFX_OBSERVATION_LIMIT) {
-        discover(context);
+        discover(context, sequence);
         if (failures < 8) evaluate(context, sequence);
     }
     if (!pilot_done && failures >= 8) stop("query_errors");
@@ -438,7 +455,7 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     line_count = line_cursor = line_replacement_cursor = discovery_cursor = vehicle_replacement_cursor = 0;
     memset(line_stops, 0, sizeof(line_stops));
     person_count = vehicle_count = vehicle_cursor = person_cursor = person_replacement_cursor = 0;
-    failures = attempts = accepted = logged = ready = 0;
+    failures = attempts = accepted = logged = ready = special_waiting_samples = 0;
     memset(&pending_candidate, 0, sizeof(pending_candidate));
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));

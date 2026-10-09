@@ -25,8 +25,10 @@ This is a development loader, not an automatically installed game mod.
 Version 0.8 removes the fixed S1↔S3 gate, discovers lines from waiting passengers
 and supports up to four forward stop intervals, including ordered express skips.
 Exact copied-route revalidation rejects intervening edits. Automated regressions
-pass; this expansion is not yet loaded into the game. See
-[route scope and validation](../docs/route-expansion.md).
+pass; the first live run completed one adjacent journey before stopping on
+waiting-sentinel read errors. Prepared 0.8.1 preserves known -2/-3 values but
+excludes them from switching; it is not loaded. See
+[route scope](../docs/route-expansion.md) and [sentinel correction](../docs/waiting-sentinels.md).
 
 ## Build and isolated tests
 

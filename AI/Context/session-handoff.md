@@ -1,6 +1,51 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.8.0 route trial running
+## Latest — 0.8.0 stopped; 0.8.1 sentinel correction prepared
+
+0.8.0 build-v8a trial is FINISHED: reason=query_errors, staged1, query_errors8,
+switching_blocked0 (separate latch; pilot_done and forwards-only wrapper stop writes).
+40365 switched S1→S3/97912 at954, both-world boarded981, alighted1952/1953,
+then S2/98301 and original86033 arrival4704/4705. No multi-stop or express coverage.
+Watcher44054 exited0 at2026-10-09T09:43:55.329225Z. User paused and left game open.
+**All watchers/readers/tests ended. No further running time needed for diagnosis.**
+
+Paused read-only inspection copied stopped consumer caches plus repeated records
+in both worlds. Untouched72593/75640/86317 have waiting.vehicle=-3 on78942,
+SimPerson state0, valid positive line/stops. Frozen discovery_cursor3209/count32
+implies finalslot23/person86317; old query rejects vehicle<-1. Earlier native
+analysis documents distinct-2/-3 branches; exact meanings remain unestablished.
+Only final candidate is inferred; earlier errors lack person IDs. No debugger,
+second DLL, engine call or memory write was used. Original baseline ce2e02d935da…
+remains80,431,012bytes. No save changed by our tools.
+
+Prepared0.8.1 `analysis/native-bridge/build-v8b`, cap5/18000, route4, reserve OFF;
+NOT loaded. Copied waiting query preserves known-2/-3 without normalizing them;
+policy/discovery skip switching these states. Host and native adapter still require
+vehicle exactly-1. Unknown negatives and tracked journey-state guards unchanged.
+Bounded exclusion logs/counts; waiting errors now include person and sequence.
+All9 tests PASS, peak62/64, including fabricated sentinel requests with zero native
+operations. Native ABI/hook/mutation/lifecycle/route bounds unchanged.
+Mutable DLL c3827f24e5e25bcc89d506a55ccce5a58181130cd4675fd3e9343a459ea6103e.
+Observer 687ff5b9b7619fc088fd90e0d756d8381615c6026efeeb61717cd180fe0068b2.
+Tests cd6ed0449197febd380be32afffde40243609ef6b59bbd186fbea8ff4d9362ef.
+Optional observer40365/destination86033 is for contract tests, not concurrent use.
+
+Old process Linux17502/start624621, Windows312, thread592; worlds0x3102c650 /
+0x3102b990. Old0.8.0 stays mapped until game exit; DO NOT reinject. Next requires
+fresh restart into disposable before_multi_passenger baseline paused, fresh process
+and save verification. Await readiness before loading build-v8b. No increased caps.
+Prepared inactive watcher/audit under build-v8b need new live-run.json after load.
+Check pilot_waiting_excluded and zero reader failures alongside route coverage;
+adjacent-only success does not validate multi-stop or express substitution.
+
+Evidence under build-v8a: log6357383 SHA256
+921145437a82b478b06277300dd49337d2e47802629c8e68a48f3ac7900417a9;
+discovery-stop-inventory.json4d1411b98b52ce2d44a4d98ef60c29c46c4d5382722c30c1fa09381746c44d56;
+live-audit.json a3510cbec8c9431f50cc6e9d414c57f2f4a839769b02f3ea309f6de119dc884a.
+Audit preserves successful adjacent evidence but trial_completed_successfully=false.
+[Full result, correction and next scope](../../docs/waiting-sentinels.md).
+
+## Historical — 0.8.0 route trial startup
 
 Fresh process and original baseline verified; user confirmed normal-speed unpause.
 Linux17502/start624621, Windows312; no prior bridge mappings. Stdout baseline

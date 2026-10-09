@@ -111,5 +111,7 @@ fixture at 62/64 queries without changing the shared SDK or mutation operation.
 The passenger cap, same-platform/capacity checks and lifecycle handling remain.
 
 Multi-stop/express, dynamic discovery, stale data and route-edit regressions pass.
-Build-v8a is prepared but not loaded into the game. See
+Build-v8a completed one adjacent journey before stopping on unsupported waiting
+sentinels; multi-stop/express live coverage remains pending. Prepared 0.8.1
+preserves known -2/-3 values for discovery and excludes them from switching. See
 [scope, examples and trial instructions](../../docs/route-expansion.md).

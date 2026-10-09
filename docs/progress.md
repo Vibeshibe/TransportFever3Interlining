@@ -878,6 +878,23 @@ five attempts/18,000 callbacks, four route intervals, reserve OFF. Capture is
 running; multi-stop/express coverage and final outcomes remain pending. Process
 and log details are recorded in the handoff and ignored live-run.json.
 
+## 2026-10-09 — Discovery sentinel diagnosed; 0.8.1 prepared
+
+0.8.0 completed one adjacent S1→S3 journey (40365→86033), then stopped at eight
+waiting-reader invalid-state errors. No multi-stop or express switch was captured.
+Paused read-only inspection found untouched passengers with vehicle sentinel-3;
+the frozen discovery cursor identifies86317 as the final candidate. Earlier
+analysis identifies separate-2/-3 native branches; neither is ordinary unassigned.
+
+0.8.1 preserves those two values for discovery and excludes them from switching.
+Host/backend still require exactly-1; unknown-4 and tracked journey sentinel states
+remain errors. New tests verify preservation, continued discovery and zero engine
+calls for fabricated sentinel requests. All nine suites pass, peak62/64 queries.
+Waiting errors now log person/sequence; exclusion logs and aggregate samples are
+bounded. No route/mutation/lifecycle limits changed. Build-v8b NOT loaded.
+All readers/watchers ended; original baseline unchanged. See
+[full evidence and prepared correction](waiting-sentinels.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

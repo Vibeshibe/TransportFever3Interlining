@@ -139,8 +139,9 @@ tfx_status tfx_query_waiting(tfx_reader *r, int32_t person, tfx_waiting_leg *out
         .line = i32(waiting), .boarding_stop = i32(waiting + 4), .alighting_stop = i32(waiting + 8),
         .vehicle = i32(waiting + 24), .destination = i32(human + 0x50),
         .arrival_time_bits = u64(waiting + 16)};
-    if (result.line < 0 || result.boarding_stop < 0 || result.alighting_stop < 0 || result.vehicle < -1)
-        return TFX_INVALID_STATE;
+    if (result.line < 0 || result.boarding_stop < 0 || result.alighting_stop < 0 ||
+        (result.vehicle < -1 && result.vehicle != TFX_WAITING_VEHICLE_SPECIAL_2 &&
+         result.vehicle != TFX_WAITING_VEHICLE_SPECIAL_3)) return TFX_INVALID_STATE;
     tfx_status status = component(r, person, PLACE, place, sizeof(place));
     if (status == TFX_OK) {
         result.flags = TFX_HAS_TERMINAL_PLACE;

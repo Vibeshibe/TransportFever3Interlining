@@ -10,6 +10,7 @@ static uint64_t sequence;
 static unsigned world, staged, boarded[5], arrived[5], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, query_error, wrong_destination;
 static int32_t source_line = 501, substitute_line = 902, leg_hops = 1, source_board = 1, substitute_board = 1;
+static int32_t waiting_sentinel;
 static unsigned route_changed, discovery_removed, screening_misses, busy_vehicles, active_stop_only, vehicle_missing, arriving_missing;
 static unsigned missing_worlds[6], invalidated_worlds[6], life_error[6];
 static unsigned cleared_home_worlds[6];
@@ -30,6 +31,7 @@ static tfx_status waiting(tfx_context c, int32_t id, tfx_waiting_leg *out) {
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = id, .destination = 777,
         .line = id == 105 ? substitute_line : source_line, .boarding_stop = id == 105 ? substitute_board : source_board,
         .alighting_stop = (id == 105 ? substitute_board : source_board) + leg_hops, .vehicle = -1};
+    if (waiting_sentinel && (id == 100 || id == 105)) out->vehicle = waiting_sentinel;
     if (screening_misses && id < 103) out->boarding_stop = 0;
     return TFX_OK;
 }
@@ -150,6 +152,7 @@ static void reset(void) {
     sequence = staged = no_capacity = wrong_vehicle = fail_result = query_error = wrong_destination = 0;
     changed_home = reassigned = bad_identity = baseline_unassigned = home_target = 0;
     source_line = 501; substitute_line = 902; leg_hops = 1; source_board = substitute_board = 1;
+    waiting_sentinel = 0;
     route_changed = discovery_removed = screening_misses = busy_vehicles = active_stop_only = vehicle_missing = arriving_missing = 0;
     memset(missing_worlds, 0, sizeof(missing_worlds)); memset(invalidated_worlds, 0, sizeof(invalidated_worlds));
     memset(life_error, 0, sizeof(life_error)); memset(lifecycle_calls, 0, sizeof(lifecycle_calls));
@@ -440,6 +443,13 @@ int main(void) {
     boarded[0] = 3; ticks(2); CHECK(strstr(output, "pilot_boarded_both"));
     reset(); active_stop_only = 1; stage_until(1); CHECK(sequence > 1);
     CHECK(requests[0].line == substitute_line); /* Advances per-line stops despite alternating phases. */
+    for (int32_t sentinel = -2; sentinel >= -3; --sentinel) {
+        reset(); waiting_sentinel = sentinel; tick();
+        CHECK(staged == 1 && requests[0].expected.person == 101 &&
+            strstr(output, "pilot_waiting_excluded person=105") &&
+            strstr(output, "pilot_waiting_excluded person=100") &&
+            !strstr(output, "candidate_query_error"));
+    }
     reset(); arriving_missing = 1; ticks(20);
     CHECK(staged == 0 && !strstr(output, "candidate_query_error"));
     arriving_missing = 0; stage_until(1);

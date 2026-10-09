@@ -510,6 +510,19 @@ static void mutation_tests(void) {
     journey_fixture(); tfx_reader r = reader(); r.world_id = 2;
     tfx_person_journey j = {.struct_size = sizeof(j)};
     CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_WAITING && j.world_id == 2 && j.vehicle == -1);
+    for (int32_t sentinel = -2; sentinel >= -3; --sentinel) {
+        journey_fixture(); put32(data[0] + 24, (uint32_t)sentinel); r = reader();
+        tfx_waiting_leg_change q = make_request(&r); CHECK(q.expected.vehicle == sentinel);
+        uint64_t ticket = 123;
+        CHECK(v6.request_waiting_leg_change(0, &q, &ticket) == TFX_INVALID_ARGUMENT && ticket == 123);
+        unsigned char raw[32]; CHECK(tfx_query_waiting_raw(&r, 1, raw) == TFX_OK);
+        uint32_t attempted = 99;
+        CHECK(tfx_apply_waiting_change(&r, &q, raw, &attempted, &fake_ops) == TFX_EXPECTED_STATE_CHANGED);
+        CHECK(!attempted && !engine_step); /* Even a fabricated request cannot switch a sentinel. */
+        tfx_person_journey unchanged_journey = j;
+        CHECK(tfx_query_journey(&r, 1, &j) == TFX_INVALID_STATE && !memcmp(&j, &unchanged_journey, sizeof(j)));
+    }
+    journey_fixture(); r = reader();
     handles[1][0][0] = 7; masks[1][0] = (1u << 7) | (1u << 1) | (1u << 4);
     put32(data[7], 6); put32(data[7] + 4, 2); put32(data[7] + 8, 3); put32(data[7] + 12, 4);
     CHECK(tfx_query_journey(&r, 1, &j) == TFX_OK && j.flags == TFX_JOURNEY_ONBOARD && j.line == 6 && j.vehicle == 4);
@@ -583,6 +596,15 @@ int main(void) {
     CHECK(tfx_query_waiting(&r, 5, &leg) == TFX_NOT_FOUND && !memcmp(&leg, &unchanged, sizeof(leg)));
     CHECK(tfx_query_waiting(&r, INT32_MAX, &leg) == TFX_NOT_FOUND);
     CHECK(tfx_query_waiting(&r, -1, &leg) == TFX_INVALID_ARGUMENT);
+    for (int32_t sentinel = -2; sentinel >= -3; --sentinel) {
+        put32(data[0] + 24, (uint32_t)sentinel);
+        CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_OK && leg.vehicle == sentinel);
+        tfx_waiting_leg expected = unchanged; expected.vehicle = sentinel;
+        CHECK(!memcmp(&leg, &expected, sizeof(leg))); /* Preserve opaque bytes and exact sentinel. */
+    }
+    put32(data[0] + 24, (uint32_t)-4); tfx_waiting_leg special = leg;
+    CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_INVALID_STATE && !memcmp(&leg, &special, sizeof(leg)));
+    put32(data[0] + 24, UINT32_MAX); leg = unchanged;
     tfx_line_stop stop = {.struct_size = sizeof(stop)};
     CHECK(tfx_query_stop(&r, 2, 1, &stop) == TFX_OK);
     CHECK(stop.station_group == 3 && stop.station_index == 1 && stop.station_entity == 99 && stop.terminal == 3);

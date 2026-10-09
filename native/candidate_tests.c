@@ -170,6 +170,8 @@ int main(void) {
     CHECK(result.dispatch_sequence == 123 && result.proposed_line == 20 && result.boarding_stop == 2 && result.alighting_stop == 3);
     CHECK(result.observed_places_left == 3 && result.boarding_station == 100 && result.alighting_station == 200);
     CHECK(!memcmp(&result.expected, &leg, sizeof(leg))); /* Preserve destination, age and waiting place. */
+    fixture(); leg.vehicle = -2; expect(IT_UNSUPPORTED_WAITING_STATE);
+    fixture(); leg.vehicle = -3; expect(IT_UNSUPPORTED_WAITING_STATE);
     fixture(); leg.vehicle = 99; expect(IT_ALREADY_ASSIGNED);
     fixture(); leg.alighting_stop = 6; expect(IT_UNSUPPORTED_LEG);
     fixture(); leg.boarding_stop = INT32_MAX; expect(IT_UNSUPPORTED_LEG);

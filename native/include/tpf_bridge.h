@@ -65,6 +65,10 @@ typedef struct tfx_api {
     tfx_status (*read_observation)(tfx_context context, tfx_observation *out);
 } tfx_api;
 
+/* Observed native waiting sentinels. Their meanings are not established; only
+ * vehicle == -1 is eligible for waiting-leg replacement. Never treat -2/-3 as IDs. */
+#define TFX_WAITING_VEHICLE_SPECIAL_2 (-2)
+#define TFX_WAITING_VEHICLE_SPECIAL_3 (-3)
 typedef struct tfx_waiting_leg {
     uint32_t struct_size;
     int32_t person, line, boarding_stop, alighting_stop, vehicle, destination;

@@ -15,7 +15,7 @@ const char *it_reason_name(it_reason reason) {
         "alighting_mismatch", "actual_terminal_mismatch", "loading_disabled",
         "unloading_disabled", "unsupported_load_limit", "no_capacity",
         "no_platform_membership", "destination_missing", "not_in_loading_index",
-        "load_timer_pending", "route_divergence"
+        "load_timer_pending", "route_divergence", "unsupported_waiting_state"
     };
     return reason >= 0 && reason < IT_REASON_COUNT ? names[reason] : "unknown";
 }
@@ -36,6 +36,7 @@ tfx_status it_validate_candidate(const tfx_api_v5 *api, tfx_context context, int
     result.expected.struct_size = sizeof(result.expected);
     READ(api->v4.v3.v2.read_waiting_leg(context, person, &result.expected));
     const tfx_waiting_leg *leg = &result.expected;
+    if (leg->vehicle < -1) REJECT(IT_UNSUPPORTED_WAITING_STATE);
     if (leg->vehicle != -1) REJECT(IT_ALREADY_ASSIGNED);
     if (leg->line < 0 || leg->boarding_stop < 0 || leg->alighting_stop <= leg->boarding_stop ||
         leg->alighting_stop - leg->boarding_stop > IT_MAX_LEG_HOPS)

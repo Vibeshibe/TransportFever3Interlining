@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.8.0 bounded route expansion implemented and fixture-tested; multi-stop live validation next
+- Status: In progress — 0.8.0 adjacent live journey completed; 0.8.1 discovery-sentinel correction prepared; multi-stop validation pending
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -160,3 +160,10 @@ attempt/lifecycle and platform/capacity guards remain. Build-v8a is NOT loaded.
 See [implementation and live test](../../docs/route-expansion.md). Multi-stop/express
 live coverage, extra-stop local substitutes, alternate platforms, preference/time
 comparison and broad edited-line/save validation remain open.
+
+0.8.0 live trial stopped on eight waiting-reader errors after one completed
+adjacent journey. Paused records expose native-3 vehicle sentinel; frozen cursor
+identifies the last failed candidate. Prepared0.8.1 copies known-2/-3 but excludes
+both from mutation, retaining unknown-state stops. All nine regressions pass;
+no active observers and new DLL not loaded. Multi-stop/express coverage is still
+pending. [Sentinel evidence and correction](../../docs/waiting-sentinels.md).
