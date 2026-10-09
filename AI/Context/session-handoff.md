@@ -1,6 +1,21 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.1 station-focused discovery prepared; live trial pending
+## Latest — 0.9.1 loaded; normal-speed unpause requested
+
+User confirmed restart/readiness. Verified fresh Linux107579/start1780715,
+Windows312, baseline hash ce2e02d935da…, pinned executable and prepared DLL hashes,
+and no previous bridge mappings. Actual stdout load before_multi_passenger_01
+at12:40:07Z; ready12:40:54Z. Loaded build-v9b successfully at12:41:51Z,
+tfx_start0. Startup confirms0.9.1, station_index,32 attempts,4 samples,18000
+callbacks,600 boarding grace and reserve OFF. No simulation observations yet.
+Log: analysis/native-bridge/build-v9b/tpf-bridge-312-18170090.log
+(the exact filename is recorded in live-run.json). preflight-process.json and
+loader-result.json preserve verification. Watcher session54222 is running. User has been asked to unpause at
+normal speed without line/vehicle edits. Await confirmation before interpreting
+missing observations. Compare indexed/fallback selections and station mismatch
+work; monitor boarding, samples, errors and fixed cap. Do not load another DLL.
+
+## Preparation — 0.9.1 station-focused discovery
 
 User wants implementation that addresses sparse matches with80+ waiting, without
 spending further usage extending the old run. The0.9.0 capture is stopped and its

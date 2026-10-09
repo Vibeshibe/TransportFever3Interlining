@@ -1036,3 +1036,15 @@ verification. Do not claim installation or gameplay validation without running i
   final capacity-tests.json `dfa2b4064fb4b0a2d2bfe5b0fb5f64312508ad5af1bbb2c18a9a8e63b8034cb6`.
   station-discovery-hashes.json records artifacts/configuration; all executable
   hashes rechecked against the final13-case report. See docs/station-discovery.md.
+
+## 2026-10-09 — Start the station-focused live trial (0.9.1)
+
+- User confirmed the restarted disposable baseline is ready. Verified fresh
+  Linux107579/start1780715, Windows312, actual baseline load12:40:07Z and
+  ready12:40:54Z, expected save/executable/DLL hashes and no prior bridge mapping.
+- Loaded build-v9b from implementation3cac800; tfx_start returned0 at12:41:51Z.
+  Startup confirms station indexing,32 attempts,4 samples,18000 callbacks,
+  one pending boarding and600-callback confirmation grace. Requested normal-speed
+  unpause without line/vehicle edits; no outcome evidence yet.
+- Ignored preflight-process.json, loader-result.json and live-run.json preserve
+  startup evidence. Log: `tpf-bridge-312-18170090.log`. The DLL remains mapped until exit.
