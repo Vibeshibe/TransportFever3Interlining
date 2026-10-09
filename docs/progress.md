@@ -1070,3 +1070,19 @@ verification. Do not claim installation or gameplay validation without running i
   at72712 at2429/2432. Three original journeys now completed;99871 still tracked.
   Metrics2400:54 indexed picks,1 stale-station rejection,282 fallbacks,
   256 station mismatches/336 screens,28 validations,zero query errors.
+
+## 2026-10-09 — Alternative-platform proposal and capture duration
+
+- User asked how long to leave the current run and proposed reusing native
+  alternative-platform walking for cross-platform interlining. At12:54Z the
+  latest observation was3300 of18000, roughly11 minutes after confirmed unpause:
+  estimate45–50 more minutes at the observed normal-speed rate. The callback cap
+  disables further bridge changes; it does not pause/close the game.
+- Latest periodic report3000:5 changes and both-world boardings,3 original
+  arrivals,2 active samples,zero query errors. Capture remains active; no >5 or
+  unsampled-boarding coverage at this checkpoint.
+- Reviewed native policy, shipped alternativeTerminals declarations and prior
+  walking/arrival/direct-boarding findings. Alternative endpoints are currently
+  rejected. Native walking is a promising reuse point; alternate-platform path
+  semantics, simulation timing and teleportation are not established. Recorded
+  the focused follow-up in task006 without altering this run or claiming support.

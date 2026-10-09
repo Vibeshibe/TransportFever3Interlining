@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.9.1 station-focused discovery implemented; offline validation complete, integrated live trial next
+- Status: In progress — 0.9.1 station-focused discovery implemented; offline validation complete, integrated live trial running
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -197,3 +197,31 @@ counters showed inefficient search. All13 new native invocations pass; the
 80-position fixture verifies targeted selection and catches cache-churn omissions.
 Peak63/64 queries. New build-v9b is not loaded; restart is needed before its
 integrated trial. See [discovery implementation](../../docs/station-discovery.md).
+
+## Proposed extension — native alternative-platform walking
+
+User proposes using the game's alternative-platform behavior as the foundation
+for switching to another line at another platform, including checking actual
+walking time versus direct boarding. This is a research/design follow-up; do not
+edit platforms/lines or change guards during the active0.9.1 capture.
+
+Current policy explicitly rejects alternative endpoint terminals and requires
+matching boarding/alighting terminals plus direct waiting-edge membership.
+Shipped declarations expose alternativeTerminals; native research found a
+vehicle-approach walking path, NoteWalkPersonsArrived, and a direct onboard path.
+Their existence does not establish alternate-platform rerouting semantics,
+walking-time accounting, or teleportation. Earlier debugger traces are unsuitable
+for timing measurements.
+
+Next isolate a same-line native alternative-platform case on a disposable save.
+Record configured/locked actual platform, passenger edge/path and walking states,
+assignment/reservation, onboard transition and simulation time. Compare nearby,
+distant and inaccessible platforms, plus departure before the passenger arrives.
+Separate rendered animation from simulation timing and passenger travel-cost
+accounting. Only then expose a verified native reroute operation through the
+shared bridge and extend policy to cross-line platform changes. Use estimated
+walking time and a boarding margin, validate actual arrival and capacity, and
+preserve a valid journey if the train departs or the platform changes again.
+Do not equate same station group with immediate platform access or merely remove
+the existing mismatch guard. Whole-trip time estimation remains a separate gap.
+See docs/native-boarding-investigation.md and src/interlining/native_candidate.c.
