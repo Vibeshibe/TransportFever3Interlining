@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.8.1 live capture running, one adjacent journey completed; multi-stop validation pending
+- Status: In progress — 0.8.1 capture complete: three boardings, two original arrivals; implement bounded capacity next
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -175,3 +175,10 @@ The [next capacity plan](../../docs/passenger-capacity-plan.md) separates an att
 ledger, one boarding confirmation and four detailed journey samples. It is a
 proposal, not a higher-capacity implementation or authorization to change the
 running trial's bounds.
+
+Completed0.8.1 capture: callback_limit18000, three adjacent switches/boardings,
+two original arrivals, third last observed on native onward S3. Zero query errors
+or special waiting samples; multi-stop/express boarding unexercised. Audit passes,
+all watchers ended, no further replay needed. Full evidence in the sentinel guide.
+Next implement the capacity plan with bounded discovery metrics and sampled
+journey diagnostics; keep fresh per-switch checks and explicit coverage gaps.

@@ -112,6 +112,9 @@ The passenger cap, same-platform/capacity checks and lifecycle handling remain.
 
 Multi-stop/express, dynamic discovery, stale data and route-edit regressions pass.
 Build-v8a completed one adjacent journey before stopping on unsupported waiting
-sentinels; multi-stop/express live coverage remains pending. Prepared 0.8.1
-preserves known -2/-3 values for discovery and excludes them from switching. See
+sentinels; multi-stop/express live coverage remains pending. Version0.8.1
+preserves known -2/-3 values for discovery and excludes them from switching.
+Its completed capture confirmed three adjacent boardings and two original
+arrivals, with the third journey unfinished at the callback cap. Zero query
+errors; the special sentinel paths did not appear in this live run. See
 [scope, examples and trial instructions](../../docs/route-expansion.md).

@@ -1,22 +1,36 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.8.1 corrected route trial running
+## Latest — 0.8.1 corrected route trial complete; next implement capacity
 
 User restarted into the verified unchanged original baseline, then confirmed
 normal-speed unpause after loading. Fresh Linux30963/start797666, Windows304;
 no prior bridge mappings. Stdout load09:52:21Z, ready09:53:10Z. Loaded build-v8b
 0.8.1 mutable DLL, tfx_start0; cap5/18000, route4, reserve OFF. Log
 `tpf-bridge-304-8080293.log`; ignored live-run.json records fresh metadata.
-Watcher59201 active; worlds1/2 `0x304d3520`/`0x304d2860`, thread592.
-Checkpoint at callback9600: one adjacent replacement, zero query errors.
-122261 switched S3→S1/97745 at418, both-world boarding427, left at planned stop2
-at1609/1612, transferred natively to79460/123296 and reached original72934
-at2436/2437. Four attempts remain unused. No special waiting exclusion,
-multi-stop or express boarding observed yet. Do not reinject; continue to the
-existing bound and audit the completed log. Watcher59201 remains active.
+Worlds1/2 `0x304d3520`/`0x304d2860`, thread592. These are historical run identities;
+revalidate before any future access. Capture stopped normally at18000:
+three switches/boardings, two original arrivals, zero query errors, no anomalies.
+122261 S3→S1/97745 staged418, boarded427, original72934 arrival2436/2437.
+128483 S1→S3/97959 staged10210, boarded10212, original72113 arrival12245/12248.
+75561 S3→S1/97745 staged13242, boarded13244, planned alight14077/14080;
+then native S3/97912 stops2→5 boarding15988/15989. Original79212 arrival unobserved
+when capture ended. No arrival/failure inferred. All replacements adjacent.
+No special waiting samples, multi-stop or express boarding. Final counters:
+963 ready samples,92 validations,3 eligible,65 boarding mismatches,8 alighting
+mismatches,14 unsupported legs,2 divergence. These are checks, not unique people.
+Watcher59201 hit its3600-second wall limit; final watcher33900 confirmed forwards-
+only native shutdown and exited0 at10:54:36.102670Z. **All watchers/readers ended.**
+No further game time or replay needed. Do not reinject into this process.
+Log audit passes; log SHA654644bea15ac323667065a66a4a8363b9e8fb5769731b8c2d797f7c2991988a;
+audit SHAfcda90bf4de5c219c83ea3ad7faa1619e7ccb94f030671e1119db10be27bb8b4.
+[Full result and limitations](../../docs/waiting-sentinels.md).
 Prepared a [capacity implementation plan](../../docs/passenger-capacity-plan.md)
 while monitoring; proposed32 attempts/one pending/four diagnostic samples is NOT
-implemented or loaded. All current limits and source binaries remain unchanged.
+implemented or loaded. Next progress implementation and offline tests before
+another integrated live test; do not ask for a separate diagnostic reload now.
+User asked about sparse examples: explained traffic timing, expanded demand
+sampling and platform exclusions. Raising the cap alone does not fix discovery.
+All current limits and source binaries remain unchanged.
 Historical process/world addresses below must not be reused.
 
 ## Previous — 0.8.0 stopped; 0.8.1 sentinel correction prepared

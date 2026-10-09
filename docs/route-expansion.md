@@ -136,5 +136,10 @@ switch occurred. The capture and subsequent paused read-only inventory are
 finished. Unsupported native vehicle sentinel-3 was found in untouched waiting
 passengers, including the final discovery candidate inferred from the frozen
 cursor. Version0.8.1 preserves known-2/-3 values for discovery while excluding
-both from switching; all other guards remain. Prepared build-v8b is not loaded.
+both from switching; all other guards remain. Build-v8b subsequently completed
+18,000 callbacks with three adjacent boardings, two original arrivals and one
+onward journey unfinished at capture end. Zero query errors, no special waiting
+samples, no multi-stop/express boarding. All watchers ended; the wrapper forwards
+only. The next implementation separates attempt capacity from journey diagnostics
+and adds discovery metrics; no extra diagnostic save reload is needed now.
 See [evidence, fix and coverage limits](waiting-sentinels.md).

@@ -26,8 +26,11 @@ Version 0.8 removes the fixed S1↔S3 gate, discovers lines from waiting passeng
 and supports up to four forward stop intervals, including ordered express skips.
 Exact copied-route revalidation rejects intervening edits. Automated regressions
 pass; the first live run completed one adjacent journey before stopping on
-waiting-sentinel read errors. Prepared 0.8.1 preserves known -2/-3 values but
-excludes them from switching; it is not loaded. See
+waiting-sentinel read errors. Version0.8.1 preserves known -2/-3 values but
+excludes them from switching. Its completed18,000-callback trial recorded three
+adjacent boardings, two original arrivals and one onward journey unfinished at
+capture end, with zero query errors. No sentinel exclusion or multi-stop/express
+boarding occurred. The five-person cap remains; higher capacity is planned. See
 [route scope](../docs/route-expansion.md) and [sentinel correction](../docs/waiting-sentinels.md).
 
 ## Build and isolated tests

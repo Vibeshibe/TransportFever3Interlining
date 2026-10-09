@@ -916,6 +916,30 @@ separate32-attempt ledger, one pending boarding, four concurrent journey samples
 aggregate reporting and explicit query/failure bounds. No runtime change, build,
 injection or save modification was made for this design work.
 
+## 2026-10-09 — Corrected route capture complete
+
+0.8.1 reached its18,000-callback cap with three distinct adjacent switches and
+both-world boardings.122261 and128483 reached their original destinations;
+75561 was last observed onboard native onward S3/97912 stops2→5, with final
+arrival unobserved. No query errors or lifecycle anomalies. Two attempts unused.
+The wrapper explicitly forwards only, allowing no further changes.
+
+Audit passes preservation/boarding/uniqueness invariants; all watchers ended.
+No sentinel exclusions or multi-stop/express replacements occurred, so those
+live-coverage gaps remain. Final counters:963 ready samples,92 validations,
+65 boarding mismatches,8 alighting mismatches,14 unsupported legs,2 divergence,
+3 eligible. Counters describe repeated checks, not unique passengers.
+
+User asked about sparse matches; explained expanded demand sampling and platform
+constraints alongside traffic timing. No timing benefit or RNG-only cause is
+established. The third passenger's native onward S3 leg reinforces the need for
+future whole-trip comparison. [Sequences, hashes and limitations](waiting-sentinels.md).
+
+No source/binary or game/save modification during capture. Existing nine-suite
+test evidence remains applicable; ran the completed-log audit and documentation
+diff checks. Next implement the capacity plan and discovery metrics before one
+integrated live test. No further running time or save reload is needed now.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

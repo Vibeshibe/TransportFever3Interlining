@@ -1,5 +1,55 @@
 # Waiting vehicle sentinels — 0.8.1
 
+## Corrected live result — 2026-10-09
+
+The 0.8.1 capture completed at its **18,000-callback limit** with three accepted
+changes, three both-world boardings, two original-destination arrivals and zero
+query errors. Two attempts remained unused. The third passenger was last observed
+on a native onward service; its final arrival is **unobserved**, not a failure or
+a completed journey. No lifecycle anomaly occurred. The wrapper now forwards
+only and permits no further changes; all watchers have ended.
+
+| Passenger | Replacement | Staged / boarded both | Final observed outcome |
+| --- | --- | --- | --- |
+| 122261 | S3→S1, vehicle97745, stops1→2 | 418 / 427 | Original72934 arrival2436/2437 |
+| 128483 | S1→S3, vehicle97959, stops1→2 | 10210 / 10212 | Original72113 arrival12245/12248 |
+| 75561 | S3→S1, vehicle97745, stops1→2 | 13242 / 13244 | Onward S3/97912, stops2→5; arrival79212 unobserved |
+
+122261 alighted at the planned stop2 at1609/1612, then used native line79460,
+vehicle123296. 128483 alighted11256/11257, used native79460/123295 stops0→2,
+and alighted11980/11981 before arrival. 75561 alighted14077/14080 and boarded
+onward S3 at15988/15989. Returning to the originally requested line for an onward
+leg does not prove time saved; no whole-trip comparison or counterfactual was run.
+
+All three replacements were adjacent. **Multi-stop/express boarding and runtime
+sentinel exclusions remain unexercised** (`special_waiting_samples=0`). A clean
+capture therefore does not independently prove the corrected sentinel branch.
+Existing fixtures and prior paused records remain its evidence. The log audit
+passes preservation, fresh-change, unique-person and boarding invariants; it
+does not label all five passengers or broader route coverage validated.
+
+Discovery sampled ready vehicles963 times and completed92 candidate validations:
+3 eligible,65 boarding mismatches,8 alighting mismatches,14 unsupported legs and
+2 route divergences. These are repeated checks, not unique passengers. Event
+logging suppresses repeat reasons and caps ordinary candidate messages; the final
+aggregate counts are the full counters. Sparse matches reflect both actual
+eligibility constraints and bounded discovery coverage; this run does not measure
+how many opportunities discovery missed or establish an RNG-only explanation.
+
+Final evidence under ignored `analysis/native-bridge/build-v8b/`:
+
+- `tpf-bridge-304-8080293.log`: `654644bea15ac323667065a66a4a8363b9e8fb5769731b8c2d797f7c2991988a`.
+- `live-audit.json`: `fcda90bf4de5c219c83ea3ad7faa1619e7ccb94f030671e1119db10be27bb8b4`.
+- `live-run.json` records bounds, process identity and final outcomes. Watcher59201
+  reached its wall limit just before completion; final read-only watcher33900
+  confirmed native shutdown and exited0 at2026-10-09T10:54:36.102670Z.
+
+No source/runtime changes, reinjection or save writes occurred during this run.
+No further game time or reload is needed to finish it. Next implement
+[bounded capacity with sampled diagnostics](passenger-capacity-plan.md), preserving
+fresh validation and the remaining route-coverage gaps. The loaded DLL stays
+mapped until game exit; a future build still requires a fresh process.
+
 ## 0.8.0 live result
 
 The first demand-driven route trial stopped at its existing eight-query-error
@@ -58,7 +108,7 @@ pairs. `special_waiting_samples` counts observations, not unique passengers.
 Waiting-read errors now include person and callback sequence. No lifecycle,
 route, query-budget, eight-error or attempt limit was relaxed.
 
-## Verification and next trial
+## Automated verification and trial preparation
 
 Regression cases preserve exact-2/-3 waiting snapshots, exclude both in candidate
 policy and actual discovery, and demonstrate another eligible passenger can still
@@ -68,7 +118,8 @@ lifecycle, host, mutation/query and DLL-contract regressions are retained.
 
 Prepared version 0.8.1 under ignored `analysis/native-bridge/build-v8b/`: cap 5,
 18,000 callbacks, route bound 4, lifecycle reserve OFF. The optional observer targets
-40365/destination 86033 for contract testing only. The fresh live capture below is now running; outcomes remain pending.
+40365/destination 86033 for contract testing only. The corrected capture is now
+complete; its final result is recorded above.
 The user restarted out of 0.8.0 into a disposable
 `TPF3Interlining_before_multi_passenger_01` baseline for this corrected trial.
 Keep the same route scope and validate known-sentinel exclusions separately from
@@ -93,7 +144,7 @@ Final evidence under ignored `build-v8b/`:
 - `tpf_journey_observer.dll`: `687ff5b9b7619fc088fd90e0d756d8381615c6026efeeb61717cd180fe0068b2`.
 - `sentinel-tests.json`: `cd6ed0449197febd380be32afffde40243609ef6b59bbd186fbea8ff4d9362ef`.
 
-## Corrected trial startup — 2026-10-09
+## Historical corrected trial startup — 2026-10-09
 
 Fresh Linux30963/start797666, Windows304; original baseline hash unchanged and
 no prior bridge mappings. Loaded build-v8b0.8.1, tfx_start0; user confirmed
@@ -101,5 +152,6 @@ normal-speed unpause. Log `tpf-bridge-304-8080293.log`, with adjacent live-run.j
 Cap5/18000, route4, reserve OFF. At callback9600, passenger122261 has completed
 an adjacent S3→S1 replacement and original72934 journey: staged418, both-world
 boarding427, planned stop2 exit1609/1612, native onward line79460/vehicle123296,
-original arrival2436/2437. Zero query errors, no special waiting exclusion or
-multi-stop/express boarding yet. Capture remains active; four attempts are unused.
+original arrival2436/2437. That checkpoint had zero query errors, no special waiting
+exclusion or multi-stop/express boarding, and four unused attempts. The completed
+result above supersedes this checkpoint.
