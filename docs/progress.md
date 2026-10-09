@@ -1065,3 +1065,8 @@ verification. Do not claim installation or gameplay validation without running i
   arrival releases a sample slot. No unsampled boarding or >5 switches yet;
   replacement legs remain adjacent. Capture is unfinished and left recording
   automatically to avoid repeated empty polling; no new game actions needed.
+
+- While recording the checkpoint,93862 arrived at72810 at2304/2305 and110796
+  at72712 at2429/2432. Three original journeys now completed;99871 still tracked.
+  Metrics2400:54 indexed picks,1 stale-station rejection,282 fallbacks,
+  256 station mismatches/336 screens,28 validations,zero query errors.

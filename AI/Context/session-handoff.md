@@ -12,6 +12,10 @@ hint mismatches0,fallback212,station mismatches195/screens249,26 validations.
 boardings:93862,110796,99871. No query errors, no unsampled boarding or >5
 switches yet. All replacement legs observed so far are adjacent. These remain
 interim findings; do not run completion-only audit or claim capture success yet.
+Later checkpoint:93862 reached original72810 at2304/2305 and110796 reached
+original72712 at2429/2432:three completed journeys, fourth99871 still tracked.
+At2400:54 indexed picks,1 stale-station mismatch rejected,282 fallback picks,
+256 total station mismatches/336 screens,28 validations. Zero query errors.
 An inactive audit_trial.py is copied into build-v9b; run only once pilot_summary
 and the hook-forwarding completion marker exist, then inspect any assertion
 failure rather than relaxing it. Live-run.json stores exact log/process identity.
