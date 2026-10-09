@@ -965,6 +965,15 @@ Prepared build-v9a,32/18000/four samples, reserve OFF, optional observer only fo
 contract testing. **Not loaded.** Tests ended; no live watcher or reader started.
 [Behavior, hashes and integrated live-test scope](passenger-capacity.md).
 
+## 2026-10-09 — Start integrated sampled-capacity trial
+
+User confirmed the restarted paused game. Verified a fresh process, actual loaded
+original baseline and unchanged save/DLL/executable hashes; no older bridge was
+mapped. Loaded0.9.0 successfully with32 attempts/18000 callbacks/four samples.
+Watcher active; normal-speed unpause requested. Live outcomes and sampled-capacity
+coverage remain pending. Fresh process/log metadata is preserved in the handoff
+and ignored build-v9a/live-run.json. No reinjection, policy change or save write.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

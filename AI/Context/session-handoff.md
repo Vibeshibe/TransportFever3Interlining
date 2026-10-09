@@ -1,6 +1,20 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.0 sampled capacity prepared; NOT loaded
+## Latest — 0.9.0 loaded; awaiting unpause
+
+User confirmed restart/readiness. Verified fresh Linux68800/start1296244,
+Windows308, pinned game hash and no previous bridge mappings. Stdout confirms
+original before_multi_passenger baseline load11:15:52Z, ready11:46:44Z; baseline
+hash remainsce2e02d935da…,80,431,012bytes. Prepared artifact hashes all match.
+Loaded build-v9a0.9.0 successfully, tfx_start0. Startup log confirms32 attempts,
+18000 callbacks,four samples,600 boarding grace,reserve OFF,route4.
+Log `tpf-bridge-308-14937416.log`; ignored live-run.json and loader-result.json
+record fresh identity and startup. Watcher28281 active. No world callbacks or
+live outcome yet; explicit normal-speed unpause requested, response pending.
+Do not reinject or reuse any historical addresses below. After unpause, monitor
+boarding, sample selection/release, totals/discovery metrics and error guards.
+
+## Preparation — 0.9.0 sampled capacity
 
 User authorized implementation after the completed0.8.1 capture. Implemented a
 compact session ledger separate from reusable full journey trackers. Cap1–32,

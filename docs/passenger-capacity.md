@@ -1,6 +1,7 @@
 # Bounded capacity and sampled journeys — 0.9.0
 
-Implemented and tested offline. The prepared DLL is **not loaded or live-validated**.
+Implemented and tested offline. The DLL is now loaded into a fresh disposable
+baseline; explicit unpause is pending and **live outcomes remain unverified**.
 The earlier [design](passenger-capacity-plan.md) is retained for context.
 
 ## Behavior and limits
@@ -106,3 +107,13 @@ Multi-stop/express replacement, special waiting exclusions, whole-trip time/fare
 comparison, platform walking and varied passenger preferences retain their
 separate evidence gaps. This is a bounded development loader, not an unrestricted
 or automatically installed release mod.
+
+## Live startup — 2026-10-09
+
+Fresh Linux68800/start1296244, Windows308; pinned executable and DLL verified,
+no prior bridge mappings. Actual stdout load is the unchanged original baseline,
+load11:15:52Z and ready11:46:44Z. Loader returned0 and the startup log confirms
+32/18000/four samples,600 boarding grace and reserve OFF. Log under build-v9a:
+`tpf-bridge-308-14937416.log`. Watcher28281 active; normal-speed unpause requested.
+No live coverage or passenger outcome is claimed yet. The DLL remains mapped
+until game exit; do not load a second bridge into this process.
