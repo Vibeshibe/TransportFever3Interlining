@@ -17,6 +17,7 @@ static const uint32_t strides[7] = {32, 0x98, 40, 24, 12, 0x1e8, 0x58};
 static const uint64_t image = 0x140000000;
 static tfx_api_v2 api = {.base.struct_size = sizeof(api)};
 static tfx_context expired;
+static tfx_api_v8 v8 = {.v7.v6.v5.v4.v3.v2.base.struct_size = sizeof(v8)};
 static tfx_api_v7 v7 = {.v6.v5.v4.v3.v2.base.struct_size = sizeof(v7)};
 static int32_t person_destinations[3];
 static uint64_t unreadable;
@@ -584,6 +585,52 @@ static void mutation_tests(void) {
     puts("PASS: ABI6 journeys; deferred conflict/stale/policy guards, ownership, context/thread expiry; engine call order/fifth argument, byte preservation, postconditions and process-wide one-attempt cap.");
 }
 
+static DWORD WINAPI options_wrong_thread(void *unused) {
+    (void)unused;
+    tfx_stop_terminals value = {.struct_size = sizeof(value)};
+    CHECK(v8.read_stop_terminals(expired, 2, 0, &value) == TFX_WRONG_THREAD);
+    return 0;
+}
+static void options_client(tfx_context c, void *unused) {
+    (void)unused; expired = c;
+    tfx_stop_terminals value = {.struct_size = sizeof(value)};
+    CHECK(v8.read_stop_terminals(c, 2, 0, &value) == TFX_OK && value.count == 1);
+    HANDLE thread = CreateThread(NULL, 0, options_wrong_thread, NULL, 0, NULL);
+    CHECK(thread != NULL); CHECK(WaitForSingleObject(thread, 5000) == WAIT_OBJECT_0); CloseHandle(thread);
+}
+static void options_tests(void) {
+    int32_t alternatives[16][2] = {{0, 1}, {1, 3}};
+    fixture(); tfx_reader r = reader();
+    tfx_stop_terminals value = {.struct_size = sizeof(value)};
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_OK && value.count == 1);
+    CHECK(value.stop.station_group == 3 && value.terminals[0].station_index == 1 &&
+        value.terminals[0].station_entity == 99 && value.terminals[0].terminal == 2);
+    CHECK(r.queries_left == 63);
+    vector_at(stops[0] + 0x10, alternatives, 16); r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_OK && value.count == 3 && value.stop.has_alternative_terminals);
+    CHECK(value.terminals[1].station_entity == 90 && value.terminals[1].station_index == 0 && value.terminals[1].terminal == 1);
+    CHECK(value.terminals[2].station_entity == 99 && value.terminals[2].terminal == 3);
+    /* Both contiguous and shared line storage use the same copied contract. */
+    handles[2][0][1] = 0x40000000; r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_OK && value.count == 3);
+    tfx_stop_terminals unchanged = value;
+    vector_at(stops[0] + 0x10, alternatives, 128); r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_LIMIT_REACHED && !memcmp(&value, &unchanged, sizeof(value)));
+    vector_at(stops[0] + 0x10, alternatives, 9); r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_INVALID_STATE);
+    vector_at(stops[0] + 0x10, alternatives, 16); alternatives[0][0] = -1; r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_INVALID_STATE);
+    alternatives[0][0] = 2; r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_INVALID_STATE);
+    alternatives[0][0] = 0; alternatives[0][1] = -1; r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_INVALID_STATE);
+    alternatives[0][1] = 1; unreadable = address(alternatives); r = reader();
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_INVALID_STATE && !memcmp(&value, &unchanged, sizeof(value)));
+    unreadable = 0; r = reader(); r.queries_left = 0;
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, &value) == TFX_QUERY_BUDGET_EXHAUSTED);
+    CHECK(tfx_query_stop_terminals(&r, 2, 0, NULL) == TFX_INVALID_ARGUMENT);
+    puts("PASS: ABI8 primary/alternative copies, station resolution, shared storage, complete-result limit, malformed data and failure preservation.");
+}
 int main(void) {
     fixture();
     tfx_reader r = reader();
@@ -660,6 +707,14 @@ int main(void) {
     r = reader(); CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
     CHECK(!memcmp(before, world, sizeof(world)));
     CHECK(api.read_waiting_leg(expired, 1, &leg) == TFX_STALE_CONTEXT);
+    CHECK(api.base.unregister_client(c.id) == TFX_OK);
+    options_tests(); fixture(); r = reader();
+    CHECK(tfx_get_api(8, &v8.v7.v6.v5.v4.v3.v2.base) == TFX_OK && v8.v7.v6.v5.v4.v3.v2.base.capabilities == 511);
+    c.before_terminal_selection = options_client;
+    CHECK(api.base.register_client(&c) == TFX_OK);
+    CHECK(tfx_dispatch_with_reader(0, &r) == TFX_OK);
+    tfx_stop_terminals options = {.struct_size = sizeof(options)};
+    CHECK(v8.read_stop_terminals(expired, 2, 0, &options) == TFX_STALE_CONTEXT);
     CHECK(api.base.unregister_client(c.id) == TFX_OK);
     vehicle_tests(); vehicle_fixture(); r = reader();
     c.before_terminal_selection = vehicle_client;

@@ -151,7 +151,8 @@ tfx_status tfx_query_waiting(tfx_reader *r, int32_t person, tfx_waiting_leg *out
     return TFX_OK;
 }
 
-tfx_status tfx_query_stop(tfx_reader *r, int32_t line, int32_t stop_index, tfx_line_stop *out) {
+static tfx_status query_stop(tfx_reader *r, int32_t line, int32_t stop_index, tfx_line_stop *out,
+                             tfx_stop_terminals *options) {
     if (!out || out->struct_size != sizeof(*out) || line < 0 || stop_index < 0) return TFX_INVALID_ARGUMENT;
     TRY(begin_query(r));
     vector stops;
@@ -189,6 +190,35 @@ tfx_status tfx_query_stop(tfx_reader *r, int32_t line, int32_t stop_index, tfx_l
     /* Positive finite IEEE-754 [0,1], allowing either representation of zero. */
     uint32_t fraction = result.passenger_max_load_bits;
     if (fraction != 0x80000000u && fraction > 0x3f800000u) return TFX_INVALID_STATE;
+    if (options) {
+        /* Stop::alternativeTerminals: vector<StationTerminal>, two int32 fields. */
+        if (!valid_vector(alternatives, 8, 8192)) return TFX_INVALID_STATE;
+        uint64_t count = (alternatives.end - alternatives.begin) / 8;
+        if (count >= TFX_STOP_TERMINALS_SIZE) return TFX_LIMIT_REACHED;
+        options->count = (uint32_t)count + 1;
+        options->terminals[0] = (tfx_stop_terminal){result.station_index, result.station_entity, result.terminal};
+        for (uint32_t i = 0; i < count; ++i) {
+            int32_t pair[2], station;
+            TRY(read_bytes(r, alternatives.begin + (uint64_t)i * 8, pair, sizeof(pair)));
+            if (pair[0] < 0 || pair[1] < 0 || (uint32_t)pair[0] >= (stations.end - stations.begin) / 4)
+                return TFX_INVALID_STATE;
+            TRY(read_bytes(r, stations.begin + (uint64_t)pair[0] * 4, &station, sizeof(station)));
+            if (station < 0) return TFX_INVALID_STATE;
+            options->terminals[i + 1] = (tfx_stop_terminal){pair[0], station, pair[1]};
+        }
+    }
+    *out = result;
+    return TFX_OK;
+}
+
+tfx_status tfx_query_stop(tfx_reader *r, int32_t line, int32_t stop_index, tfx_line_stop *out) {
+    return query_stop(r, line, stop_index, out, NULL);
+}
+
+tfx_status tfx_query_stop_terminals(tfx_reader *r, int32_t line, int32_t stop_index, tfx_stop_terminals *out) {
+    if (!out || out->struct_size != sizeof(*out)) return TFX_INVALID_ARGUMENT;
+    tfx_stop_terminals result = {.struct_size = sizeof(result), .stop.struct_size = sizeof(result.stop)};
+    TRY(query_stop(r, line, stop_index, &result.stop, &result));
     *out = result;
     return TFX_OK;
 }

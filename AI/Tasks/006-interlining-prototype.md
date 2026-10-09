@@ -238,3 +238,16 @@ case was introduced into the ongoing0.9.1 capture.
 Current0.9.1 checkpoint6600:seven boardings,six original arrivals,one active sample,
 zero logged errors. Live switching beyond five is demonstrated; unsampled
 boardings and broader route cases remain pending. Capture is not yet complete.
+
+Superseding milestone: user authorized native behavior for cross-platform support.
+Version0.10.0 implements same-station boarding and different fixed alighting
+platforms, ABI8 copied configured boarding options, actual-terminal checks and
+deferred snapshot comparison. All13 native invocations pass; worst63/64 queries.
+Prepared build-v10a/package; not loaded or live validated. No hard-coded save or
+line IDs. User's S2 platform2/3 setup is a test fixture. Alternative future alighting
+terminals remain excluded. [Implementation and trial](../../docs/cross-platform-trial.md).
+
+The user cancelled0.9.1 after eight both-world boardings and eight original arrivals,
+zero errors. Native stop returned0; watcher ended. Stopped partial audit passes;
+unsampled and multi-stop/express live coverage remain pending. Next integrated
+cross-platform run needs a fresh game process, not another read-only replay.

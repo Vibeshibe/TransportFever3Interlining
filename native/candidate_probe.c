@@ -6,7 +6,8 @@
 #include "station_cache.h"
 #include "probe_limits.h"
 #include "../src/interlining/native_candidate.h"
-static tfx_api_v5 api = {.v4.v3.v2.base.struct_size = sizeof(api)};
+static tfx_api_v8 platform_api = {.v7.v6.v5.v4.v3.v2.base.struct_size = sizeof(platform_api)};
+#define api platform_api.v7.v6.v5
 static tfx_api_v7 lifecycle_api = {.v6.v5.v4.v3.v2.base.struct_size = sizeof(lifecycle_api)};
 #define changes_api lifecycle_api.v6
 /* Compact session ledger survives tracker release and entity reuse. */
@@ -141,7 +142,7 @@ static void discover(tfx_context context, uint64_t sequence) {
 }
 static tfx_status revalidate(tfx_context context, const tfx_waiting_leg_change *request) {
     it_candidate fresh;
-    tfx_status status = it_validate_candidate(&api, context, request->expected.person, request->candidate_vehicle, &fresh);
+    tfx_status status = it_validate_candidate(&platform_api, context, request->expected.person, request->candidate_vehicle, &fresh);
     if (status != TFX_OK) return status;
     if (fresh.reason != IT_CANDIDATE) return TFX_POLICY_REJECTED;
     if (pending_candidate.expected.person != request->expected.person ||
@@ -499,7 +500,7 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             }
             ++attempted; ++metrics.validation_calls;
             it_candidate proposal;
-            status = it_validate_candidate(&api, context, leg.person, v.vehicle, &proposal);
+            status = it_validate_candidate(&platform_api, context, leg.person, v.vehicle, &proposal);
             if (status == TFX_NOT_FOUND) continue;
             if (status != TFX_OK) { error("validate", status); return; }
             ++attempts; ++reasons[proposal.reason];
@@ -547,13 +548,13 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             if (pi < 32) last_reason[pi][vi] = (unsigned char)(proposal.reason + 1);
             char text[768];
             snprintf(text, sizeof(text),
-                "candidate_result sequence=%llu person=%d old_line=%d old_stops=%d,%d destination=%d arrival_bits=%016llx vehicle=%d proposed_line=%d proposed_stops=%d,%d reason=%s board=%d,%d alight=%d,%d places_left=%u requires_engine_revalidation=%u\n",
+                "candidate_result sequence=%llu person=%d old_line=%d old_stops=%d,%d destination=%d arrival_bits=%016llx vehicle=%d proposed_line=%d proposed_stops=%d,%d reason=%s board=%d,%d alight=%d,%d places_left=%u requires_engine_revalidation=%u cross_platform=%u alternative_platform=%u cross_platform_alighting=%u\n",
                 (unsigned long long)sequence, proposal.expected.person, proposal.expected.line,
                 proposal.expected.boarding_stop, proposal.expected.alighting_stop, proposal.expected.destination,
                 (unsigned long long)proposal.expected.arrival_time_bits, v.vehicle, v.line,
                 proposal.boarding_stop, proposal.alighting_stop, it_reason_name(proposal.reason),
                 proposal.boarding_station, proposal.boarding_terminal, proposal.alighting_station,
-                proposal.alighting_terminal, proposal.observed_places_left, proposal.requires_engine_revalidation);
+                proposal.alighting_terminal, proposal.observed_places_left, proposal.requires_engine_revalidation, proposal.cross_platform, proposal.alternative_platform, proposal.cross_platform_alighting);
             log_line(text); ++logged;
             if (staged) return;
         }
@@ -613,11 +614,11 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));
     char text[512];
-    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=station_index station_buckets=16 station_people=32 journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s\n",
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=station_index station_buckets=16 station_people=32 journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s platform_policy=native_same_station\n",
         (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS, (unsigned)IT_MAX_LEG_HOPS, (unsigned)TFX_JOURNEY_SAMPLE_LIMIT, TFX_BOARDING_GRACE_CALLBACKS,
         TFX_FULL_JOURNEY_TRACKING ? "full" : "sampled");
     log_line(text);
-    tfx_status status = tfx_get_api(TFX_TERMINAL_ABI_VERSION, &api.v4.v3.v2.base);
+    tfx_status status = tfx_get_api(TFX_STOP_TERMINALS_ABI_VERSION, &api.v4.v3.v2.base);
     if (status != TFX_OK) return status;
     status = tfx_get_api(TFX_LIFECYCLE_ABI_VERSION, &changes_api.v5.v4.v3.v2.base);
     if (status != TFX_OK) return status;

@@ -117,6 +117,14 @@ static tfx_status read_line_stop(tfx_context context, int32_t line, int32_t stop
     return status;
 }
 
+static tfx_status read_stop_terminals(tfx_context context, int32_t line, int32_t stop, tfx_stop_terminals *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_stop_terminals(current_reader, line, stop, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
+
 static tfx_status scan_waiting_people(tfx_context context, int32_t first_entity, tfx_waiting_page *out) {
     AcquireSRWLockShared(&lock);
     tfx_status status = query_context(context);
@@ -240,13 +248,14 @@ static tfx_status read_change_result(tfx_context context, uint64_t ticket, tfx_c
 }
 
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version < TFX_ABI_VERSION || version > TFX_LIFECYCLE_ABI_VERSION) return TFX_ABI_MISMATCH;
+    if (version < TFX_ABI_VERSION || version > TFX_STOP_TERMINALS_ABI_VERSION) return TFX_ABI_MISMATCH;
     size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
         version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) :
         version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) :
         version == TFX_PLATFORM_ABI_VERSION ? sizeof(tfx_api_v4) :
         version == TFX_TERMINAL_ABI_VERSION ? sizeof(tfx_api_v5) :
-        version == TFX_CHANGE_ABI_VERSION ? sizeof(tfx_api_v6) : sizeof(tfx_api_v7);
+        version == TFX_CHANGE_ABI_VERSION ? sizeof(tfx_api_v6) :
+        version == TFX_LIFECYCLE_ABI_VERSION ? sizeof(tfx_api_v7) : sizeof(tfx_api_v8);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
@@ -287,6 +296,10 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
     if (version >= TFX_LIFECYCLE_ABI_VERSION) {
         out->capabilities |= TFX_CAP_PERSON_LIFECYCLE;
         ((tfx_api_v7 *)out)->read_person_lifecycle = read_person_lifecycle;
+    }
+    if (version >= TFX_STOP_TERMINALS_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_STOP_TERMINALS;
+        ((tfx_api_v8 *)out)->read_stop_terminals = read_stop_terminals;
     }
     return TFX_OK;
 }

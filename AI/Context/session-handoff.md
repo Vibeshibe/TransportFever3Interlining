@@ -1,5 +1,45 @@
 # Session handoff — 2026-10-09
 
+## Current — 0.10.0 prepared; 0.9.1 stopped by request
+
+User wants native cross-platform behavior, with no separate walking-time gate,
+and a usable next version before usage runs out. S2 uses platform2 in Faringdon,
+platform3 elsewhere. This required allowing different fixed platforms at both
+ends of a compatible leg. The implementation is generic: no save/line/person IDs
+or names in policy. See [0.10.0 scope](../../docs/cross-platform-trial.md).
+
+ABI8 read_stop_terminals copies the primary plus alternatives, resolving station
+indices in the current world. Query replaces the boarding-stop read, retaining
+63/64 worst-case budget. Same physical station required at each endpoint;
+boarding must match a configured, locked actual terminal. Waiting-edge membership
+may be on another terminal of that station. Loading/unloading, destination,
+capacity and existing route guards remain. Different fixed alighting platforms
+use native destination-driven exit path construction. Alternative alighting
+terminals remain excluded. Deferred snapshots include boarding options/selection.
+
+Prepared ignored build-v10a; final warning-clean build and all13 test invocations
+pass, including ABI8 DLL contracts, query failures, different endpoint platforms,
+configuration/selection changes, lifecycle and32-attempt regressions. Mutable DLL
+SHA a3d77630201f7e0bbed257dcb35b36ecb290bc787c10fef304d5fe0d48a93a35;
+tests SHA3c851c5a3dae372b06e07b5e53ccfe748c03a2395edbd365aa5e22831079c3bd.
+No new DLL loaded. Package/instructions: build-v10a/TPF3Interlining-0.10.0-trial.zip.
+Live cross-platform boarding/arrival remain unproven; do not call this stable.
+
+User requested cancelling0.9.1. Verified Linux107579/start1780715; existing DLL
+stop returned0 at13:23:08.647357Z. Watcher54222 ended intentionally (130).
+All eight switched passengers reached original destinations in both worlds before
+stop; zero errors. Latest periodic metrics11400:8/8/8,active0,peak4,unsampled0;
+288 indexed picks,1948 fallback,2 stale hints rejected,1695 station mismatches/
+2236 screens,170 validations. Partial stopped audit passed; no automatic summary.
+Do not reuse completion-only audit or invent an exact final callback number.
+
+Next: restart game, load disposable pre-trial baseline with S2 platform layout,
+leave paused; verify fresh process/save/game/DLL hashes and no old bridge before
+loading build-v10a. Existing0.9.1 DLL stays mapped until exit. No restart yet
+confirmed and no active watcher. Logs should distinguish cross_platform,
+alternative_platform and cross_platform_alighting; sample onward destinations.
+Do not ask for another diagnostics-only replay before the integrated trial.
+
 ## Latest — alternative-platform research; 0.9.1 still running
 
 User requested research while the existing trial runs. Completed read-only

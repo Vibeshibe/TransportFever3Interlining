@@ -13,6 +13,9 @@ extern "C" {
 #define TFX_TERMINAL_ABI_VERSION 5u
 #define TFX_CHANGE_ABI_VERSION 6u
 #define TFX_LIFECYCLE_ABI_VERSION 7u
+#define TFX_STOP_TERMINALS_ABI_VERSION 8u
+#define TFX_CAP_STOP_TERMINALS 256u
+#define TFX_STOP_TERMINALS_SIZE 16u
 #define TFX_CAP_PERSON_LIFECYCLE 128u
 #define TFX_CAP_WAITING_LEG_CHANGE 32u
 #define TFX_CAP_PERSON_JOURNEY 64u
@@ -215,6 +218,22 @@ typedef struct tfx_api_v7 {
     tfx_api_v6 v6;
     tfx_status (*read_person_lifecycle)(tfx_context, int32_t person, tfx_person_lifecycle *out);
 } tfx_api_v7;
+
+/* Complete copied primary + alternatives, in configuration order. Entry zero
+ * is primary. Station indices belong to stop.station_group; entities are resolved
+ * in this callback's world. Oversize results fail, never silently truncate. */
+typedef struct tfx_stop_terminal {
+    int32_t station_index, station_entity, terminal;
+} tfx_stop_terminal;
+typedef struct tfx_stop_terminals {
+    uint32_t struct_size, count;
+    tfx_line_stop stop;
+    tfx_stop_terminal terminals[TFX_STOP_TERMINALS_SIZE];
+} tfx_stop_terminals;
+typedef struct tfx_api_v8 {
+    tfx_api_v7 v7;
+    tfx_status (*read_stop_terminals)(tfx_context, int32_t line, int32_t stop, tfx_stop_terminals *out);
+} tfx_api_v8;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

@@ -34,10 +34,16 @@ preserve all of them through verified engine transitions. See
 [the native trace](../../docs/native-boarding-investigation.md).
 
 The native implementation below now expands shared segments; this historical Lua
-prototype still tests adjacent legs. Loop wrap, alternative terminals, planning
+prototype still tests adjacent legs. Loop wrap, alternative alighting terminals, planning
 new transfers and varied preferences remain outside the current native policy.
 
 ## Native read-only validator
+
+Version0.10.0 adds native cross-platform **boarding within one station**, including
+configured alternative boarding terminals. It permits a different fixed alighting platform within the same station.
+Alternative alighting terminals remain excluded. ABI8 adds complete copied terminal options and deferred
+selection/configuration checks. See [scope and trial](../../docs/cross-platform-trial.md).
+The version0.8 description below records the earlier eligibility rules.
 
 `native_candidate.c` uses only the versioned public C API; it contains no engine
 offsets or pointers. `it_validate_candidate` re-reads passenger, route, vehicle,

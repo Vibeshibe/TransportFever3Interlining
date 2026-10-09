@@ -13,6 +13,7 @@ static unsigned no_capacity, wrong_vehicle, fail_result, pending_result, query_e
 static int32_t source_line = 501, substitute_line = 902, leg_hops = 1, source_board = 1, substitute_board = 1;
 static int32_t waiting_sentinel, indexed_target, absent_waiter;
 static unsigned vehicles_not_ready, population;
+static unsigned boarding_terminal, selected_terminal, alternatives_enabled, alighting_terminal;
 static unsigned route_changed, discovery_removed, screening_misses, busy_vehicles, active_stop_only, vehicle_missing, arriving_missing;
 static unsigned missing_worlds[FIXTURE_PEOPLE], invalidated_worlds[FIXTURE_PEOPLE], life_error[FIXTURE_PEOPLE];
 static unsigned cleared_home_worlds[FIXTURE_PEOPLE];
@@ -55,7 +56,7 @@ static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
     if (vehicle_missing) return TFX_NOT_FOUND;
     *out = (tfx_vehicle){.struct_size = sizeof(*out), .vehicle = id, .line = substitute_line,
         .stop_index = substitute_board, .state = id == 99 && !vehicles_not_ready ? 2 : 1, .load_state = 3, .arrival_station_index = 0,
-        .arrival_terminal = 1, .arrival_locked = 1, .passenger_capacity = TFX_PASSENGER_LIMIT + 5,
+        .arrival_terminal = (int32_t)selected_terminal, .arrival_locked = 1, .passenger_capacity = TFX_PASSENGER_LIMIT + 5,
         .passengers_onboard = no_capacity ? TFX_PASSENGER_LIMIT + 5 : staged, .passenger_places_left = no_capacity ? 0 : TFX_PASSENGER_LIMIT + 5 - staged};
     return TFX_OK;
 }
@@ -67,8 +68,22 @@ static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop
         .stop_count = 6, .station_group = 1000 + position, .station_entity = 2000 + position,
         .station_index = 0, .terminal = 1, .passenger_load_enabled = 1,
         .passenger_max_load_bits = 0x3f800000};
+    if (line == substitute_line && index == substitute_board) {
+        out->terminal = (int32_t)boarding_terminal; out->has_alternative_terminals = alternatives_enabled;
+    }
+    if (line == substitute_line && index == substitute_board + leg_hops) out->terminal = (int32_t)alighting_terminal;
     if (route_changed == 1 && line == substitute_line && index == 1 + leg_hops) out->terminal = 9;
     if (route_changed == 2 && index == 2) out->station_group += 50;
+    return TFX_OK;
+}
+static tfx_status stop_terminals(tfx_context c, int32_t line, int32_t index, tfx_stop_terminals *out) {
+    CHECK(out->struct_size == sizeof(*out));
+    tfx_line_stop value = {.struct_size = sizeof(value)};
+    tfx_status status = stop(c, line, index, &value);
+    if (status != TFX_OK) return status;
+    *out = (tfx_stop_terminals){.struct_size = sizeof(*out), .count = 1 + alternatives_enabled, .stop = value};
+    out->terminals[0] = (tfx_stop_terminal){value.station_index, value.station_entity, value.terminal};
+    if (alternatives_enabled) out->terminals[1] = (tfx_stop_terminal){0, value.station_entity, 2};
     return TFX_OK;
 }
 static tfx_status loading(tfx_context c, int32_t line, int32_t index, tfx_stop_vehicles *out) {
@@ -87,7 +102,7 @@ static tfx_status platforms(tfx_context c, int32_t id, tfx_person_platforms *out
 static tfx_status terminal(tfx_context c, int32_t station, int32_t index, tfx_terminal *out) {
     BEGIN(out);
     *out = (tfx_terminal){.struct_size = sizeof(*out), .station_entity = station,
-        .terminal = index, .passengers_load = 1, .passengers_unload = 1}; return TFX_OK;
+        .terminal = index, .terminal_count = 10, .passengers_load = 1, .passengers_unload = 1}; return TFX_OK;
 }
 static tfx_status presence(tfx_context c, int32_t id, tfx_entity_presence *out) {
     BEGIN(out); CHECK(id == 777);
@@ -141,15 +156,16 @@ static tfx_status lifecycle(tfx_context c, int32_t id, tfx_person_lifecycle *out
     return TFX_OK;
 }
 tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
-    CHECK(version == 5 || version == 7);
-    base->abi_version = version; base->capabilities = version == 5 ? 31 : 255;
+    CHECK(version == 8 || version == 7);
+    base->abi_version = version; base->capabilities = version == 8 ? 511 : 255;
     base->register_client = registration; base->read_observation = observation;
     tfx_api_v5 *api = (tfx_api_v5 *)base;
     api->v4.v3.v2.read_waiting_leg = waiting; api->v4.v3.v2.scan_waiting_people = scan;
     api->v4.v3.v2.read_line_stop = stop; api->v4.v3.read_vehicle = vehicle;
     api->v4.v3.read_stop_vehicles = loading; api->v4.read_person_platforms = platforms;
     api->read_terminal = terminal; api->read_entity_presence = presence;
-    if (version == 7) {
+    if (version == 8) ((tfx_api_v8 *)base)->read_stop_terminals = stop_terminals;
+    if (version >= 7) {
         ((tfx_api_v7 *)base)->read_person_lifecycle = lifecycle;
         tfx_api_v6 *changes = (tfx_api_v6 *)base;
         changes->request_waiting_leg_change = request; changes->read_change_result = result;
@@ -158,6 +174,7 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
     return TFX_OK;
 }
 static void reset(void) {
+    boarding_terminal = selected_terminal = alighting_terminal = 1; alternatives_enabled = 0;
     sequence = staged = no_capacity = wrong_vehicle = fail_result = pending_result = query_error = wrong_destination = 0;
     changed_home = reassigned = bad_identity = baseline_unassigned = home_target = 0;
     source_line = 501; substitute_line = 902; leg_hops = 1; source_board = substitute_board = 1;
@@ -462,12 +479,23 @@ int main(void) {
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
     puts("PASS: lifecycle continuation after both-world boarding/confirmation; permanent error block, all pending passengers, ID retention, mixed outcomes, no cap refund, disagreement and prior-arrival guards.");
 #endif
+    reset(); boarding_terminal = selected_terminal = alighting_terminal = 2; tick(); CHECK(staged == 1);
+    CHECK(strstr(output, "cross_platform=1 alternative_platform=0 cross_platform_alighting=1"));
+    reset(); alternatives_enabled = 1; selected_terminal = 2; tick(); CHECK(staged == 1);
+    CHECK(strstr(output, "cross_platform=1 alternative_platform=1"));
+    selected_terminal = 1; queries = 0;
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);
+    selected_terminal = 2; alternatives_enabled = 0; queries = 0;
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_POLICY_REJECTED);
+    reset(); tick(); CHECK(staged == 1); alternatives_enabled = 1; queries = 0;
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);
+    puts("PASS: native-platform proposals and deferred rejection of selected/configured platform changes.");
     home_clear_tests();
     reset(); leg_hops = 4; tick(); CHECK(staged == 1);
     CHECK(requests[0].expected.line == 501 && requests[0].line == 902 &&
         requests[0].expected.alighting_stop == 5 && requests[0].alighting_stop == 5);
     route_changed = 1; queries = 0;
-    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_POLICY_REJECTED);
+    CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);
     CHECK(queries <= 64);
     route_changed = 2; queries = 0; /* Both routes still match, but changed since staging. */
     CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);

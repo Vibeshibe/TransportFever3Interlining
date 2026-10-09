@@ -35,6 +35,7 @@ STUB1(tfx_query_presence, tfx_entity_presence)
 STUB1(tfx_query_journey, tfx_person_journey)
 STUB1(tfx_query_lifecycle, tfx_person_lifecycle)
 STUB2(tfx_query_stop, tfx_line_stop)
+STUB2(tfx_query_stop_terminals, tfx_stop_terminals)
 STUB2(tfx_query_stop_vehicles, tfx_stop_vehicles)
 STUB2(tfx_query_terminal, tfx_terminal)
 

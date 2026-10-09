@@ -2,6 +2,11 @@
 
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
+Version0.10.0 adds [cross-platform boarding](../docs/cross-platform-trial.md) within
+one station using native boarding behavior. ABI8 supplies copied primary and
+alternative terminal options; prior ABI layouts are retained. Different fixed alighting platforms in the same station are supported;
+configured alternative alighting terminals remain excluded. Prepared build-v10a requires live validation.
+
 **Version 0.9 supports a build-time cap of 1–32 distinct passenger attempts.**
 The default remains one. Larger builds use at most four full journey samples plus
 one pending boarding, while every switch receives fresh validation and both-world
@@ -39,6 +44,13 @@ boarding occurred. That run retained the five-person cap. See
 [route scope](../docs/route-expansion.md) and [sentinel correction](../docs/waiting-sentinels.md).
 
 ## Build and isolated tests
+
+ABI8 adds `tfx_stop_terminals` and `read_stop_terminals` through `tfx_api_v8`.
+The copied result contains the original `tfx_line_stop` and primary-first resolved
+station/terminal entries (maximum16). The reader returns a complete result or an
+error with caller output unchanged; one existing callback query allowance is
+consumed. It supplies metadata, not boarding permission. See
+[cross-platform policy and tests](../docs/cross-platform-trial.md).
 
 On Linux x86-64, with Python 3.12+, CMake, Ninja, and Wine:
 

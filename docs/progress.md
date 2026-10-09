@@ -1122,3 +1122,55 @@ verification. Do not claim installation or gameplay validation without running i
 - User clarified certainty about Transport Fever 2. Updated the evidence to
   distinguish predecessor-game precedent from unverified TF3 alternative-platform
   behavior; the TF3 static fallback finding is independent of that recollection.
+
+## 2026-10-09 — Prepare native cross-platform trial 0.10.0
+
+- User requested next-version implementation matching native boarding behavior,
+  then clarified S2 uses platform2 in Faringdon and platform3 elsewhere. Added
+  same-station boarding and different fixed alighting platforms; no save-specific
+  line names, station IDs or passenger IDs appear in eligibility rules.
+- ABI8 copies primary/alternative stop terminals and resolves station indices.
+  Native registration exports establish Stop alternative vector offset0x10 and
+  StationTerminal station/terminal offsets0/4. The new query replaces one stop
+  read without increasing query count. Prior ABI layouts/capabilities are retained.
+- Actual locked boarding platform must be configured and in the same physical
+  station. Waiting membership on another terminal of that station is accepted;
+  distinct grouped stations remain excluded. Actual loading/unloading flags,
+  capacity, planned endpoint station, destination and route checks remain.
+  Alighting uses the engine's destination-driven path builder; different fixed
+  platforms are an experiment, not proof of onward reachability. Alternative
+  future alighting terminals remain excluded.
+- Deferred snapshots now compare configured boarding options and actual selection,
+  plus existing route/waiting state. No new mutation operation, forced onboard
+  state or walking-time delay. Logs distinguish cross-platform boarding, selected
+  alternatives and differing alighting platforms. See
+  [scope, build and integrated trial](cross-platform-trial.md).
+- Warning-clean final build and all13 native invocations pass, including ABI8
+  copied-data/context guards and real-DLL capability checks, malformed/oversized
+  options, shared storage, both endpoint platform differences, permissions,
+  deferred selection/configuration changes, lifecycle and32-attempt regressions.
+  Worst consumer fixture remains63/64 queries. Report executable hashes match
+  final binaries; docs links/diff formatting checked. No new live result claimed.
+- Prepared build-v10a,32 attempts,4 samples,18000 callbacks. Mutable DLL SHA:
+  `a3d77630201f7e0bbed257dcb35b36ecb290bc787c10fef304d5fe0d48a93a35`;
+  capacity-tests.json SHA:
+  `3c851c5a3dae372b06e07b5e53ccfe748c03a2395edbd365aa5e22831079c3bd`.
+  Package instructions and manifest accompany the experimental DLL/loader.
+  Native source committed to dev; main remains reserved for stable releases.
+
+## 2026-10-09 — Stop 0.9.1 after eight complete journeys
+
+- User requested cancelling the current trial to move on. Fresh process identity
+  matched Linux107579/start1780715. Existing tfx_stop returned0 at13:23:08.647357Z;
+  watcher54222 ended intentionally. The old DLL remains loaded until game exit.
+- All eight distinct changes boarded and reached the preserved original
+  destination in both worlds before stopping. Zero errors. Latest periodic
+  metrics11400:8 staged/applied/boarded/arrived,active0,peak4,unsampled0;288 indexed
+  picks,1948 fallbacks,2 stale hints rejected,1695 station mismatches/2236 screens,
+  170 validations. These are periodic metrics, not an invented exact stop count.
+- Separate stopped-capture audit passed all eight change/postcondition/boarding/
+  original-arrival checks. No automatic summary; completion-only audit not used.
+  Log SHA `1c2f6f7d77e2c888396698edbdc623ee2ea6d184187c79e1bdb5b0e71e9c5272`;
+  stopped-audit.json SHA `ba2d2cc0d44f22e5ab5a768b05463553e8b87070b59bf78dea7cd4b6ef11b93e`.
+  No unsampled boarding or multi-stop/express live coverage. Next0.10.0 integrated
+  trial needs a restart and disposable baseline; no new DLL has been loaded.

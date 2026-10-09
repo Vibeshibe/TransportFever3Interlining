@@ -48,9 +48,25 @@ static tfx_status loading(tfx_context c, int32_t line, int32_t stop, tfx_stop_ve
     *out = (tfx_stop_vehicles){.struct_size = sizeof(*out), .line = line, .stop_index = stop,
         .count = indexed, .vehicles = {99}}; return TFX_OK;
 }
-static tfx_api_v5 api;
+static tfx_api_v8 platform_api;
+#define api platform_api.v7.v6.v5
+static tfx_stop_terminal alternatives[2];
+static unsigned alternative_count;
+static tfx_status options_error;
+static tfx_status read_options(tfx_context c, int32_t line, int32_t index, tfx_stop_terminals *out) {
+    CHECK(out->struct_size == sizeof(*out));
+    if (options_error) return options_error;
+    tfx_line_stop stop = {.struct_size = sizeof(stop)};
+    tfx_status status = read_stop(c, line, index, &stop);
+    if (status != TFX_OK) return status;
+    *out = (tfx_stop_terminals){.struct_size = sizeof(*out), .count = 1 + alternative_count, .stop = stop};
+    out->terminals[0] = (tfx_stop_terminal){stop.station_index, stop.station_entity, stop.terminal};
+    for (unsigned i = 0; i < alternative_count; ++i) out->terminals[i + 1] = alternatives[i];
+    return TFX_OK;
+}
 static void fixture(void) {
     forced = TFX_OK; present = indexed = 1;
+    alternative_count = 0; options_error = TFX_OK;
     stop_count = 4; query_count = fail_query = 0;
     leg = (tfx_waiting_leg){.struct_size = sizeof(leg), .person = 42, .line = 10, .boarding_stop = 1,
         .alighting_stop = 2, .vehicle = -1, .destination = 777, .flags = TFX_HAS_TERMINAL_PLACE,
@@ -67,9 +83,9 @@ static void fixture(void) {
         .platforms = {{100, 1}}};
     terminals[0] = (tfx_terminal){sizeof(tfx_terminal), 100, 1, 3, 1, 0};
     terminals[1] = (tfx_terminal){sizeof(tfx_terminal), 200, 0, 3, 0, 1};
-    api = (tfx_api_v5){0};
-    api.v4.v3.v2.base.struct_size = sizeof(api); api.v4.v3.v2.base.abi_version = 5;
-    api.v4.v3.v2.base.capabilities = 31; api.v4.v3.v2.base.read_observation = observation;
+    platform_api = (tfx_api_v8){0}; platform_api.read_stop_terminals = read_options;
+    api.v4.v3.v2.base.struct_size = sizeof(platform_api); api.v4.v3.v2.base.abi_version = 8;
+    api.v4.v3.v2.base.capabilities = 511; api.v4.v3.v2.base.read_observation = observation;
     api.v4.v3.v2.read_waiting_leg = waiting; api.v4.v3.v2.read_line_stop = read_stop;
     api.v4.v3.read_vehicle = read_vehicle; api.v4.v3.read_stop_vehicles = loading;
     api.v4.read_person_platforms = read_platforms; api.read_terminal = read_terminal;
@@ -77,7 +93,7 @@ static void fixture(void) {
 }
 static void expect(it_reason reason) {
     it_candidate result;
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK);
     CHECK(result.reason == reason && result.requires_engine_revalidation == 1);
 }
 static void route_fixture(int hops) {
@@ -102,25 +118,25 @@ static void route_tests(void) {
     it_candidate result;
     for (int hops = 1; hops <= IT_MAX_LEG_HOPS; ++hops) {
         route_fixture(hops);
-        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+        CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
         CHECK(result.alighting_stop == 2 + hops && result.expected.alighting_stop == 1 + hops);
         CHECK(query_count <= 18);
         /* An express reaches the same endpoint with fewer stop intervals. */
         stops[hops + 2] = stops[2 * hops + 1]; stops[hops + 2].stop_index = 3;
         expect(IT_CANDIDATE);
-        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.alighting_stop == 3);
+        CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.alighting_stop == 3);
     }
     route_fixture(4); stops[6] = stops[7]; stops[6].stop_index = 3;
     stops[7] = stops[9]; stops[7].stop_index = 4; /* A,C,E subsequence of A,B,C,D,E. */
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE && result.alighting_stop == 4);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE && result.alighting_stop == 4);
     route_fixture(3); stops[5].station_group = 9000; expect(IT_ROUTE_DIVERGENCE); /* Branch/detour. */
     route_fixture(3); stops[5].station_group = 1002; stops[6].station_group = 1001;
     expect(IT_ROUTE_DIVERGENCE); /* Same stations in reverse order. */
     route_fixture(3); stops[5].station_group = 1000; expect(IT_ROUTE_DIVERGENCE); /* Returns to boarding. */
     route_fixture(3); stops[2].station_group = stops[1].station_group; expect(IT_UNSUPPORTED_LEG);
     route_fixture(3); stops[3].station_group = stops[0].station_group; expect(IT_UNSUPPORTED_LEG);
-    route_fixture(3); stops[5].station_group = 2000; stops[5].terminal = 9;
-    expect(IT_ALIGHTING_MISMATCH); /* Do not skip wrong-platform first visit for later matching visit. */
+    route_fixture(3); stops[5].station_group = 2000; stops[5].station_entity = 999;
+    expect(IT_ALIGHTING_MISMATCH); /* Do not skip wrong-station first visit for later matching visit. */
     route_fixture(3); stops[7].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
     route_fixture(3); for (unsigned i = 4; i < 8; ++i) stops[i].stop_count = 4;
     expect(IT_ALIGHTING_MISMATCH); /* End of route; never wrap. */
@@ -128,17 +144,17 @@ static void route_tests(void) {
     route_fixture(3); leg.alighting_stop = 0; expect(IT_UNSUPPORTED_LEG);
     route_fixture(3); leg.boarding_stop = -1; expect(IT_UNSUPPORTED_LEG);
     route_fixture(3); stops[1].stop_count--;
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_INVALID_STATE);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_INVALID_STATE);
     route_fixture(3); stops[6].stop_count--;
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_INVALID_STATE);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_INVALID_STATE);
     /* Failure at every query, including the last one, preserves caller output. */
     route_fixture(4);
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK);
     unsigned total = query_count;
     for (unsigned n = 1; n <= total; ++n) {
         route_fixture(4); fail_query = n;
         memset(&result, 0xa5, sizeof(result)); it_candidate before = result;
-        CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_NOT_FOUND);
+        CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_NOT_FOUND);
         CHECK(!memcmp(&result, &before, sizeof(result)));
     }
     puts("PASS: bounded multi-stop/express routing, original endpoint, ordered stations, branches/loops/platform exclusions and late-read failure preservation.");
@@ -172,6 +188,40 @@ static void station_cache_tests(void) {
     CHECK(tfx_station_next(&cache, 119, 1, NULL, 0) == 119);
     puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
 }
+static void cross_platform_tests(void) {
+    fixture(); stops[2].terminal = 2; vehicle.arrival_terminal = 2;
+    terminals[0].terminal = 2;
+    it_candidate result;
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+    CHECK(result.cross_platform && !result.alternative_platform && result.boarding_terminal == 2);
+    CHECK(!memcmp(&result.expected, &leg, sizeof(leg)));
+    /* Native waiting place can already be on another terminal of this station. */
+    platforms.platforms[0].terminal = 0; expect(IT_CANDIDATE);
+    platforms.platforms[0].station_entity = 101; expect(IT_NO_PLATFORM_MEMBERSHIP);
+    fixture(); stops[2].has_alternative_terminals = 1; alternative_count = 1;
+    alternatives[0] = (tfx_stop_terminal){0, 100, 2};
+    vehicle.arrival_terminal = terminals[0].terminal = 2;
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+    CHECK(result.cross_platform && result.alternative_platform && result.route.boarding_options.count == 2);
+    terminals[0].passengers_load = 0; expect(IT_LOADING_DISABLED);
+    terminals[0].passengers_load = 1;
+    vehicle.arrival_terminal = 0; expect(IT_ACTUAL_TERMINAL_MISMATCH);
+    vehicle.arrival_terminal = 2; vehicle.arrival_locked = 0; expect(IT_ACTUAL_TERMINAL_MISMATCH);
+    vehicle.arrival_locked = 1; alternatives[0].station_index = 1;
+    alternatives[0].station_entity = 101; vehicle.arrival_station_index = 1;
+    expect(IT_ACTUAL_TERMINAL_MISMATCH); /* Group membership is not station identity. */
+    fixture(); stops[0].has_alternative_terminals = 1; expect(IT_CANDIDATE);
+    fixture(); stops[1].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
+    fixture(); stops[3].station_entity = 201; expect(IT_ALIGHTING_MISMATCH);
+    fixture(); stops[2].terminal = 2; vehicle.arrival_terminal = terminals[0].terminal = 2;
+    stops[3].terminal = terminals[1].terminal = 2;
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+    CHECK(result.cross_platform && result.cross_platform_alighting && result.alighting_terminal == 2);
+    CHECK(result.expected.destination == 777 && result.alighting_station == 200);
+    terminals[1].passengers_unload = 0; expect(IT_UNLOADING_DISABLED);
+    fixture(); options_error = TFX_LIMIT_REACHED; expect(IT_TERMINAL_LIMIT);
+    puts("PASS: cross-platform boarding, actual configured alternatives, same-station membership, actual load flags and same-station alighting and unloading guards.");
+}
 int main(void) {
     station_cache_tests();
     /* Regression: passengers discovered after the first full batch must remain
@@ -196,8 +246,9 @@ int main(void) {
     CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, 99) == 7 && cursor == before_cursor);
     CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, 99) == -1);
     route_tests();
+    cross_platform_tests();
     fixture(); it_candidate result;
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
     CHECK(result.dispatch_sequence == 123 && result.proposed_line == 20 && result.boarding_stop == 2 && result.alighting_stop == 3);
     CHECK(result.observed_places_left == 3 && result.boarding_station == 100 && result.alighting_station == 200);
     CHECK(!memcmp(&result.expected, &leg, sizeof(leg))); /* Preserve destination, age and waiting place. */
@@ -211,7 +262,7 @@ int main(void) {
     fixture(); vehicle.user_stopped = 1; expect(IT_VEHICLE_NOT_LOADING);
     fixture(); stops[2].stop_count = 3; expect(IT_UNSUPPORTED_LEG);
     fixture(); stops[3].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
-    fixture(); stops[2].terminal = 2; expect(IT_BOARDING_MISMATCH);
+    fixture(); stops[2].station_entity = 101; expect(IT_BOARDING_MISMATCH);
     fixture(); stops[3].station_group = 3000; expect(IT_ALIGHTING_MISMATCH);
     fixture(); vehicle.arrival_station_index = 100; expect(IT_ACTUAL_TERMINAL_MISMATCH);
     fixture(); vehicle.arrival_locked = 0; expect(IT_ACTUAL_TERMINAL_MISMATCH);
@@ -221,7 +272,7 @@ int main(void) {
     fixture(); vehicle.next_passenger_load_seconds_bits = 0x3e4ccccd; expect(IT_LOAD_TIMER_PENDING);
     fixture(); vehicle.next_passenger_load_seconds_bits = 0x7fc00000; expect(IT_LOAD_TIMER_PENDING);
     fixture(); vehicle.next_passenger_load_seconds_bits = 0xbf000000; expect(IT_CANDIDATE);
-    fixture(); platforms.platforms[0].terminal = 2; expect(IT_NO_PLATFORM_MEMBERSHIP);
+    fixture(); platforms.platforms[0].terminal = 3; expect(IT_NO_PLATFORM_MEMBERSHIP);
     fixture(); platforms.count = 0; expect(IT_NO_PLATFORM_MEMBERSHIP);
     fixture(); terminals[0].passengers_load = 0; expect(IT_LOADING_DISABLED);
     fixture(); terminals[1].passengers_unload = 0; expect(IT_UNLOADING_DISABLED);
@@ -229,7 +280,7 @@ int main(void) {
     fixture(); indexed = 0; expect(IT_NOT_IN_LOADING_INDEX);
     fixture(); forced = TFX_QUERY_BUDGET_EXHAUSTED;
     memset(&result, 0xa5, sizeof(result)); it_candidate unchanged = result;
-    CHECK(it_validate_candidate(&api, 7, 42, 99, &result) == TFX_QUERY_BUDGET_EXHAUSTED);
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_QUERY_BUDGET_EXHAUSTED);
     CHECK(!memcmp(&result, &unchanged, sizeof(result)));
     CHECK(it_validate_candidate(NULL, 7, 42, 99, &result) == TFX_INVALID_ARGUMENT);
     CHECK(!strcmp(it_reason_name(IT_CANDIDATE), "candidate"));

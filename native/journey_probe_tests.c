@@ -57,9 +57,14 @@ int main(int argc, char **argv) {
         CHECK(life.v6.v5.v4.v3.v2.base.capabilities == (mutable ? 255u : 223u) && life.read_person_lifecycle);
         tfx_person_lifecycle snapshot = {.struct_size = sizeof(snapshot)};
         CHECK(life.read_person_lifecycle(0, 123, &snapshot) == TFX_STALE_CONTEXT);
+        tfx_api_v8 platforms = {.v7.v6.v5.v4.v3.v2.base.struct_size = sizeof(platforms)};
+        CHECK(get_api(8, &platforms.v7.v6.v5.v4.v3.v2.base) == TFX_OK);
+        CHECK(platforms.v7.v6.v5.v4.v3.v2.base.capabilities == (mutable ? 511u : 479u) && platforms.read_stop_terminals);
+        tfx_stop_terminals options = {.struct_size = sizeof(options)};
+        CHECK(platforms.read_stop_terminals(0, 1, 0, &options) == TFX_STALE_CONTEXT);
         CHECK(start(NULL) == TFX_UNSUPPORTED_BUILD);
         FreeLibrary(module);
-        puts("PASS: DLL preserves ABI6/7 capability contract and refuses the unsupported fixture executable.");
+        puts("PASS: DLL preserves ABI6/7, provides ABI8 copied terminals and refuses the unsupported fixture executable.");
     } else CHECK(argc == 1);
     CHECK(tfx_register_journey_probe(NULL, 123, 456) == TFX_INVALID_ARGUMENT);
     CHECK(tfx_register_journey_probe(write_line, -1, 456) == TFX_INVALID_ARGUMENT);

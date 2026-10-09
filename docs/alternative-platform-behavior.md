@@ -120,3 +120,14 @@ bounded logging without debugger pauses for timing.
 These measurements distinguish advance walking, position relocation and direct
 boarding. They also test departure recovery. Planner cost accounting needs its
 own evidence: visible walking or an elapsed boarding delay alone cannot prove it.
+
+## Subsequent implementation decision
+
+The user requested matching native behavior rather than adding walking-time
+simulation. Version0.10.0 prepares a bounded experiment for cross-platform
+boarding and different fixed alighting platforms inside the same station.
+It validates explicit selected boarding options, terminal permissions and fresh
+route snapshots, and delegates onward path construction to the engine. This
+supersedes the earlier proposal to require a new pedestrian router first; it
+adds no claim that the engine simulates platform walking. See
+[cross-platform scope and validation](cross-platform-trial.md).
