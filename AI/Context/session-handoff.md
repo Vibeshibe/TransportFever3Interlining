@@ -1,5 +1,25 @@
 # Session handoff — 2026-10-09
 
+## Latest — 0.10.0 live after confirmed unpause
+
+Implementation eabf1eb is pushed to origin/dev. User restarted, loaded the
+verified original disposable baseline and confirmed normal-speed unpause.
+Fresh Linux132392/start2068868, Windows312; no prior bridge mapping. Actual load
+13:24:26Z,ready13:25:22Z; save/executable/artifact hashes match. New DLL tfx_start0
+at13:27:19.156854Z. Startup0.10.0/ABI1–8/platform_policy=native_same_station.
+Log: analysis/native-bridge/build-v10a/tpf-bridge-312-20897483.log; live-run.json,
+loader-result.json and preflight-process.json preserve exact identity/evidence.
+Watcher55819 active,thread592,worlds1/2 0x35c288e0/0x35c295a0. Early callbacks
+arrive successfully; no boarding claimed yet. Read the log on resume, avoid
+frequent empty polling. Do not inject another DLL or edit lines/vehicles.
+
+Package created and ZIP/checksums verified:
+build-v10a/TPF3Interlining-0.10.0-trial.zip (167006bytes),SHA
+c960895b4f8532b7f565fc8a7b5ff3e3a3f2d5a8486fcece1e933633bb26fa2f.
+Contains tested DLL,loader,13-case report,README,loader guide and source/hash
+manifest. No automatic persistent install; main unchanged. Next monitor actual
+cross-platform boarding and sampled original destinations under32/4/18000 bounds.
+
 ## Current — 0.10.0 prepared; 0.9.1 stopped by request
 
 User wants native cross-platform behavior, with no separate walking-time gate,

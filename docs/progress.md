@@ -1174,3 +1174,18 @@ verification. Do not claim installation or gameplay validation without running i
   stopped-audit.json SHA `ba2d2cc0d44f22e5ab5a768b05463553e8b87070b59bf78dea7cd4b6ef11b93e`.
   No unsampled boarding or multi-stop/express live coverage. Next0.10.0 integrated
   trial needs a restart and disposable baseline; no new DLL has been loaded.
+
+## 2026-10-09 — Package and start 0.10.0 integrated trial
+
+- Implementation eabf1eb pushed to origin/dev. Created and verified ignored
+  build-v10a/TPF3Interlining-0.10.0-trial.zip (167006bytes), containing tested DLL,
+  loader,13-case report,instructions and source/checksum manifest. SHA:
+  `c960895b4f8532b7f565fc8a7b5ff3e3a3f2d5a8486fcece1e933633bb26fa2f`.
+- User confirmed fresh game readiness. Verified Linux132392/start2068868,
+  Windows312, no previous bridge, baseline/game/DLL hashes. Actual stdout load
+  before_multi_passenger_01 at13:24:26Z,ready13:25:22Z. Native start returned0
+  at13:27:19.156854Z; startup confirms0.10.0,ABI1–8,native_same_station policy.
+- User confirmed unpause at normal speed. Watcher55819 active; thread592,
+  both worlds observed. New log tpf-bridge-312-20897483.log and live-run.json retain
+  evidence. Early callbacks/candidate exclusions only; no new live success claimed.
+  Capture runs with32 attempts,4 full samples,18000 callbacks. No line/vehicle edits.

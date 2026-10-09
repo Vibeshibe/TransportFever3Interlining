@@ -57,7 +57,7 @@ Native indices are zero-based; UI platform3 may be terminal2.
 ## Build, validation and delivery
 
 Prepared build directory: `analysis/native-bridge/build-v10a`. The test package
-will be under that directory as `TPF3Interlining-0.10.0-trial.zip` with DLL,
+is under that directory as `TPF3Interlining-0.10.0-trial.zip` with DLL,
 loader, instructions and a checksum manifest. It uses32 lifetime attempts,
 four detailed journey samples, one pending boarding and18,000 callbacks. Every
 switch still requires both-world boarding confirmation; unsampled completion
