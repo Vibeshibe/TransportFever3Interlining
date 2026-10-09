@@ -1,6 +1,6 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.0 loaded; awaiting unpause
+## Latest — 0.9.0 sampled trial running
 
 User confirmed restart/readiness. Verified fresh Linux68800/start1296244,
 Windows308, pinned game hash and no previous bridge mappings. Stdout confirms
@@ -9,9 +9,20 @@ hash remainsce2e02d935da…,80,431,012bytes. Prepared artifact hashes all match.
 Loaded build-v9a0.9.0 successfully, tfx_start0. Startup log confirms32 attempts,
 18000 callbacks,four samples,600 boarding grace,reserve OFF,route4.
 Log `tpf-bridge-308-14937416.log`; ignored live-run.json and loader-result.json
-record fresh identity and startup. Watcher28281 active. No world callbacks or
-live outcome yet; explicit normal-speed unpause requested, response pending.
-Do not reinject or reuse any historical addresses below. After unpause, monitor
+record fresh identity and startup. User confirmed normal-speed unpause.
+Watcher28281 active; worlds1/2 `0x369cde50`/`0x369ceb10`, thread616.
+Checkpoint6300:122261 S3→S1/97745 staged418, boarded427, original72934 arrival
+2420/2421. Tracker released; next600-callback report confirmed active0.127526
+then switched S1 stops4→5 toS3/97912 stops5→6 at5097, boarded5114, alighted5909/
+5912 and boarded native79462/123307 stops0→1 at6180/6181. Original98211 pending.
+Two samples cumulatively, peak1 tracker: reuse observed, no unsampled release or
+>5 switches yet. Both replacement legs adjacent; no multi-stop/express coverage.
+Zero query errors. User reports50+ people waiting and asks about sparse matches.
+Counters support discovery inefficiency:1172/1489 screening attempts at4800
+were station mismatches. These are repeated checks, not unique people. Prioritize
+station-focused discovery after this bounded trial, retaining all eligibility
+guards. Do not infer how many opportunities were missed or blame RNG alone.
+Do not reinject or reuse any historical addresses below. Continue monitoring
 boarding, sample selection/release, totals/discovery metrics and error guards.
 
 ## Preparation — 0.9.0 sampled capacity

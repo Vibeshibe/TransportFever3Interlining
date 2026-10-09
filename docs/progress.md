@@ -974,6 +974,20 @@ Watcher active; normal-speed unpause requested. Live outcomes and sampled-capaci
 coverage remain pending. Fresh process/log metadata is preserved in the handoff
 and ignored build-v9a/live-run.json. No reinjection, policy change or save write.
 
+## 2026-10-09 — Sample reuse observed; discovery targeting remains inefficient
+
+At0.9.0 checkpoint6300, two adjacent replacements boarded, one original arrival
+was confirmed and the second journey continued on a native onward service.
+First tracker released after arrival2420/2421; a later S1 stops4→5 to S3 stops5→6
+replacement used the freed sample capacity. Cumulative samples2, peak tracker1,
+zero query errors. No unsampled boarding or >5-switch live evidence yet.
+
+User reports50+ people waiting despite sparse matches. At4800,1172 of1489
+screening attempts involved another station. This supports improving station-
+focused discovery; it does not quantify missed opportunities or establish an
+RNG-only cause. Preserve platform/route/capacity checks. Current capture continues
+unchanged under its original bounds; this checkpoint is not the final result.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

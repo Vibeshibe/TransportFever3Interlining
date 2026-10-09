@@ -1,7 +1,8 @@
 # Bounded capacity and sampled journeys — 0.9.0
 
 Implemented and tested offline. The DLL is now loaded into a fresh disposable
-baseline; explicit unpause is pending and **live outcomes remain unverified**.
+baseline and running after confirmed unpause. The capture is not complete;
+**higher-capacity and unsampled-boarding live coverage remain pending**.
 The earlier [design](passenger-capacity-plan.md) is retained for context.
 
 ## Behavior and limits
@@ -115,5 +116,8 @@ no prior bridge mappings. Actual stdout load is the unchanged original baseline,
 load11:15:52Z and ready11:46:44Z. Loader returned0 and the startup log confirms
 32/18000/four samples,600 boarding grace and reserve OFF. Log under build-v9a:
 `tpf-bridge-308-14937416.log`. Watcher28281 active; normal-speed unpause requested.
-No live coverage or passenger outcome is claimed yet. The DLL remains mapped
+At checkpoint6300, two adjacent replacements boarded and one original journey
+completed; the second used S1 stops4→5 to S3 stops5→6 and is on its native onward
+connection. Sample-slot reuse is observed (two cumulative samples, peak1 active).
+Zero query errors; no unsampled boarding or >5 switches yet. The DLL remains mapped
 until game exit; do not load a second bridge into this process.
