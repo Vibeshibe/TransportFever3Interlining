@@ -1,18 +1,41 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.1 loaded; normal-speed unpause requested
+## Current running checkpoint — resume by reading the log
+
+User confirmed unpause; capture continues automatically, not complete. Watcher
+session54222 remains active (one-hour wall limit); DLL self-limits at18000
+callbacks. Avoid spending usage on frequent empty polling. Read live-run.json
+and the latest log on next turn before acting. No restart or second DLL.
+At1800:4 staged/applied/boarded,4 active samples,peak4; index picks37,
+hint mismatches0,fallback212,station mismatches195/screens249,26 validations.
+115753 reached original75525 at2145/2148, freeing a sample. Other confirmed
+boardings:93862,110796,99871. No query errors, no unsampled boarding or >5
+switches yet. All replacement legs observed so far are adjacent. These remain
+interim findings; do not run completion-only audit or claim capture success yet.
+An inactive audit_trial.py is copied into build-v9b; run only once pilot_summary
+and the hook-forwarding completion marker exist, then inspect any assertion
+failure rather than relaxing it. Live-run.json stores exact log/process identity.
+
+## Latest — 0.9.1 running after confirmed unpause
+
+User confirmed normal-speed unpause. Watcher54222 active; thread752,
+worlds1/2 0x5f512630 / 0x5f511970 (only for this process). At600: three successful
+changes and both-world boardings (115753,93862,110796), three active samples,
+no arrivals yet. Index picks12, hint station mismatches0; fallback87,
+station mismatches83, screens99. Prior0.9.0 at600 had one boarding and128 station
+mismatches/167 screens; encouraging descriptive comparison, not a controlled
+performance result. No query errors. Continue bounded capture; no new DLL.
 
 User confirmed restart/readiness. Verified fresh Linux107579/start1780715,
 Windows312, baseline hash ce2e02d935da…, pinned executable and prepared DLL hashes,
 and no previous bridge mappings. Actual stdout load before_multi_passenger_01
 at12:40:07Z; ready12:40:54Z. Loaded build-v9b successfully at12:41:51Z,
 tfx_start0. Startup confirms0.9.1, station_index,32 attempts,4 samples,18000
-callbacks,600 boarding grace and reserve OFF. No simulation observations yet.
+callbacks,600 boarding grace and reserve OFF. Startup was observed while paused; subsequent unpause/checkpoints are recorded above.
 Log: analysis/native-bridge/build-v9b/tpf-bridge-312-18170090.log
 (the exact filename is recorded in live-run.json). preflight-process.json and
 loader-result.json preserve verification. Watcher session54222 is running. User has been asked to unpause at
-normal speed without line/vehicle edits. Await confirmation before interpreting
-missing observations. Compare indexed/fallback selections and station mismatch
+normal speed without line/vehicle edits. Normal-speed unpause is now confirmed; current checkpoint above supersedes this startup note. Compare indexed/fallback selections and station mismatch
 work; monitor boarding, samples, errors and fixed cap. Do not load another DLL.
 
 ## Preparation — 0.9.1 station-focused discovery

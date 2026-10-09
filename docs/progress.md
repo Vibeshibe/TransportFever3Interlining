@@ -1048,3 +1048,20 @@ verification. Do not claim installation or gameplay validation without running i
   unpause without line/vehicle edits; no outcome evidence yet.
 - Ignored preflight-process.json, loader-result.json and live-run.json preserve
   startup evidence. Log: `tpf-bridge-312-18170090.log`. The DLL remains mapped until exit.
+
+## 2026-10-09 — Station-focused trial: early boarding and arrival checkpoint
+
+- Normal-speed unpause confirmed. Both simulation worlds observed (thread752);
+  watcher54222 and the bounded18000-callback capture remain running.
+- By600, three passengers had boarded versus one at600 in the prior0.9.0 run.
+  Indexed selections12, wrong-station indexed selections0; fallback87,
+  total station mismatches83/screens99. This is a descriptive comparison, not
+  a controlled performance measurement or a count of unique rejected people.
+- By1800:4 stages,4 successful changes,4 both-world boardings and4 active samples.
+  Indexed picks37, hint mismatches0, fallback212, station mismatches195/screens249;
+ 26 full validations. No query errors.115753 then reached original75525 in both
+  worlds at2145/2148.93862,110796 and99871 remain under observation.
+- Live-run.json preserves process, unpause and checkpoint details. The first
+  arrival releases a sample slot. No unsampled boarding or >5 switches yet;
+  replacement legs remain adjacent. Capture is unfinished and left recording
+  automatically to avoid repeated empty polling; no new game actions needed.
