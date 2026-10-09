@@ -988,6 +988,21 @@ focused discovery; it does not quantify missed opportunities or establish an
 RNG-only cause. Preserve platform/route/capacity checks. Current capture continues
 unchanged under its original bounds; this checkpoint is not the final result.
 
+## 2026-10-09 — Stop capture and prioritize station-focused discovery
+
+User reports80+ waiting and wants implementation progress instead of spending
+usage on repeated inefficient searches. Called the loaded bridge's tfx_stop;
+returned0 at12:21:00Z, then ended the owned watcher. No reload or second DLL.
+All three switched passengers reached original destinations, with zero logged
+query errors. Latest aggregate snapshot9000 shows active0/peak1 trackers;
+last candidate log9419. Manual stopping emits no final pilot_summary, so final
+callback/counter values are not fabricated. Separate stopped-audit.json passes
+change/boarding/arrival invariants. Higher-capacity/unsampled coverage remains open.
+
+Next implement bounded indexing by boarding station and fresh validation of
+indexed candidates, retaining global exploration and all platform/route/capacity
+checks. Prepare and test a new DLL before another integrated game run.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -1,6 +1,26 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.0 sampled trial running
+## Latest — 0.9.0 stopped; implement station-focused discovery
+
+User reports80+ waiting and requests avoiding usage on repeated inefficient
+search. Stopped current bridge through existing tfx_stop: returned0 at
+2026-10-09T12:21:00.533606Z. Watcher28281/owned Linux77511 terminated intentionally
+(exit143). All observers ended; no further capture needed. DLL stays mapped until
+game exit. No replacement is loaded yet. Implement/test station-focused search
+before requesting a new game process; user is willing to restart for improvements.
+
+All three switched passengers reached original destinations:122261 at2420/2421,
+127526 at6776/6777,120415 at8645/8648. Latest metrics9000:three samples,peak1,
+active0,zero errors. Last candidate log9419; stop does not produce a pilot_summary,
+so exact stop callback/final aggregate values are not invented. Three adjacent
+legs, including S1 stops4→5 toS3 stops5→6; no >5 or unsampled-boarding coverage.
+Partial stopped audit validates all changes, boardings and arrivals; separate
+from prepared automatic-completion audit. Log SHA76c3062be72c7d43a6f7061c63ab3c28298208c70d02f36f97e9fbc30b8cd34e;
+stopped-audit.json SHAb258775a776d98cb0f6183f86f1f0700116ac1a592fad281aee8efdbd8497e65.
+stop-result.json/live-run.json record stop acknowledgement. No source changes yet
+for the next discovery version at this checkpoint.
+
+## Historical — 0.9.0 running checkpoints
 
 User confirmed restart/readiness. Verified fresh Linux68800/start1296244,
 Windows308, pinned game hash and no previous bridge mappings. Stdout confirms
