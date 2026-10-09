@@ -68,7 +68,7 @@ lifecycle, host, mutation/query and DLL-contract regressions are retained.
 
 Prepared version 0.8.1 under ignored `analysis/native-bridge/build-v8b/`: cap 5,
 18,000 callbacks, route bound 4, lifecycle reserve OFF. The optional observer targets
-40365/destination 86033 for contract testing only. **Not loaded into the game.**
+40365/destination 86033 for contract testing only. The fresh live capture below is now running; outcomes remain pending.
 The current 0.8.0 DLL remains mapped until exit, so a revised trial needs a fresh
 restart into a disposable `TPF3Interlining_before_multi_passenger_01` baseline.
 Keep the same route scope and validate known-sentinel exclusions separately from
@@ -92,3 +92,10 @@ Final evidence under ignored `build-v8b/`:
 - `tpf_shared_bridge.dll`: `c3827f24e5e25bcc89d506a55ccce5a58181130cd4675fd3e9343a459ea6103e`.
 - `tpf_journey_observer.dll`: `687ff5b9b7619fc088fd90e0d756d8381615c6026efeeb61717cd180fe0068b2`.
 - `sentinel-tests.json`: `cd6ed0449197febd380be32afffde40243609ef6b59bbd186fbea8ff4d9362ef`.
+
+## Corrected trial startup — 2026-10-09
+
+Fresh Linux30963/start797666, Windows304; original baseline hash unchanged and
+no prior bridge mappings. Loaded build-v8b0.8.1, tfx_start0; user confirmed
+normal-speed unpause. Log `tpf-bridge-304-8080293.log`, with adjacent live-run.json.
+Cap5/18000, route4, reserve OFF. Capture is active; no live outcome is claimed yet.

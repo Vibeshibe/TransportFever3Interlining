@@ -895,6 +895,14 @@ bounded. No route/mutation/lifecycle limits changed. Build-v8b NOT loaded.
 All readers/watchers ended; original baseline unchanged. See
 [full evidence and prepared correction](waiting-sentinels.md).
 
+## 2026-10-09 — 0.8.1 corrected route trial loaded
+
+Fresh process, original baseline hash and prepared DLL verified. Loaded build-v8b
+successfully; user confirmed normal-speed unpause. Five attempts/18,000 callbacks,
+route bound4 and reserve OFF remain. Runtime sentinel exclusion and broader-route
+coverage are pending. Fresh log/process metadata is recorded in the handoff and
+ignored live-run.json; no policy change during this capture.
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

@@ -1,6 +1,18 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.8.0 stopped; 0.8.1 sentinel correction prepared
+## Latest — 0.8.1 corrected route trial running
+
+User restarted into the verified unchanged original baseline, then confirmed
+normal-speed unpause after loading. Fresh Linux30963/start797666, Windows304;
+no prior bridge mappings. Stdout load09:52:21Z, ready09:53:10Z. Loaded build-v8b
+0.8.1 mutable DLL, tfx_start0; cap5/18000, route4, reserve OFF. Log
+`tpf-bridge-304-8080293.log`; ignored live-run.json records fresh metadata.
+Watcher59201 active; worlds1/2 `0x304d3520`/`0x304d2860`, thread592.
+No live outcome yet. Do not reinject; watch pilot_waiting_excluded and query
+errors, multi-stop/express coverage, boarding and separate final outcomes.
+Historical process/world addresses below must not be reused.
+
+## Previous — 0.8.0 stopped; 0.8.1 sentinel correction prepared
 
 0.8.0 build-v8a trial is FINISHED: reason=query_errors, staged1, query_errors8,
 switching_blocked0 (separate latch; pilot_done and forwards-only wrapper stop writes).
