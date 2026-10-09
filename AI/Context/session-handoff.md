@@ -15,6 +15,10 @@ unresolved. Keep current platform guards. Focused same-line native alternative
 test is later work; no restart, debugger or DLL change during this capture.
 All targeted Ghidra exports finished; ignored evidence manifest and addresses
 are recorded in the guide. Documentation only; native source/build unchanged.
+User subsequently reported apparent teleport boarding on an excessively long
+platform and suggested alternatives behave similarly. Recorded as visual user
+evidence consistent with the fallback, not a timed trace or confirmed alternative
+case. It strengthens the reuse hypothesis without proving walking-time handling.
 
 Latest live checkpoint6600:7 staged/applied/boarded,6 sampled original arrivals,
 1 active sample,peak4,0 pending/unsampled boardings, no logged errors.

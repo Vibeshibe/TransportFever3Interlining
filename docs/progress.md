@@ -1113,3 +1113,9 @@ verification. Do not claim installation or gameplay validation without running i
 - Validation: checked decompiled paths against boolean-return/caller/distance
   assembly and decoded constant; verified documentation links and diff formatting.
   Native tests were not rerun for documentation-only changes.
+
+- User then reported apparent teleport boarding on an excessively long platform
+  and hypothesized equivalent alternative-platform behavior. Recorded separately
+  from static evidence: consistent with the direct-board fallback, but no timed
+  trace or observed alternative-platform case establishes the exact branch or
+  simulation-time cost. Native policy and the running capture remain unchanged.

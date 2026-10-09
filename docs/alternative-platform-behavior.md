@@ -38,6 +38,14 @@ than evidence that every alternative-platform passenger teleports. An upstream
 operation could already have relocated or rerouted the passenger before this
 handler. That part of the alternative-platform sequence is unresolved.
 
+During this research the user visually observed a passenger apparently teleport
+into a vehicle at an excessively long platform. This is consistent with the
+distance-limited approach and direct-board fallback. No synchronized position,
+assignment or timing trace was taken, so it does not identify the exact branch
+or demonstrate zero simulation-time cost. The user's hypothesis that alternative
+platforms behave similarly is plausible through the same assignment handler;
+it remains a hypothesis until an alternative-platform case is observed.
+
 The shipped `api/tealdef/api/engine.d.tl` describes `ModelPerson.path`, `pathPos`,
 `speed`, `topSpeed`, `stopped` and timing fields. The arrival callback shows that
 the walking branch has a distinct completion event. It does **not** establish
