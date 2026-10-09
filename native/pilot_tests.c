@@ -7,11 +7,12 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static tfx_client client;
 static uint64_t sequence;
-#define FIXTURE_PEOPLE (TFX_PASSENGER_LIMIT + 1)
+#define FIXTURE_PEOPLE 97
 static unsigned world, staged, boarded[TFX_PASSENGER_LIMIT], arrived[TFX_PASSENGER_LIMIT], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, pending_result, query_error, wrong_destination;
 static int32_t source_line = 501, substitute_line = 902, leg_hops = 1, source_board = 1, substitute_board = 1;
-static int32_t waiting_sentinel;
+static int32_t waiting_sentinel, indexed_target, absent_waiter;
+static unsigned vehicles_not_ready, population;
 static unsigned route_changed, discovery_removed, screening_misses, busy_vehicles, active_stop_only, vehicle_missing, arriving_missing;
 static unsigned missing_worlds[FIXTURE_PEOPLE], invalidated_worlds[FIXTURE_PEOPLE], life_error[FIXTURE_PEOPLE];
 static unsigned cleared_home_worlds[FIXTURE_PEOPLE];
@@ -27,6 +28,7 @@ static tfx_status observation(tfx_context c, tfx_observation *out) {
 }
 static tfx_status waiting(tfx_context c, int32_t id, tfx_waiting_leg *out) {
     BEGIN(out); CHECK(id >= 100 && id < 100 + FIXTURE_PEOPLE);
+    if (id == absent_waiter) return TFX_NOT_FOUND;
     /* Always return original waiting state, even for a changed person: discovery
      * must skip remembered passengers in a lagging replica without re-switching. */
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = id, .destination = 777,
@@ -34,6 +36,7 @@ static tfx_status waiting(tfx_context c, int32_t id, tfx_waiting_leg *out) {
         .alighting_stop = (id == 100 + TFX_PASSENGER_LIMIT ? substitute_board : source_board) + leg_hops, .vehicle = -1};
     if (waiting_sentinel && (id == 100 || id == 100 + TFX_PASSENGER_LIMIT)) out->vehicle = waiting_sentinel;
     if (screening_misses && id < 103) out->boarding_stop = 0;
+    if (indexed_target && id != indexed_target && id != 100 + TFX_PASSENGER_LIMIT) out->boarding_stop = 0;
     return TFX_OK;
 }
 static tfx_status scan(tfx_context c, int32_t first, tfx_waiting_page *out) {
@@ -41,17 +44,17 @@ static tfx_status scan(tfx_context c, int32_t first, tfx_waiting_page *out) {
     *out = (tfx_waiting_page){.struct_size = sizeof(*out), .next_entity = -1};
     /* Keep one demand source for the substitute; paginate larger populations. */
     unsigned i = (unsigned)first;
-    for (; i < TFX_PASSENGER_LIMIT && out->count < TFX_WAITING_PAGE_SIZE - 1; ++i)
-        out->persons[out->count++] = 100 + (int32_t)i;
+    for (; i < population && out->count < TFX_WAITING_PAGE_SIZE - 1; ++i)
+        out->persons[out->count++] = 100 + (int32_t)i + (i >= TFX_PASSENGER_LIMIT);
     out->persons[out->count++] = 100 + TFX_PASSENGER_LIMIT;
-    if (i < TFX_PASSENGER_LIMIT) out->next_entity = (int32_t)i;
+    if (i < population) out->next_entity = (int32_t)i;
     return TFX_OK;
 }
 static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
     BEGIN(out); CHECK(id >= 96 && id <= 99);
     if (vehicle_missing) return TFX_NOT_FOUND;
     *out = (tfx_vehicle){.struct_size = sizeof(*out), .vehicle = id, .line = substitute_line,
-        .stop_index = substitute_board, .state = id == 99 ? 2 : 1, .load_state = 3, .arrival_station_index = 0,
+        .stop_index = substitute_board, .state = id == 99 && !vehicles_not_ready ? 2 : 1, .load_state = 3, .arrival_station_index = 0,
         .arrival_terminal = 1, .arrival_locked = 1, .passenger_capacity = TFX_PASSENGER_LIMIT + 5,
         .passengers_onboard = no_capacity ? TFX_PASSENGER_LIMIT + 5 : staged, .passenger_places_left = no_capacity ? 0 : TFX_PASSENGER_LIMIT + 5 - staged};
     return TFX_OK;
@@ -158,7 +161,7 @@ static void reset(void) {
     sequence = staged = no_capacity = wrong_vehicle = fail_result = pending_result = query_error = wrong_destination = 0;
     changed_home = reassigned = bad_identity = baseline_unassigned = home_target = 0;
     source_line = 501; substitute_line = 902; leg_hops = 1; source_board = substitute_board = 1;
-    waiting_sentinel = 0;
+    waiting_sentinel = indexed_target = absent_waiter = vehicles_not_ready = 0; population = TFX_PASSENGER_LIMIT;
     route_changed = discovery_removed = screening_misses = busy_vehicles = active_stop_only = vehicle_missing = arriving_missing = 0;
     memset(missing_worlds, 0, sizeof(missing_worlds)); memset(invalidated_worlds, 0, sizeof(invalidated_worlds));
     memset(life_error, 0, sizeof(life_error)); memset(lifecycle_calls, 0, sizeof(lifecycle_calls));
@@ -188,32 +191,61 @@ static void stage_until(unsigned count) {
     if (staged != count) fprintf(stderr, "Staging target=%u actual=%u sequence=%llu\n%s", count, staged, (unsigned long long)sequence, output + (strlen(output) > 4000 ? strlen(output) - 4000 : 0));
     CHECK(staged == count);
 }
+/* Warm hints while no train is loading, then expose a short boarding window. */
+static void station_discovery_tests(void) {
+    reset(); indexed_target = 104; vehicles_not_ready = 1; ticks(600);
+    CHECK(staged == 0); vehicles_not_ready = 0; tick();
+    CHECK(staged == 1 && requests[0].expected.person == 104);
+
+    reset(); indexed_target = 104; vehicles_not_ready = 1; ticks(600);
+    indexed_target = 103; vehicles_not_ready = 0; stage_until(1);
+    CHECK(requests[0].expected.person == 103); /* Stale station cannot authorize a switch. */
+
+    reset(); indexed_target = 104; vehicles_not_ready = 1; ticks(600);
+    absent_waiter = 104; vehicles_not_ready = 0; ticks(20);
+    CHECK(staged == 0 && !strstr(output, "candidate_query_error"));
+    absent_waiter = 0; stage_until(1); CHECK(requests[0].expected.person == 104);
+
+    /* More waiters than the global cache, across paginated discovery. The sole
+     * matching waiter is retained by station while other stations churn. */
+    for (unsigned target = 0; target < 80; ++target) {
+        reset(); population = 80;
+        indexed_target = 100 + (int32_t)target + (target >= TFX_PASSENGER_LIMIT);
+        vehicles_not_ready = 1; ticks(128);
+        CHECK(staged == 0); vehicles_not_ready = 0; tick();
+        CHECK(staged == 1 && requests[0].expected.person == indexed_target);
+        sequence = TFX_OBSERVATION_LIMIT - 1; tick();
+        CHECK(strstr(output, "indexed_picks=1 fallback_picks=0"));
+        CHECK(!strstr(output, "candidate_query_error"));
+    }
+    puts("PASS: station-focused selection, changed/stale hints, recovery, and an 80-waiter population within the fixed query budget.");
+}
 #ifndef TFX_TEST_SAMPLED
 static void home_clear_tests(void) {
-    first_boarded(); cleared_home_worlds[0] = 2; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick();
     CHECK(!tfx_pilot_complete() && strstr(output, "pilot_home_pending person=100") &&
         !strstr(output, "pilot_lifecycle_resolved"));
     no_capacity = 0; ticks(8); CHECK(staged == 1);
-    missing_worlds[0] = 2; ticks(2); CHECK(staged == 1);
-    missing_worlds[0] = 3; ticks(2);
+    missing_worlds[requests[0].expected.person - 100] = 2; ticks(2); CHECK(staged == 1);
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(2);
     CHECK(!tfx_pilot_complete() && strstr(output, "pilot_lifecycle_resolved person=100") &&
         strstr(output, "pilot_tracking_resumed"));
-    unsigned reads = lifecycle_calls[0], journeys = journey_calls[0];
-    cleared_home_worlds[0] = missing_worlds[0] = 0; life_error[0] = 1;
+    unsigned reads = lifecycle_calls[requests[0].expected.person - 100], journeys = journey_calls[requests[0].expected.person - 100];
+    cleared_home_worlds[requests[0].expected.person - 100] = missing_worlds[requests[0].expected.person - 100] = 0; life_error[requests[0].expected.person - 100] = 1;
     ticks(10); CHECK(staged == 2 && requests[1].expected.person != 100);
-    CHECK(lifecycle_calls[0] == reads && journey_calls[0] == journeys);
+    CHECK(lifecycle_calls[requests[0].expected.person - 100] == reads && journey_calls[requests[0].expected.person - 100] == journeys);
 
     /* Matching home loss closes as its own outcome while the person remains
      * onboard. Never claim disappearance/arrival, re-read the ID, or refund it. */
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); no_capacity = 0;
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); no_capacity = 0;
     ticks(4); CHECK(staged == 1 && !strstr(output, "pilot_lifecycle_resolved"));
-    cleared_home_worlds[0] = 3; ticks(2);
+    cleared_home_worlds[requests[0].expected.person - 100] = 3; ticks(2);
     CHECK(strstr(output, "outcome=home_invalidated world_mask=3 confirmed=1 arrival=0") &&
         strstr(output, "pilot_tracking_resumed"));
-    reads = lifecycle_calls[0]; journeys = journey_calls[0];
-    cleared_home_worlds[0] = 0; life_error[0] = 1;
+    reads = lifecycle_calls[requests[0].expected.person - 100]; journeys = journey_calls[requests[0].expected.person - 100];
+    cleared_home_worlds[requests[0].expected.person - 100] = 0; life_error[requests[0].expected.person - 100] = 1;
     ticks(10); CHECK(staged == 2 && requests[1].expected.person != 100);
-    CHECK(lifecycle_calls[0] == reads && journey_calls[0] == journeys);
+    CHECK(lifecycle_calls[requests[0].expected.person - 100] == reads && journey_calls[requests[0].expected.person - 100] == journeys);
     stage_until(5); boarded[4] = 3; ticks(4);
     for (unsigned i = 1; i < 5; ++i) arrived[i] = 3;
     ticks(2); CHECK(tfx_pilot_complete() && strstr(output, "reason=all_outcomes_observed staged=5") &&
@@ -221,68 +253,68 @@ static void home_clear_tests(void) {
     ticks(10); CHECK(staged == 5);
 
     /* Removal in one world is not matching home invalidation in both. */
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); missing_worlds[0] = 2; ticks(2);
-    cleared_home_worlds[0] = 3; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 2; ticks(2);
+    cleared_home_worlds[requests[0].expected.person - 100] = 3; tick();
     CHECK(!strstr(output, "pilot_lifecycle_resolved") && !tfx_pilot_complete());
-    missing_worlds[0] = 3; ticks(2);
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(2);
     CHECK(strstr(output, "outcome=passenger_removed arrival=0 attempt_retained=1") &&
         !strstr(output, "outcome=home_invalidated"));
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); missing_worlds[0] = 1;
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 1;
     ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS);
     CHECK(tfx_pilot_complete() && strstr(output, "home_clear_timeout") &&
         !strstr(output, "pilot_lifecycle_resolved"));
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); missing_worlds[0] = 2; ticks(2);
-    missing_worlds[0] = 0; ticks(2);
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 2; ticks(2);
+    missing_worlds[requests[0].expected.person - 100] = 0; ticks(2);
     CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
 
     /* One-world clearing cannot release the pilot; repeated observations must
      * not refresh its original confirmation deadline. */
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); no_capacity = 0;
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); no_capacity = 0;
     ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS - 1);
     CHECK(!tfx_pilot_complete() && staged == 1);
     tick(); CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=home_clear_timeout") &&
         strstr(output, "outcome=unresolved home_cleared_world_mask=2") &&
         !strstr(output, "pilot_lifecycle_resolved"));
-    first_boarded(); cleared_home_worlds[0] = 2; tick();
-    ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS - 1); cleared_home_worlds[0] = 3; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick();
+    ticks(TFX_HOME_CLEAR_GRACE_CALLBACKS - 1); cleared_home_worlds[requests[0].expected.person - 100] = 3; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "home_clear_timeout") &&
         !strstr(output, "pilot_lifecycle_resolved"));
 
     /* Neither restoration nor a different home can rebase a tracked identity. */
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); cleared_home_worlds[0] = 0; ticks(2);
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); cleared_home_worlds[requests[0].expected.person - 100] = 0; ticks(2);
     CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); changed_home = 1; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); changed_home = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
-    reset(); tick(); cleared_home_worlds[0] = 3; tick();
+    reset(); tick(); cleared_home_worlds[requests[0].expected.person - 100] = 3; tick();
     CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
-    first_boarded(); cleared_home_worlds[0] = 3; wrong_destination = 1; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 3; wrong_destination = 1; tick();
     CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
-    first_boarded(); cleared_home_worlds[0] = 3; invalidated_worlds[0] = 3; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 3; invalidated_worlds[requests[0].expected.person - 100] = 3; tick();
     CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
     reset(); home_target = 1; tick(); boarded[0] = 3; no_capacity = 1; ticks(10);
-    cleared_home_worlds[0] = 3; tick();
+    cleared_home_worlds[requests[0].expected.person - 100] = 3; tick();
     CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
 
     /* The other replica must not mix an arrival/invalidation into pending loss. */
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); arrived[0] = 1; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); arrived[0] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "arrival_lifecycle_disagreement"));
-    first_boarded(); cleared_home_worlds[0] = 2; tick(); invalidated_worlds[0] = 1; tick();
+    first_boarded(); cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); invalidated_worlds[requests[0].expected.person - 100] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "home_clear_lifecycle_disagreement"));
-    first_boarded(); arrived[0] = 2; tick(); cleared_home_worlds[0] = 1; tick();
+    first_boarded(); arrived[0] = 2; tick(); cleared_home_worlds[requests[0].expected.person - 100] = 1; tick();
     CHECK(tfx_pilot_complete() && !strstr(output, "pilot_home_pending"));
 
     /* Every pending passenger must resolve, with no release of permanent errors. */
     reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
-    cleared_home_worlds[0] = cleared_home_worlds[1] = 2; ticks(4);
-    missing_worlds[0] = 3; ticks(2); no_capacity = 0; ticks(4); CHECK(staged == 2);
-    cleared_home_worlds[1] = 3; ticks(10); CHECK(staged == 3 && strstr(output, "pilot_tracking_resumed"));
+    cleared_home_worlds[requests[0].expected.person - 100] = cleared_home_worlds[requests[1].expected.person - 100] = 2; ticks(4);
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(2); no_capacity = 0; ticks(4); CHECK(staged == 2);
+    cleared_home_worlds[requests[1].expected.person - 100] = 3; ticks(10); CHECK(staged == 3 && strstr(output, "pilot_tracking_resumed"));
     reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
-    cleared_home_worlds[0] = 2; ticks(4); life_error[1] = 1; tick();
-    cleared_home_worlds[0] = 3; ticks(2); life_error[1] = 0; no_capacity = 0; ticks(10);
+    cleared_home_worlds[requests[0].expected.person - 100] = 2; ticks(4); life_error[requests[1].expected.person - 100] = 1; tick();
+    cleared_home_worlds[requests[0].expected.person - 100] = 3; ticks(2); life_error[requests[1].expected.person - 100] = 0; no_capacity = 0; ticks(10);
     CHECK(staged == 2 && !strstr(output, "pilot_tracking_resumed"));
 
     first_boarded(); sequence = TFX_OBSERVATION_LIMIT - 3;
-    cleared_home_worlds[0] = 2; tick(); missing_worlds[0] = 3; ticks(2);
+    cleared_home_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 3; ticks(2);
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
     puts("PASS: both-world home invalidation resumes other IDs without removal/arrival claims or cap refunds; unconfirmed loss times out at 32 callbacks and conflicting evidence still stops.");
 }
@@ -293,10 +325,10 @@ static void reserve_tests(void) {
     ticks(20); CHECK(staged == 4 && !tfx_pilot_complete());
     for (unsigned i = 1; i < 4; ++i) arrived[i] = 3;
     ticks(8); CHECK(staged == 4); /* Arrivals alone do not release the reserved attempt. */
-    cleared_home_worlds[0] = 2; ticks(8);
+    cleared_home_worlds[requests[0].expected.person - 100] = 2; ticks(8);
     CHECK(staged == 4 && !tfx_pilot_complete() && strstr(output, "pilot_home_pending"));
-    missing_worlds[0] = 2; ticks(8); CHECK(staged == 4 && !tfx_pilot_complete());
-    missing_worlds[0] = 3; ticks(10);
+    missing_worlds[requests[0].expected.person - 100] = 2; ticks(8); CHECK(staged == 4 && !tfx_pilot_complete());
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(10);
     CHECK(staged == 5 && !tfx_pilot_complete() && strstr(output, "pilot_tracking_resumed"));
     const char *resolved = strstr(output, "pilot_lifecycle_resolved person=100"), *fifth = strstr(output, "ordinal=5");
     CHECK(resolved && fifth && resolved < fifth);
@@ -308,8 +340,8 @@ static void reserve_tests(void) {
      * home invalidation releases the reserved fifth without claiming removal. */
     reset(); stage_until(4);
     for (unsigned i = 0; i < 4; ++i) boarded[i] = 3;
-    ticks(8); cleared_home_worlds[0] = 2; ticks(8); CHECK(staged == 4);
-    cleared_home_worlds[0] = 3; ticks(10); CHECK(staged == 5);
+    ticks(8); cleared_home_worlds[requests[0].expected.person - 100] = 2; ticks(8); CHECK(staged == 4);
+    cleared_home_worlds[requests[0].expected.person - 100] = 3; ticks(10); CHECK(staged == 5);
     resolved = strstr(output, "outcome=home_invalidated arrival=0 attempt_retained=1");
     fifth = strstr(output, "ordinal=5"); CHECK(resolved && fifth && resolved < fifth);
     boarded[4] = 3; ticks(4);
@@ -324,13 +356,14 @@ static void reserve_tests(void) {
     sequence = TFX_OBSERVATION_LIMIT - 1; tick();
     CHECK(tfx_pilot_complete() && staged == 4 && strstr(output, "reason=callback_limit"));
     first_boarded(); /* Both-world confirmation on the cap cannot stage another passenger. */
-    missing_worlds[0] = 2; tick(); missing_worlds[0] = 3;
+    missing_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 3;
     sequence = TFX_OBSERVATION_LIMIT - 2; tick(); tick();
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
     puts("PASS: trial reserve waits for confirmed lifecycle with unused allowance, then permits the fifth distinct attempt; no cap refund or final-callback proposal.");
 }
 #endif
 int main(void) {
+    station_discovery_tests();
 #if TFX_RESERVE_LAST_FOR_LIFECYCLE
     reserve_tests();
 #else
@@ -365,17 +398,17 @@ int main(void) {
     /* Resolve each kind after boarding and then actually stage a different ID. */
     for (unsigned invalidation = 0; invalidation < 2; ++invalidation) {
         first_boarded();
-        unsigned *event = invalidation ? &invalidated_worlds[0] : &missing_worlds[0];
+        unsigned *event = invalidation ? &invalidated_worlds[requests[0].expected.person - 100] : &missing_worlds[requests[0].expected.person - 100];
         *event = 2; ticks(8); CHECK(staged == 1 && !tfx_pilot_complete());
         CHECK(!strstr(output, "pilot_tracking_resumed"));
         *event = 3; ticks(2);
         CHECK(!tfx_pilot_complete() && strstr(output, "pilot_lifecycle_resolved person=100") &&
             strstr(output, "pilot_tracking_resumed"));
-        unsigned reads = lifecycle_calls[0], journeys = journey_calls[0];
+        unsigned reads = lifecycle_calls[requests[0].expected.person - 100], journeys = journey_calls[requests[0].expected.person - 100];
         no_capacity = 0; ticks(10); CHECK(staged == 2);
         /* Closed IDs remain excluded even if reused or assigned a later journey. */
-        *event = 0; life_error[0] = 1; ticks(4);
-        CHECK(lifecycle_calls[0] == reads && journey_calls[0] == journeys && !tfx_pilot_complete());
+        *event = 0; life_error[requests[0].expected.person - 100] = 1; ticks(4);
+        CHECK(lifecycle_calls[requests[0].expected.person - 100] == reads && journey_calls[requests[0].expected.person - 100] == journeys && !tfx_pilot_complete());
         stage_until(5); boarded[4] = 3; ticks(4);
         for (unsigned i = 1; i < 5; ++i) arrived[i] = 3;
         ticks(2); CHECK(tfx_pilot_complete() && strstr(output, "reason=all_outcomes_observed staged=5"));
@@ -386,28 +419,28 @@ int main(void) {
     }
     /* One confirmation cannot release another passenger's pending lifecycle. */
     reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
-    missing_worlds[0] = invalidated_worlds[1] = 2; ticks(8);
-    missing_worlds[0] = 3; ticks(2); CHECK(!strstr(output, "pilot_tracking_resumed"));
+    missing_worlds[requests[0].expected.person - 100] = invalidated_worlds[requests[1].expected.person - 100] = 2; ticks(8);
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(2); CHECK(!strstr(output, "pilot_tracking_resumed"));
     no_capacity = 0; ticks(8); CHECK(staged == 2);
-    invalidated_worlds[1] = 3; ticks(10); CHECK(staged == 3 && strstr(output, "pilot_tracking_resumed"));
+    invalidated_worlds[requests[1].expected.person - 100] = 3; ticks(10); CHECK(staged == 3 && strstr(output, "pilot_tracking_resumed"));
     /* Nor can confirmation release the permanent block from an unrelated error. */
     reset(); stage_until(2); boarded[1] = 3; no_capacity = 1; ticks(8);
-    missing_worlds[0] = 2; ticks(2); life_error[1] = 1; tick();
-    missing_worlds[0] = 3; ticks(2); life_error[1] = 0; no_capacity = 0; ticks(20);
+    missing_worlds[requests[0].expected.person - 100] = 2; ticks(2); life_error[requests[1].expected.person - 100] = 1; tick();
+    missing_worlds[requests[0].expected.person - 100] = 3; ticks(2); life_error[requests[1].expected.person - 100] = 0; no_capacity = 0; ticks(20);
     CHECK(staged == 2 && !tfx_pilot_complete() && !strstr(output, "pilot_tracking_resumed"));
 
-    reset(); tick(); missing_worlds[0] = 3; ticks(2);
+    reset(); tick(); missing_worlds[requests[0].expected.person - 100] = 3; ticks(2);
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "lifecycle_before_confirmed_boarding") &&
         strstr(output, "removed_world_mask=3 invalidated_world_mask=0 outcome=unresolved"));
-    first_boarded(); missing_worlds[0] = 2; tick(); invalidated_worlds[0] = 1; tick();
+    first_boarded(); missing_worlds[requests[0].expected.person - 100] = 2; tick(); invalidated_worlds[requests[0].expected.person - 100] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "lifecycle_world_disagreement"));
-    first_boarded(); missing_worlds[0] = 2; tick(); missing_worlds[0] = 0; ticks(2);
+    first_boarded(); missing_worlds[requests[0].expected.person - 100] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 0; ticks(2);
     CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved"));
-    first_boarded(); invalidated_worlds[0] = 2; tick(); invalidated_worlds[0] = 0; ticks(2);
+    first_boarded(); invalidated_worlds[requests[0].expected.person - 100] = 2; tick(); invalidated_worlds[requests[0].expected.person - 100] = 0; ticks(2);
     CHECK(tfx_pilot_complete() && strstr(output, "destination_assignment_unresolved"));
-    first_boarded(); arrived[0] = 2; tick(); missing_worlds[0] = 1; tick();
+    first_boarded(); arrived[0] = 2; tick(); missing_worlds[requests[0].expected.person - 100] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "arrival_lifecycle_disagreement"));
-    first_boarded(); missing_worlds[0] = 2; tick(); arrived[0] = 1; tick();
+    first_boarded(); missing_worlds[requests[0].expected.person - 100] = 2; tick(); arrived[0] = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "arrival_lifecycle_disagreement"));
     reset(); tick(); changed_home = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "passenger_identity_unresolved") &&
@@ -417,14 +450,14 @@ int main(void) {
     CHECK(tfx_pilot_complete() && strstr(output, "destination_assignment_unresolved"));
     reset(); tick(); bad_identity = 1; tick();
     CHECK(tfx_pilot_complete() && strstr(output, "unexpected_lifecycle_identity"));
-    reset(); tick(); life_error[0] = 1; ticks(8);
+    reset(); tick(); life_error[requests[0].expected.person - 100] = 1; ticks(8);
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=query_errors") &&
         strstr(output, "pilot_lifecycle_error person=100") && !strstr(output, "outcome=passenger_removed"));
-    reset(); tick(); boarded[0] = 3; life_error[0] = 1; tick(); life_error[0] = 0; ticks(20);
+    reset(); tick(); boarded[0] = 3; life_error[requests[0].expected.person - 100] = 1; tick(); life_error[requests[0].expected.person - 100] = 0; ticks(20);
     CHECK(staged == 1 && !tfx_pilot_complete());
-    first_boarded(); arrived[0] = 3; ticks(8); missing_worlds[0] = 3; ticks(8);
+    first_boarded(); arrived[0] = 3; ticks(8); missing_worlds[requests[0].expected.person - 100] = 3; ticks(8);
     CHECK(!tfx_pilot_complete() && !strstr(output, "outcome=passenger_removed"));
-    first_boarded(); missing_worlds[0] = 2; tick();
+    first_boarded(); missing_worlds[requests[0].expected.person - 100] = 2; tick();
     sequence = TFX_OBSERVATION_LIMIT - 1; tick();
     CHECK(tfx_pilot_complete() && staged == 1 && strstr(output, "reason=callback_limit"));
     puts("PASS: lifecycle continuation after both-world boarding/confirmation; permanent error block, all pending passengers, ID retention, mixed outcomes, no cap refund, disagreement and prior-arrival guards.");
@@ -476,6 +509,7 @@ static unsigned occurrences(const char *needle) {
     return count;
 }
 int main(void) {
+    station_discovery_tests();
     CHECK(TFX_PASSENGER_LIMIT == 32 && TFX_JOURNEY_SAMPLE_LIMIT == 4);
     reset(); stage_until(32); boarded[31] = 3; ticks(4);
     CHECK(!tfx_pilot_complete() && staged == 32);

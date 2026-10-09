@@ -5,7 +5,8 @@ versioned C API with copied queries and a staged waiting-leg change operation.
 **Version 0.9 supports a build-time cap of 1–32 distinct passenger attempts.**
 The default remains one. Larger builds use at most four full journey samples plus
 one pending boarding, while every switch receives fresh validation and both-world
-boarding confirmation. Prepared0.9.0 passes offline tests but is not loaded;
+boarding confirmation. Version0.9.1 adds station-focused discovery; live testing
+is pending. The stopped0.9.0 trial completed three original journeys;
 see [capacity, metrics and limits](../docs/passenger-capacity.md).
 The first historical batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
@@ -113,8 +114,11 @@ rtk proxy python3 tools/build_native_bridge.py --build-dir analysis/native-bridg
 ```
 
 The consumer scans at most 1,024 masks per discovery callback, remembers 32
-rolling person IDs, 16 demand-line IDs and 16 vehicle IDs, checks up to four
-vehicles, and samples up to four people for one ready vehicle. It performs at most one full candidate
+rolling person IDs, 16 demand-line IDs and 16 vehicle IDs. Version0.9.1 also
+indexes up to32 waiting hints in each of16 station groups, learning directly
+from scanned pages. Up to four vehicles and four people are checked; three
+passenger positions prefer the arriving station, with global fallback. See
+[station discovery and its limits](../docs/station-discovery.md). It performs at most one full candidate
 validation plus fresh host revalidation before a write. Tracking and discovery
 use separate callbacks to preserve query budgets.
 

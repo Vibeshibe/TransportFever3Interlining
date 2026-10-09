@@ -1,6 +1,41 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.9.0 stopped; implement station-focused discovery
+## Latest — 0.9.1 station-focused discovery prepared; live trial pending
+
+User wants implementation that addresses sparse matches with80+ waiting, without
+spending further usage extending the old run. The0.9.0 capture is stopped and its
+watcher ended. No game interaction or replacement load during this implementation.
+
+Version0.9.1 learns one waiting station directly from each scanned page, rotating
+positions on completed sweeps. Tests exposed omissions when learning through the
+churning32-person global cache; direct page learning resolves the fixture case.
+New station_cache.h retains16 groups ×32 person/line hints, with round-robin
+selection/eviction and no engine pointers. First three candidate screens prefer
+the arriving station and another line, fourth uses global exploration if reached.
+Every proposal retains fresh copied reads and deferred validation. Known stale,
+assigned and selected hints are discarded; moved hints migrate. Existing32-attempt,
+4-sample,1-pending,18000-callback limits, ABI7 and mutation policy are unchanged.
+
+Prepared ignored build-v9b, never loaded. Mutable DLL SHA:
+a21d9fa8548c43c91be01d4210aff43de7295c872ecc233e3d40c804fd32cacb;
+optional contract-test observer SHA:
+a9a6070094cc2d7c3e91d61dd53f42e12c5c8fb316b112c37accf9c745d1d407.
+All13 final native invocations pass, including all80 candidate positions in
+normal/reserved/sampled fixtures and legacy32-attempt coverage. Max63/64 queries.
+capacity-tests.json SHA:dfa2b4064fb4b0a2d2bfe5b0fb5f64312508ad5af1bbb2c18a9a8e63b8034cb6.
+All test sessions ended. Read docs/station-discovery.md for behavior, bounds, tests and next trial.
+A station cache is a rolling32-person window, not a full80-person queue. Live
+throughput improvement, >5 switches and unsampled boardings remain unproven.
+
+Next: ask for actual restart/readiness into disposable
+TPF3Interlining_before_multi_passenger_01, paused. Old0.9.0 remains mapped until
+exit. Verify fresh PID/start, actual loaded save, pinned executable, new DLL hash
+and no previous bridge before loading build-v9b. Never reuse old addresses or
+load beside the stopped DLL. No extra diagnostic reload planned. Compare indexed
+picks, fallbacks and station mismatches, then confirm boardings/sample outcomes.
+Keep the bounded capture rather than extending it to fill the cap.
+
+## Historical — 0.9.0 stopped; station-discovery work requested
 
 User reports80+ waiting and requests avoiding usage on repeated inefficient
 search. Stopped current bridge through existing tfx_stop: returned0 at

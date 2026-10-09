@@ -1009,3 +1009,30 @@ Commit coherent research, tooling, and implementation milestones separately.
 For each milestone record evidence, commands, outcomes, unresolved assumptions,
 and the next validation step. Label static inference separately from runtime
 verification. Do not claim installation or gameplay validation without running it.
+
+## 2026-10-09 — Prioritize station queues and repair discovery omissions (0.9.1)
+
+- User requested addressing sparse candidates with80+ waiting before further
+  capture. Implemented16 station buckets ×32 person/line hints, station-first
+  screening with global exploration, bounded rotation/eviction and stale-hint
+  refresh/removal. Existing route/platform/capacity and deferred validation apply.
+- A larger fixture exposed repeated omissions from learning through the churning
+  global cache. Discovery now learns directly from each scanned page and rotates
+  its position each completed sweep. No cache value authorizes native changes.
+- Added indexed/fallback selection, stale-station and index-size counters. Existing
+  four vehicle/person screens and one full validation per callback remain; one
+  additional copied stop query raises the worst fixture allowance to63/64.
+- Warnings-as-errors build and all13 native invocations pass. Each of80 target
+  positions is selected on the first loading callback after128 warmup callbacks
+  in normal, reserved and sampled modes. Migration, missing records/recovery,
+  eviction, duplicate/same-line exclusion, legacy lifecycle and32-attempt sampling
+  regressions pass. Lifecycle fixtures now use actual selected IDs because
+  station-first discovery changes ordering; outcome assertions were retained.
+- Prepared ignored build-v9b:32 attempts,4 samples,18000 callbacks. No game load,
+  save edit or new watcher. Previous0.9.0 remains stopped; restart required for
+  next integration run. Live search improvement, >5 switches and unsampled
+  boardings remain pending. A station window does not enumerate an entire queue.
+- Evidence: mutable DLL `a21d9fa8548c43c91be01d4210aff43de7295c872ecc233e3d40c804fd32cacb`;
+  final capacity-tests.json `dfa2b4064fb4b0a2d2bfe5b0fb5f64312508ad5af1bbb2c18a9a8e63b8034cb6`.
+  station-discovery-hashes.json records artifacts/configuration; all executable
+  hashes rechecked against the final13-case report. See docs/station-discovery.md.

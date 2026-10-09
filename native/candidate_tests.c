@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../src/interlining/native_candidate.h"
 #include "pilot_cache.h"
+#include "station_cache.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static tfx_waiting_leg leg;
 static tfx_vehicle vehicle;
@@ -142,7 +143,37 @@ static void route_tests(void) {
     }
     puts("PASS: bounded multi-stop/express routing, original endpoint, ordered stations, branches/loops/platform exclusions and late-read failure preservation.");
 }
+static void station_cache_tests(void) {
+    tfx_station_cache cache = {0};
+    tfx_station_remember(&cache, 42, 10, 1);
+    tfx_station_remember(&cache, 42, 10, 2);
+    CHECK(cache.count == 1 && tfx_station_bucket_size(&cache.buckets[0]) == 1);
+    CHECK(tfx_station_next(&cache, 10, 2, NULL, 0) == -1);
+    CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == 42);
+    int32_t checked[] = {42};
+    CHECK(tfx_station_next(&cache, 10, 1, checked, 1) == -1);
+    tfx_station_remember(&cache, 42, 20, 2);
+    CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == -1);
+    CHECK(tfx_station_next(&cache, 20, 1, NULL, 0) == 42);
+    tfx_station_forget(&cache, 42);
+    CHECK(tfx_station_next(&cache, 20, 1, NULL, 0) == -1);
+    memset(&cache, 0, sizeof(cache));
+    for (int32_t id = 0; id < 80; ++id) tfx_station_remember(&cache, id, 10, 2);
+    CHECK(cache.count == 1 && tfx_station_bucket_size(&cache.buckets[0]) == 32);
+    int32_t seen[32];
+    for (unsigned i = 0; i < 32; ++i) {
+        seen[i] = tfx_station_next(&cache, 10, 1, seen, i);
+        CHECK(seen[i] >= 48 && seen[i] < 80);
+    }
+    CHECK(tfx_station_next(&cache, 10, 1, seen, 32) == -1);
+    for (int32_t id = 100; id < 120; ++id) tfx_station_remember(&cache, id, id, 2);
+    CHECK(cache.count == 16);
+    CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == -1);
+    CHECK(tfx_station_next(&cache, 119, 1, NULL, 0) == 119);
+    puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
+}
 int main(void) {
+    station_cache_tests();
     /* Regression: passengers discovered after the first full batch must remain
      * observable, while remembering existing IDs must not churn the cache. */
     int32_t ids[TFX_PILOT_PEOPLE] = {0}; uint32_t count = 0, cursor = 0;

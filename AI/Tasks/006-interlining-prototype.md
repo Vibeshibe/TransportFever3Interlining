@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.9.0 sampled32-attempt implementation and offline tests complete; integrated live validation next
+- Status: In progress — 0.9.1 station-focused discovery implemented; offline validation complete, integrated live trial next
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -190,3 +190,10 @@ and idle-tracking scheduling are implemented. All13 native invocations and nine
 configuration cases pass; peak62/64 queries. Prepared build-v9a is NOT loaded.
 Next one integrated live test after a fresh process and paused baseline; broader
 route coverage remains separate. [Full evidence](../../docs/passenger-capacity.md).
+
+Version0.9.1 implements station-focused discovery and direct scan-page learning.
+The stopped0.9.0 trial completed three original journeys, but station-mismatch
+counters showed inefficient search. All13 new native invocations pass; the
+80-position fixture verifies targeted selection and catches cache-churn omissions.
+Peak63/64 queries. New build-v9b is not loaded; restart is needed before its
+integrated trial. See [discovery implementation](../../docs/station-discovery.md).

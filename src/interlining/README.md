@@ -127,5 +127,7 @@ both-world boarding confirmation for every replacement. Larger builds retain
 at most four concurrent full journeys plus one pending boarding. Unsampled
 passengers close as boarding-confirmed with final arrival unobserved; their IDs
 remain excluded. Deadlines, aggregate discovery metrics and slot-reuse regressions
-are implemented. All13 native invocations pass, peak62/64 queries; no live load
-yet. [Implementation and limitations](../../docs/passenger-capacity.md).
+are implemented. The stopped0.9.0 trial completed three original journeys.
+Version0.9.1 adds [station-focused discovery](../../docs/station-discovery.md),
+with direct page learning and fresh validation of cached hints. Live validation
+of the new search remains pending. [Implementation and limitations](../../docs/passenger-capacity.md).

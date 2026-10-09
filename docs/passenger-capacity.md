@@ -1,8 +1,9 @@
 # Bounded capacity and sampled journeys — 0.9.0
 
-Implemented and tested offline. The DLL is now loaded into a fresh disposable
-baseline and running after confirmed unpause. The capture is not complete;
-**higher-capacity and unsampled-boarding live coverage remain pending**.
+The 0.9.0 live trial was stopped after three confirmed switches, boardings and
+original destination arrivals. Sample-slot reuse was observed; **more than five
+switches and unsampled-boarding live coverage remain pending**. Version 0.9.1
+adds [station-focused discovery](station-discovery.md); a new live trial is pending.
 The earlier [design](passenger-capacity-plan.md) is retained for context.
 
 ## Behavior and limits
@@ -43,8 +44,9 @@ replica worlds. Pending lifecycle evidence freezes new proposals; the existing
 Once no trackers are active, all available callbacks can perform discovery.
 Post-boarding lifecycle changes on unsampled passengers are not observed.
 
-Discovery still retains32 people,16 lines and16 vehicles, screens at most four
-vehicles/people, and validates at most one candidate per discovery callback.
+Version 0.9.0 retained32 people,16 lines and16 vehicles. Version 0.9.1 adds
+a bounded station index while retaining four vehicle/passenger screens and
+at most one full candidate validation per discovery callback.
 No platform restriction or route guard was relaxed to increase matches. The cap
 does not guarantee32 opportunities or establish simulation-time performance.
 
@@ -95,7 +97,7 @@ CLI combinations reject before building. Evidence under ignored `build-v9a/`:
 
 Use a fresh game process and disposable `TPF3Interlining_before_multi_passenger_01`
 baseline, initially paused. Verify process/start identity, actual loaded save,
-DLL hash and absence of an earlier bridge before loading. Existing0.8.1 remains
+DLL hash and absence of an earlier bridge before loading. The stopped0.9.0 remains
 mapped until its process exits. No game or save was modified during implementation.
 
 Run32 attempts/18,000 callbacks/four samples with no line or vehicle edits.
@@ -109,7 +111,7 @@ comparison, platform walking and varied passenger preferences retain their
 separate evidence gaps. This is a bounded development loader, not an unrestricted
 or automatically installed release mod.
 
-## Live startup — 2026-10-09
+## Historical live startup — 2026-10-09
 
 Fresh Linux68800/start1296244, Windows308; pinned executable and DLL verified,
 no prior bridge mappings. Actual stdout load is the unchanged original baseline,
@@ -121,3 +123,13 @@ completed; the second used S1 stops4→5 to S3 stops5→6 and is on its native o
 connection. Sample-slot reuse is observed (two cumulative samples, peak1 active).
 Zero query errors; no unsampled boarding or >5 switches yet. The DLL remains mapped
 until game exit; do not load a second bridge into this process.
+
+## Stopped outcome — 2026-10-09
+
+`tfx_stop` returned success at12:21:00Z; the watcher ended. Passengers122261,
+127526 and120415 each boarded and reached their original destinations in both
+worlds. Latest totals at9000 show three samples, peak one tracker, active zero,
+and no query errors. Last candidate log9419; manual stop emits no final summary,
+so an exact stop callback and final aggregate counts are unavailable. All three
+replacement legs were adjacent; >5 switches and unsampled boarding remain untested
+live. See [station discovery](station-discovery.md) for the next implementation.
