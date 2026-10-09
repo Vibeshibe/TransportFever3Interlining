@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(tpf_shared_bridge VERSION 0.8.1 LANGUAGES C ASM)
+project(tpf_shared_bridge VERSION 0.9.0 LANGUAGES C ASM)
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Use a Windows x64 toolchain")
 endif()
@@ -9,17 +9,32 @@ set(TFX_PILOT_OBSERVATION_LIMIT "3600" CACHE STRING "Pilot callback cap (1..3600
 if(NOT TFX_PILOT_OBSERVATION_LIMIT MATCHES "^[1-9][0-9]*$" OR TFX_PILOT_OBSERVATION_LIMIT GREATER 36000)
     message(FATAL_ERROR "TFX_PILOT_OBSERVATION_LIMIT must be between 1 and 36000")
 endif()
-set(TFX_PILOT_PASSENGER_LIMIT "1" CACHE STRING "Distinct passenger attempt cap (1..5)")
-if(NOT TFX_PILOT_PASSENGER_LIMIT MATCHES "^[1-5]$")
-    message(FATAL_ERROR "TFX_PILOT_PASSENGER_LIMIT must be between 1 and 5")
+set(TFX_PILOT_PASSENGER_LIMIT "1" CACHE STRING "Distinct passenger attempt cap (1..32)")
+if(NOT TFX_PILOT_PASSENGER_LIMIT MATCHES "^[1-9][0-9]*$" OR TFX_PILOT_PASSENGER_LIMIT GREATER 32)
+    message(FATAL_ERROR "TFX_PILOT_PASSENGER_LIMIT must be between 1 and 32")
+endif()
+set(TFX_PILOT_JOURNEY_SAMPLE_LIMIT "" CACHE STRING "Concurrent full journey samples (1..5; large trials at most 4)")
+if(TFX_PILOT_JOURNEY_SAMPLE_LIMIT STREQUAL "")
+    if(TFX_PILOT_PASSENGER_LIMIT LESS_EQUAL 5)
+        set(TFX_PILOT_JOURNEY_SAMPLE_LIMIT "${TFX_PILOT_PASSENGER_LIMIT}")
+    else()
+        set(TFX_PILOT_JOURNEY_SAMPLE_LIMIT "4")
+    endif()
+endif()
+if(NOT TFX_PILOT_JOURNEY_SAMPLE_LIMIT MATCHES "^[1-5]$" OR
+   TFX_PILOT_JOURNEY_SAMPLE_LIMIT GREATER TFX_PILOT_PASSENGER_LIMIT OR
+   (TFX_PILOT_PASSENGER_LIMIT GREATER 5 AND TFX_PILOT_JOURNEY_SAMPLE_LIMIT GREATER 4))
+    message(FATAL_ERROR "Invalid journey sample limit for the selected attempt cap")
 endif()
 option(TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE "Hold final attempt for a confirmed lifecycle outcome (trial only)" OFF)
-if(TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE AND TFX_PILOT_PASSENGER_LIMIT LESS 2)
-    message(FATAL_ERROR "Lifecycle reserve requires at least two passenger attempts")
+if(TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE AND (TFX_PILOT_PASSENGER_LIMIT LESS 2 OR
+   NOT TFX_PILOT_JOURNEY_SAMPLE_LIMIT EQUAL TFX_PILOT_PASSENGER_LIMIT))
+    message(FATAL_ERROR "Lifecycle reserve requires full tracking of at least two passenger attempts")
 endif()
 add_library(tpf_shared_bridge SHARED host.c backend.c queries.c mutation.c candidate_probe.c ../src/interlining/native_candidate.c slot.c entry.S)
 target_compile_definitions(tpf_shared_bridge PRIVATE TFX_OBSERVATION_LIMIT=${TFX_PILOT_OBSERVATION_LIMIT}
     TFX_PASSENGER_LIMIT=${TFX_PILOT_PASSENGER_LIMIT}
+    TFX_JOURNEY_SAMPLE_LIMIT=${TFX_PILOT_JOURNEY_SAMPLE_LIMIT}
     TFX_RESERVE_LAST_FOR_LIFECYCLE=$<BOOL:${TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE}>)
 target_link_libraries(tpf_shared_bridge PRIVATE bcrypt)
 set_target_properties(tpf_shared_bridge PROPERTIES PREFIX "")
@@ -59,3 +74,8 @@ target_compile_definitions(pilot_tests PRIVATE TFX_PASSENGER_LIMIT=5)
 
 add_executable(pilot_reserve_tests pilot_tests.c candidate_probe.c ../src/interlining/native_candidate.c)
 target_compile_definitions(pilot_reserve_tests PRIVATE TFX_PASSENGER_LIMIT=5 TFX_RESERVE_LAST_FOR_LIFECYCLE=1)
+
+add_executable(pilot_sampled_tests pilot_tests.c candidate_probe.c ../src/interlining/native_candidate.c)
+target_compile_definitions(pilot_sampled_tests PRIVATE TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4 TFX_TEST_SAMPLED=1)
+add_executable(host_capacity_tests host_batch_tests.c host.c)
+target_compile_definitions(host_capacity_tests PRIVATE TFX_PASSENGER_LIMIT=32)

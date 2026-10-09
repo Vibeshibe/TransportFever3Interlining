@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "host.h"
+#include "probe_limits.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static tfx_api_v6 api = {.v5.v4.v3.v2.base.struct_size = sizeof(api)};
 static uint64_t tickets[2];
@@ -12,6 +13,7 @@ static unsigned count, writes, validations, readback, fail_write, reject_policy;
 static tfx_status expected_request, expected_results[2];
 static unsigned expected_attempts[2];
 static tfx_context stale;
+static uint64_t expired_ticket;
 
 tfx_status tfx_query_waiting(tfx_reader *r, int32_t person, tfx_waiting_leg *out) {
     (void)r;
@@ -52,6 +54,12 @@ static tfx_status write_change(tfx_reader *r, const tfx_waiting_leg_change *q,
 }
 static void client(tfx_context context, void *unused) {
     (void)unused;
+    if (readback && expired_ticket) {
+        tfx_change_result result = {.struct_size = sizeof(result), .ticket = 12345};
+        tfx_change_result unchanged = result;
+        CHECK(api.read_change_result(context, expired_ticket, &result) == TFX_NOT_FOUND);
+        CHECK(!memcmp(&result, &unchanged, sizeof(result)));
+    }
     for (unsigned i = 0; i < count; ++i) {
         if (readback) {
             tfx_change_result result = {.struct_size = sizeof(result)};
@@ -80,6 +88,25 @@ int main(int argc, char **argv) {
     CHECK(tfx_get_api(6, &api.v5.v4.v3.v2.base) == TFX_OK);
     tfx_client c = {.struct_size = sizeof(c), .id = "tests.batch", .before_terminal_selection = client};
     CHECK(api.v5.v4.v3.v2.base.register_client(&c) == TFX_OK);
+    if (argc == 2 && !strcmp(argv[1], "history")) {
+        count = 1; people[0] = 1; expected_request = TFX_OK;
+        reject_policy = 1; expected_results[0] = TFX_POLICY_REJECTED;
+        uint64_t oldest = 0;
+        for (unsigned i = 0; i < 80; ++i) {
+            dispatch(i % 2 + 1, 0);
+            if (!i) oldest = tickets[0];
+            dispatch(1, 1);
+        }
+        expired_ticket = oldest; dispatch(1, 1);
+        CHECK(writes == 0 && validations == 80);
+        /* Pending requests spanning ring wrap retain distinct conflict results. */
+        count = 2; people[1] = people[0];
+        expected_results[0] = expected_results[1] = TFX_REQUEST_CONFLICT;
+        for (unsigned i = 0; i < 40; ++i) { dispatch(1, 0); dispatch(2, 1); }
+        CHECK(writes == 0 && validations == 80);
+        puts("PASS: stale history tickets preserve outputs; pending conflicts survive result-ring wrap without engine attempts.");
+        return 0;
+    }
     count = 2; people[0] = people[1] = 1; expected_request = TFX_OK;
     expected_results[0] = expected_results[1] = TFX_REQUEST_CONFLICT;
     dispatch(1, 0); dispatch(1, 1); CHECK(writes == 0 && validations == 0);
@@ -106,11 +133,11 @@ int main(int argc, char **argv) {
     CHECK(api.v5.v4.v3.v2.base.register_client(&c) == TFX_OK);
     dispatch(1, 0); CHECK(writes == 1); /* Allowance is not client-owned. */
     expected_request = TFX_OK;
-    for (people[0] = 2; people[0] <= 5; ++people[0]) {
+    for (people[0] = 2; people[0] <= TFX_PASSENGER_LIMIT; ++people[0]) {
         dispatch((unsigned)people[0] % 2 + 1, 0); dispatch(1, 1);
     }
-    CHECK(writes == 5 && validations == 6);
-    expected_request = TFX_LIMIT_REACHED; dispatch(1, 0); CHECK(writes == 5);
-    puts("PASS: five distinct people, cross-world/client deduplication, one attempt per dispatch, fresh validation, conflicts and final cap.");
+    CHECK(writes == TFX_PASSENGER_LIMIT && validations == TFX_PASSENGER_LIMIT + 1);
+    expected_request = TFX_LIMIT_REACHED; dispatch(1, 0); CHECK(writes == TFX_PASSENGER_LIMIT);
+    printf("PASS: %u distinct people, cross-world/client deduplication, one attempt per dispatch, fresh validation, conflicts and final cap.\n", (unsigned)TFX_PASSENGER_LIMIT);
     return 0;
 }

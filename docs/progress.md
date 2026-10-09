@@ -940,6 +940,31 @@ test evidence remains applicable; ran the completed-log audit and documentation
 diff checks. Next implement the capacity plan and discovery metrics before one
 integrated live test. No further running time or save reload is needed now.
 
+## 2026-10-09 — Implement sampled capacity (0.9.0)
+
+Separated the consumer's compact attempt ledger from reusable detailed trackers.
+Build caps now permit1–32 attempts; larger trials retain at most four concurrent
+journey samples plus one pending boarding. Every change still gets fresh full
+validation and both-world boarding confirmation. IDs remain excluded after tracker
+release; unsampled boarding never counts as destination arrival. A600-callback
+confirmation deadline stops unresolved transitions, including pending results.
+Lifecycle guards, shared ABI/hook and native mutation operation remain unchanged.
+
+Added bounded aggregate outcome/discovery metrics. Discovery can use callbacks
+formerly reserved for tracking when no trackers remain. No platform/route guard
+was relaxed, and increased discovery performance has not been measured live.
+
+All13 native invocations pass; actual consumer fixture confirms32 switches with
+four retained samples and28 released boarding trackers, slot reuse/ID protection,
+deadlines and truthful totals. Host32-cap/failure/history tests pass. Peak62/64
+queries. Nine C/CMake configuration combinations pass expected outcomes, with all
+six invalid CLI combinations rejected before building. Corrected pagination in
+the expanded fixture during development; no live failure or game change occurred.
+
+Prepared build-v9a,32/18000/four samples, reserve OFF, optional observer only for
+contract testing. **Not loaded.** Tests ended; no live watcher or reader started.
+[Behavior, hashes and integrated live-test scope](passenger-capacity.md).
+
 ## Ongoing workflow
 
 Commit coherent research, tooling, and implementation milestones separately.

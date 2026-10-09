@@ -118,3 +118,14 @@ Its completed capture confirmed three adjacent boardings and two original
 arrivals, with the third journey unfinished at the callback cap. Zero query
 errors; the special sentinel paths did not appear in this live run. See
 [scope, examples and trial instructions](../../docs/route-expansion.md).
+
+## Version 0.9 sampled capacity
+
+The consumer separates a compact attempt ledger from a fixed tracker pool.
+It supports up to32 attempts, with fresh route/access/capacity checks and
+both-world boarding confirmation for every replacement. Larger builds retain
+at most four concurrent full journeys plus one pending boarding. Unsampled
+passengers close as boarding-confirmed with final arrival unobserved; their IDs
+remain excluded. Deadlines, aggregate discovery metrics and slot-reuse regressions
+are implemented. All13 native invocations pass, peak62/64 queries; no live load
+yet. [Implementation and limitations](../../docs/passenger-capacity.md).

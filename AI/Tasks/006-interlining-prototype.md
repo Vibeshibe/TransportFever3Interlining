@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.8.1 capture complete: three boardings, two original arrivals; implement bounded capacity next
+- Status: In progress — 0.9.0 sampled32-attempt implementation and offline tests complete; integrated live validation next
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -182,3 +182,11 @@ or special waiting samples; multi-stop/express boarding unexercised. Audit passe
 all watchers ended, no further replay needed. Full evidence in the sentinel guide.
 Next implement the capacity plan with bounded discovery metrics and sampled
 journey diagnostics; keep fresh per-switch checks and explicit coverage gaps.
+
+Version0.9.0 implements32-attempt capacity with four concurrent journey samples
+and one pending boarding. Released trackers never release IDs or imply arrival.
+600-callback confirmation deadline, periodic aggregate discovery/outcome metrics
+and idle-tracking scheduling are implemented. All13 native invocations and nine
+configuration cases pass; peak62/64 queries. Prepared build-v9a is NOT loaded.
+Next one integrated live test after a fresh process and paused baseline; broader
+route coverage remains separate. [Full evidence](../../docs/passenger-capacity.md).

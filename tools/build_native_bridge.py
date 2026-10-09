@@ -24,14 +24,24 @@ def main():
     parser.add_argument("--observation-limit", type=int, default=3600,
                         help="pilot callback cap, 1..36000 (default: 3600); observer remains at 3600")
     parser.add_argument("--passenger-limit", type=int, default=1,
-                        help="distinct passenger attempt cap, 1..5 (default: 1)")
+                        help="distinct passenger attempt cap, 1..32 (default: 1)")
+    parser.add_argument("--journey-sample-limit", type=int,
+                        help="concurrent full journeys, 1..5; defaults to full tracking up to 5 attempts, otherwise 4")
     parser.add_argument("--reserve-last-attempt-for-lifecycle", action="store_true",
                         help="trial pacing: keep final attempt unused until a tracked lifecycle outcome is confirmed")
     args = parser.parse_args()
-    if args.reserve_last_attempt_for_lifecycle and args.passenger_limit < 2:
-        parser.error("--reserve-last-attempt-for-lifecycle requires --passenger-limit >= 2")
-    if not 1 <= args.passenger_limit <= 5:
-        parser.error("--passenger-limit must be between 1 and 5")
+    if not 1 <= args.passenger_limit <= 32:
+        parser.error("--passenger-limit must be between 1 and 32")
+    if args.journey_sample_limit is None:
+        args.journey_sample_limit = args.passenger_limit if args.passenger_limit <= 5 else 4
+    if not 1 <= args.journey_sample_limit <= min(5, args.passenger_limit) or (
+        args.passenger_limit > 5 and args.journey_sample_limit > 4
+    ):
+        parser.error("invalid --journey-sample-limit for the selected attempt cap")
+    if args.reserve_last_attempt_for_lifecycle and (
+        args.passenger_limit < 2 or args.journey_sample_limit != args.passenger_limit
+    ):
+        parser.error("--reserve-last-attempt-for-lifecycle requires full tracking of at least two attempts")
     if not 1 <= args.observation_limit <= 36000:
         parser.error("--observation-limit must be between 1 and 36000")
     observer = (args.observe_person, args.observe_destination)
@@ -64,6 +74,7 @@ def main():
         f"-DCMAKE_ASM_COMPILER={compiler}", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
         f"-DTFX_PILOT_OBSERVATION_LIMIT={args.observation_limit}",
         f"-DTFX_PILOT_PASSENGER_LIMIT={args.passenger_limit}",
+        f"-DTFX_PILOT_JOURNEY_SAMPLE_LIMIT={args.journey_sample_limit}",
         f"-DTFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE={'ON' if args.reserve_last_attempt_for_lifecycle else 'OFF'}",
         f"-DTFX_OBSERVE_PERSON={args.observe_person if args.observe_person is not None else ''}",
         f"-DTFX_OBSERVE_DESTINATION={args.observe_destination if args.observe_destination is not None else ''}",

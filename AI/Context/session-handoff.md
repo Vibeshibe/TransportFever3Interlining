@@ -1,6 +1,48 @@
 # Session handoff — 2026-10-09
 
-## Latest — 0.8.1 corrected route trial complete; next implement capacity
+## Latest — 0.9.0 sampled capacity prepared; NOT loaded
+
+User authorized implementation after the completed0.8.1 capture. Implemented a
+compact session ledger separate from reusable full journey trackers. Cap1–32,
+default1; ≤5 defaults full tracking, larger trials max4 samples plus1 pending.
+All switches retain fresh route/state revalidation and both-world boarding.
+600-callback boarding/result timeout; no refund or retries. Released IDs remain
+excluded. Unsampled post-boarding journeys are no longer read and never add arrivals.
+Sample selection is first available slot at boarding, not a representative sample.
+Existing32-callback home guard, error/lifecycle stops, ABI7/hook/native operation
+unchanged. New aggregate counters every600 callbacks and at shutdown; discovery
+uses all available callbacks when no trackers remain. No larger search windows or
+platform policy changes; live performance is unmeasured.
+
+All13 final native invocations PASS.32-person actual consumer test:4 retained
+samples,28 released boardings, peak5 trackers, max62/64 queries. Legacy normal/
+reserve lifecycle tests retained; host capacity/failure/history, copied query/
+mutation, candidate and DLL contracts pass. Nine C/CMake option combinations and
+six invalid CLI combinations checked. Corrected a test-population pagination bug
+during development. All test sessions ended; no live reader/watcher/game action.
+
+Prepared ignored `analysis/native-bridge/build-v9a`:32 attempts/18000 callbacks,
+4 samples, reserve OFF. Optional observer75561/destination79212 is contract-test
+only. Mutable226347e0a0befe95837f3c4dfcf0831e87fc2c5ecc263d96fef1760320dbf14c;
+observera8293373faf78eebc4771dbd8b2241af4b82316255612500e14f446eb8694ece;
+tests928472786c99aecdc669826553a543f43055b0d620af9cce86614658622544b9;
+configd08f5a80efe248221c8f988226fa1321995446a8578e336af5469dc41e7a94b9.
+`capacity-tests.json`, `configuration-tests.json`, `capacity-hashes.json` preserve
+evidence; `run_tests.py` is the isolated Wine runner. Inactive watcher and sampled
+audit are prepared and syntax-checked, not run against a live0.9 log yet. They need
+fresh `live-run.json` after a verified load. No0.9 capture or outcome exists.
+
+Next integrated trial requires actual readiness after restart into disposable
+`TPF3Interlining_before_multi_passenger_01`, paused. Verify PID/start, actual loaded
+save, executable/DLL hash and absent old bridge. Never reuse historical addresses
+below or inject beside0.8.1. User has not confirmed a restart for0.9 yet. No need
+for extra diagnostic reloads before this integrated trial. Monitor >5 replacements,
+unsampled boarding, sample reuse and metrics if demand permits; report missing
+coverage honestly instead of extending caps. Multistop/express, special waiting
+states, whole-trip timing and preferences remain separate gaps.
+[Implementation and full evidence](../../docs/passenger-capacity.md).
+
+## Previous — 0.8.1 corrected route trial complete
 
 User restarted into the verified unchanged original baseline, then confirmed
 normal-speed unpause after loading. Fresh Linux30963/start797666, Windows304;

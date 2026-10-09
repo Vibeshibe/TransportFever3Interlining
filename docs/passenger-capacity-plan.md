@@ -1,7 +1,8 @@
 # Passenger capacity and sampled diagnostics
 
-Status: proposed next implementation after the bounded 0.8.1 capture. This
-document changes neither the loaded DLL nor its five-attempt limit.
+Status: historical design, now implemented offline in0.9.0. See the
+[implementation, evidence and live test](passenger-capacity.md). The running game's
+older DLL has not been replaced; the proposal below records the original plan.
 
 ## Separate three responsibilities
 

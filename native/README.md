@@ -2,8 +2,12 @@
 
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
-**Version 0.8 supports a build-time cap of 1–5 distinct passengers.**
-The default remains one. The first batch confirmed four switches/boardings, then
+**Version 0.9 supports a build-time cap of 1–32 distinct passenger attempts.**
+The default remains one. Larger builds use at most four full journey samples plus
+one pending boarding, while every switch receives fresh validation and both-world
+boarding confirmation. Prepared0.9.0 passes offline tests but is not loaded;
+see [capacity, metrics and limits](../docs/passenger-capacity.md).
+The first historical batch confirmed four switches/boardings, then
 stopped on missing journey records; original destination completion is unresolved.
 See [the trial record](../docs/multi-passenger-trial.md). Version 0.7.2 validated
 five boardings, four original arrivals and one separate removal outcome.
@@ -30,7 +34,7 @@ waiting-sentinel read errors. Version0.8.1 preserves known -2/-3 values but
 excludes them from switching. Its completed18,000-callback trial recorded three
 adjacent boardings, two original arrivals and one onward journey unfinished at
 capture end, with zero query errors. No sentinel exclusion or multi-stop/express
-boarding occurred. The five-person cap remains; higher capacity is planned. See
+boarding occurred. That run retained the five-person cap. See
 [route scope](../docs/route-expansion.md) and [sentinel correction](../docs/waiting-sentinels.md).
 
 ## Build and isolated tests
@@ -55,7 +59,8 @@ installed LLVM-MinGW directory. Builds and runtime logs stay under ignored
 directory and restart the game before testing a changed bridge.
 
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
-`candidate_tests.exe`, `host_batch_tests.exe`, `pilot_tests.exe`, `pilot_reserve_tests.exe`,
+`candidate_tests.exe`, `host_batch_tests.exe`, `host_capacity_tests.exe`,
+`pilot_tests.exe`, `pilot_reserve_tests.exe`, `pilot_sampled_tests.exe`,
 `journey_probe_tests.exe`, `journey_snapshot.exe`,
 `boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
@@ -100,11 +105,11 @@ may finish. **Restart the game to remove the wrapper or retry initialization.**
 The DLL is pinned until process exit. It serializes no private state; changes
 to native passenger components are part of the game state. One onboard checkpoint
 and native onward transfer survived restart in [the save/reload trial](../docs/save-reload-trial.md).
-The consumer registers `research.interlining-bounded`. Build a five-person trial with:
+The consumer registers `research.interlining-bounded`. Build a sampled32-person trial with:
 
 ```sh
 rtk proxy python3 tools/build_native_bridge.py --build-dir analysis/native-bridge/NEW_BUILD \
-  --passenger-limit 5 --observation-limit 18000
+  --passenger-limit 32 --journey-sample-limit 4 --observation-limit 18000
 ```
 
 The consumer scans at most 1,024 masks per discovery callback, remembers 32
@@ -118,11 +123,13 @@ station order preserved; express skips are allowed. Identical accessible
 boarding/alighting terminals and all previous capacity/load checks still apply.
 The next passenger is considered only after the previous passenger boarded the
 expected train, line and leg in both worlds. Selected IDs never re-enter discovery.
-Each journey retains its original destination and is tracked independently through
-native onward travel. The pilot ends on all configured passengers arriving, the
-callback cap, eight query errors, or an unexpected result, boarding or destination.
-A cap with fewer arrivals is an incomplete capture, not a success. Final summaries
-include each passenger's boarding and destination world masks.
+Each journey retains its original destination. Full tracking remains the default
+with up to five attempts; larger runs track only the configured concurrent sample
+after boarding. Unsampled journeys close as `boarding_confirmed`, never arrival.
+The pilot ends when the attempt cap is consumed and retained samples finish, at
+the callback cap, after eight query errors, or on an unexpected result/identity.
+Unconfirmed boarding has a600-callback deadline. Final summaries separate sampled
+arrivals, lifecycle outcomes, unobserved unsampled journeys and unresolved trackers.
 
 Version 0.7.3 records separate removal/invalidation masks and outcomes. Before
 staging, it copies the home and original destination slots. Pending lifecycle
@@ -136,7 +143,7 @@ outcomes ends as `all_outcomes_observed`, distinct from all destinations reached
 
 For a continuation trial, `--reserve-last-attempt-for-lifecycle` holds the final
 attempt until a lifecycle outcome has been confirmed. This default-off pacing
-option requires at least two allowed attempts and changes no eligibility checks.
+option requires full tracking of at least two attempts and changes no eligibility checks.
 It avoids exhausting the cap before continuation can be tested. Both normal and
 reserved schedules have consumer regression coverage; see
 [implementation and next trial](../docs/lifecycle-continuation.md).
@@ -147,6 +154,9 @@ host bounds, replica/client duplicate prevention, delayed boarding, fresh capaci
 tracking and failure stops. `query_tests.exe` still exercises the default one-attempt
 host and actual mutation adapter against copied component fixtures.
 Missing former waiting records are expected after ordinary boarding.
+Also run `pilot_sampled_tests.exe`, `host_capacity_tests.exe`, and its `failure`
+and `history` modes for32-person capacity, tracker release/reuse, deadlines,
+aggregate counts and result-ring wraparound. The reserve suite remains separate.
 
 Vehicle discovery samples lines learned from waiting passengers and advances
 each line's stop cursor independently. Empty-demand services may be missed; this
@@ -346,7 +356,7 @@ code loaded until dispatch returns. Query budgets remain shared across this work
 The backend checks the entire staged native waiting value plus destination/place,
 opens a dedicated modification scope and performs notified engine remove/add.
 It closes the scope before original selection. Only three route integers change.
-A build-time limit permits 1–5 distinct passenger attempts per DLL lifetime
+A build-time limit permits 1–32 distinct passenger attempts per DLL lifetime
 (default one). The host allows at most one engine attempt per dispatch, regardless
 of the number of clients. Attempted person IDs are retained across worlds and clients;
 they cannot be changed again, even if a replica still shows old waiting state.
