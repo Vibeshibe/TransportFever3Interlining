@@ -1,5 +1,11 @@
 # Shared native bridge — continuous interlining candidate
 
+Version 0.13.1 prepares reachable endpoint hints before the first switch in a
+mixed-direction queue. The new short-window regression reproduces a0.13.0 miss
+and serves compatible passengers in all16 timing phases with the fix. See the
+[implementation and live gap](../docs/continuous-operation.md#0131--rank-reachable-endpoints-before-the-first-switch).
+Build-v13b is separate; build-v13a remains the running0.13.0 capture.
+
 Version 0.13.0 adds [continuous operation](../docs/continuous-operation.md),
 cross-source endpoint selection and ABI9 paged line discovery. Lifetime passenger
 and callback cutoffs can be disabled with `--continuous`; per-update budgets,

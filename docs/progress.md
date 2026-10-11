@@ -1428,3 +1428,48 @@ User confirmed normal-speed unpause. First observations succeed in both worlds
 this startup checkpoint. Log and identity receipts are under ignored build-v13a;
 `watch_live.py` only reads logs/process state and cannot stop or mutate the game.
 Monitoring repeated source queues, continuation beyond32 and callback costs.
+
+### 0.13.0 live return-stop coverage still incomplete
+
+User reported S2 arriving Wimborne→Faringdon with3 own waiters,5 S3 and17 S1.
+Vehicle98388 had37 spare places at validation; only96845 S1→S2 was staged1235
+and confirmed1237. Subsequent S1 vehicle98398 at Wimborne stop5 recorded no
+switched boardings. It reported32 free places1486,25 at1495,20 at1503. Logged
+checks1486/1490 selected outbound legs and rejected route/alighting mismatches.
+The Faringdon-bound S1/S3 passengers are within intended shared-leg policy;
+individual records were not captured, so do not claim every displayed waiter
+was freshly validated. Preservedwimborne-return-01.json/.log underbuild-v13a.
+
+First window elsewhere did serve both S2 and S3 on S1 vehicle98398 at201/218.
+The offline improvement does not resolve the live short-window search gap.
+Next fix: establish reachable endpoint hints before the first successful change,
+with prefetch work separated from mutation callbacks to retain the query budget.
+Current0.13.0 continues unchanged to collect continuous/performance evidence.
+At1200callbacks:10 boardings,mean149.366us,p95 upper512us,max1150us,peak43queries/
+2123reads/52477bytes. These are bridge callback costs, not whole-game frame times.
+
+### 0.13.1 direction prefetch prepared independently
+
+User clarified all reported passengers are waiting for the shared Wimborne→Faringdon
+terminus leg; these belong in the intended candidate pool. Implemented reachable
+endpoint hints before the first successful switch at a mixed-endpoint station.
+A dedicated prefetch callback preserves the validation budget; unambiguous queues
+need no extra delay. Stop/line/count changes and periodic refresh update hints;
+fresh route validation remains mandatory.0.13.0 game is unchanged.
+
+Paired short-window regression:0.13.0 switches0/16 windows;0.13.1 serves1–3 in
+all16, with64 wrong-direction waiters preceding16 compatible people, two source
+lines and80 other vehicles. Existing120-callback case remains20/20; opposing
+trains improve minimum10→12 each. All three existing pilot/lifecycle executables
+pass unchanged, worst64/64queries. Full final suite runs underbuild-v13b.
+
+Latest0.13.0 checkpoint3600:23 boardings,3 sampled arrivals,4 active samples,
+16 unsampled boardings;mean167.476us,p95 upper512us,max1150us,peak46queries.
+No stop/error marker. Capture has not yet established live>32 switching.
+
+All17 final0.13.1 checks passed; binary/report fingerprints verified.
+- `tpf_shared_bridge.dll` SHA256 `d61dd61ef9c6c506bfcfe4e4c42b54b780673c8771852eacf2a4513da36ad7a7`
+- `capacity-tests.json` SHA256 `5b7e076ecc2257cc289d5f907637f882cbde63d890b25c09d4cabd430c42aa77`
+- `prefetch-comparison.json` SHA256 `ea379237ce9614f1327c36112088b5c5b27cdf9362c93d17fb7613f808089602`
+
+No0.13.1 injection; current0.13.0 reached28 boardings by4098 with no logged stop.

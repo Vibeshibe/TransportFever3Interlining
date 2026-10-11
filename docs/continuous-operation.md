@@ -112,3 +112,53 @@ Final mutable DLL SHA-256:
 `4a39e2765bf0b8388945e71f6722e8533df03b50d27d3494cc151fb2b9fc201f`.
 Final report SHA-256:
 `dd1702a5a0c0aa3dbfde41a929bab33e2b5714e3d94718d2261c8e5e345da5ee`.
+
+## 0.13.1 — rank reachable endpoints before the first switch
+
+The 0.13.0 live run still missed Wimborne→Faringdon queues. On S2 vehicle98388,
+only96845 switched from S1 (1235→1237), despite37 spare places at validation.
+S1 vehicle98398 subsequently recorded no switched boardings at that stop; logged
+checks1486/1490 selected outbound passengers, while ready samples reported32,
+25 and20 free places. The user reported5 S3/17 S1 waiters before S2 arrived and
+no S3→S1 boarding afterward. Individual remaining passenger records were not
+captured. Faringdon-bound passengers on that shared leg are intended candidates;
+these observations do not justify excluding their queue.
+
+0.13.1 prepares a train's reachable station-group hints before its first successful
+switch when a station's indexed queues have mixed endpoints. It reads at most the
+next four stop intervals, wraps the stop list, and stops at a repeated station.
+Both source lines and all hinted reachable endpoints can then be prioritized.
+Unambiguous queues need no additional warm-up callback; general exploration
+remains available. Hints refresh when the observed line/stop changes, station or
+stop count changes, or after128 callbacks when the mixed queue is revisited.
+
+Prefetch uses a separate callback rather than adding queries to the full validation
+and deferred mutation path. Cached hints still authorize nothing: stale endpoint
+or route data must pass fresh policy checks. Lifetime cutoffs remain disabled in
+the continuous build; no change to native mutation, ABI9, episode guards or sampling.
+
+New regression:80 rail waiters across two source lines, with64 opposite-direction
+passengers encountered before16 compatible passengers, plus40 bus stations and81
+vehicles. In16 timing phases with12-callback boarding windows, the exact0.13.0
+consumer served0 passengers in every window; the revised consumer served1–3 in
+all16 windows. Both serve20/20 in the existing120-callback fixture. The new version
+also serves at least12 per opposing train across8phases, compared with10 before.
+This reproduces a search-order failure; it does not claim full live queue clearance.
+Comparison artifacts are under ignored`analysis/native-bridge/build-v13b`.
+
+Prepared build command uses the same continuous/observer options above with a new
+`--build-dir analysis/native-bridge/build-v13b`. Never rebuild loaded build-v13a.
+Existing lifecycle/pilot tests retain64/64 worst-case query usage. All17 final suite invocations passed; executable and DLL hashes match the
+report. Live validation of0.13.1 is pending; do not promote it as stable yet. Current0.13.0 remains running independently.
+
+Live0.13.0 processing at3,600callbacks:23 confirmed boardings,3 sampled original
+arrivals,4 active samples,16 unsampled boardings; mean167.476µs, histogram p95
+upper512µs,max1150µs,peak46queries/2413reads/52477bytes. No error/stop marker at
+this checkpoint. Continuous mode passed its configured default3,600-callback
+research limit; live passage beyond32 switches remains pending.
+
+0.13.1 verified artifact hashes:
+
+- `tpf_shared_bridge.dll`: `d61dd61ef9c6c506bfcfe4e4c42b54b780673c8771852eacf2a4513da36ad7a7`
+- `capacity-tests.json`: `5b7e076ecc2257cc289d5f907637f882cbde63d890b25c09d4cabd430c42aa77`
+- `prefetch-comparison.json`: `ea379237ce9614f1327c36112088b5c5b27cdf9362c93d17fb7613f808089602`

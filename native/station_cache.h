@@ -12,6 +12,8 @@ typedef struct tfx_station_hint { int32_t person, line, boarding_stop, alighting
 typedef struct tfx_station_search {
     uint32_t cursor, preferred_cursor, selections;
     int32_t line, boarding_stop, alighting_stop, alighting_group;
+    uint32_t reachable_count;
+    int32_t reachable[4];
 } tfx_station_search;
 typedef struct tfx_station_bucket {
     int32_t station_group;
@@ -91,13 +93,18 @@ static inline int32_t tfx_station_pick(tfx_station_cache *cache, int32_t station
         if (bucket->station_group != station_group) continue;
         /* Try another source line first within the preferred endpoint. A second
          * pass serves the previous source if no different source remains. */
-        unsigned passes = preferred && preferred->alighting_group >= 0 ? 2u : 1u;
+        unsigned passes = preferred && (preferred->reachable_count || preferred->alighting_group >= 0) ? 2u : 1u;
         for (unsigned pass = 0; pass < passes; ++pass) for (uint32_t n = 0; n < bucket->count; ++n) {
             uint32_t *position = cursor ? cursor : &bucket->read_cursor;
             const tfx_station_hint *hint = &bucket->people[(*position)++ % bucket->count];
             if (hint->person < 0 || hint->line == arriving_line) continue;
             if (preferred) {
-                if (preferred->alighting_group >= 0) {
+                if (preferred->reachable_count) {
+                    unsigned reachable = 0;
+                    for (unsigned k = 0; k < preferred->reachable_count && k < 4; ++k)
+                        reachable |= hint->alighting_group == preferred->reachable[k];
+                    if (!reachable || (!pass && hint->line == preferred->line)) continue;
+                } else if (preferred->alighting_group >= 0) {
                     if (hint->alighting_group != preferred->alighting_group ||
                         (!pass && hint->line == preferred->line)) continue;
                 } else if (hint->line != preferred->line || hint->boarding_stop != preferred->boarding_stop ||

@@ -220,6 +220,12 @@ static void station_cache_tests(void) {
     CHECK(tfx_station_pick(&cache, 10, 1, &second.preferred_cursor, &second, NULL, 0) == 42);
     tfx_station_destination(&cache, 42, 10, 20);
     tfx_station_destination(&cache, 44, 10, 20);
+    /* Reachable endpoints rank the minority direction before any successful leg. */
+    tfx_station_search unseeded = {.line = -1, .alighting_group = -1,
+        .reachable_count = 1, .reachable = {20}};
+    CHECK(tfx_station_pick(&cache, 10, 1, &unseeded.preferred_cursor, &unseeded, NULL, 0) >= 0);
+    unseeded.reachable[0] = 999;
+    CHECK(tfx_station_pick(&cache, 10, 1, &unseeded.preferred_cursor, &unseeded, NULL, 0) == -1);
     first.alighting_group = 20;
     CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 44);
     first.line = 3;

@@ -21,7 +21,7 @@
 static tfx_client client;
 static uint64_t sequence;
 static unsigned queries, peak, window, missing_target, staged, boarding_reads, scan_calls;
-static unsigned mixed_directions, changed_hints, dual_arrival;
+static unsigned mixed_directions, changed_hints, dual_arrival, clustered_directions;
 static unsigned epoch, network_only, new_line, auto_arrive, reject_once, reject_before;
 static unsigned seen[PEOPLE], duplicate_staging[PEOPLE], seen_vehicles[82];
 static tfx_waiting_leg_change requests[TEST_REQUESTS];
@@ -38,10 +38,11 @@ static void log_line(const char *s) {
     CHECK(strlen(output) + strlen(s) < sizeof(output)); strcat(output, s);
 }
 static int32_t demand_line(int32_t person) {
-    return person < 180 ? SOURCE + (mixed_directions && person >= 140) :
+    return person < 180 ? SOURCE + (clustered_directions ? (person & 1) : (mixed_directions && person >= 140)) :
         person == 180 ? (network_only ? SOURCE : SUBSTITUTE) : 1000 + (person - 181) / 4;
 }
 static int opposite(int32_t person) {
+    if (clustered_directions && person < 180) return person < 164;
     return mixed_directions && person < 180 && ((person - FIRST) % 4 ||
         (changed_hints && (person - FIRST) % 8 == 0));
 }
@@ -185,7 +186,7 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
 }
 static void reset(void) {
     sequence = window = missing_target = staged = boarding_reads = scan_calls = 0;
-    mixed_directions = changed_hints = dual_arrival = 0;
+    mixed_directions = changed_hints = dual_arrival = clustered_directions = 0;
     epoch = network_only = new_line = auto_arrive = reject_once = reject_before = 0;
     memset(seen_vehicles, 0, sizeof(seen_vehicles));
     memset(seen, 0, sizeof(seen)); memset(duplicate_staging, 0, sizeof(duplicate_staging)); output[0] = 0;
@@ -204,6 +205,19 @@ static void warm(unsigned phase) {
     CHECK(scan_calls < 350); /* Dense pages are drained, not rescanned per person. */
 }
 int main(void) {
+    unsigned short_min = 32, short_max = 0, short_successes = 0;
+    for (unsigned phase = 0; phase < 16; ++phase) {
+        reset(); mixed_directions = clustered_directions = 1; ticks(600 + phase);
+        window = 1; ticks(12);
+        if (staged < short_min) short_min = staged;
+        if (staged > short_max) short_max = staged;
+        short_successes += staged > 0;
+        CHECK(!strstr(output, "candidate_query_error"));
+    }
+    printf("Clustered opposite-direction queue: %u..%u switches in 12 callbacks; served %u/16 windows.\n", short_min, short_max, short_successes);
+#ifndef TFX_DISCOVERY_BASELINE
+    CHECK(short_successes == 16);
+#endif
     for (unsigned phase = 0; phase < 16; ++phase) {
         warm(phase); window = 1; ticks(16);
         if (!staged) fprintf(stderr, "phase=%u boarding_reads=%u\n%s", phase, boarding_reads, output);

@@ -1,5 +1,28 @@
 # Session handoff — 2026-10-11
 
+## Active development — 0.13.1 direction-prefetch fix
+
+Live0.13.0 still missed return queues: S2 vehicle98388 only96845 S1→S2 (1235/1237),
+S1 vehicle98398 no switches at Wimborne stop5 (1486 onward), despite spare places.
+User reported5 S3/17 S1 toFaringdon. Logged rejected checks chose outbound legs;
+Faringdon-bound passengers remain intended candidates, not policy exclusions.
+Evidencebuild-v13a/wimborne-return-01.json/.log. Do not claim exact eligibility
+of individual uninspected passengers or that every candidate was screened.
+
+0.13.1 source implemented in separatebuild-v13b, NOT loaded. Direction hints
+prefetch up tofour next station groups before first success if cached endpoints
+are mixed. Separate callback; same64-query ceiling, full validation unchanged.
+Paired12-callback fixture:0.13.0 zero switches in16/16 phases; new1–3 in16/16.
+Existing pilot/reserve/sampled tests pass without editing their expectations.
+All17 final suite invocations passed (session44393 complete); executable/DLL
+hashes verified. Commit/push, package, then request restart when ready.
+Do not rebuild/inject over the runningbuild-v13a DLL.
+
+Latest0.13.0:28 boardings by4098; last totals3600 had23 boardings,3 sampled arrivals,4 active,16 unsampled;
+mean167.476us,p95 upper512us,max1150us,46queries peak. No error/stop. Watcher50272
+finished its10minutes without stopping the bridge; read log directly for updates.
+Live>32 and stable promotion remain pending. Main unchanged.
+
 ## Live — 0.13.0 continuous trial running
 
 User restarted and confirmed normal-speed unpause. LinuxPID68878/start1187665,
