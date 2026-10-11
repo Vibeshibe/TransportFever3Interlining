@@ -1,5 +1,23 @@
 # Session handoff — 2026-10-11
 
+## Latest decision — enough 0.11.0 evidence to test 0.12.0
+
+User asked whether the running test has enough data. At11:08Z, preserved
+`build-v11a/readiness-checkpoint.json` and exact `.log` snapshot:32 distinct
+changes and32 both-world boardings (27 cross-platform);12 lifetime samples,
+7 original arrivals,1 home invalidation,4 still travelling,20 unsampled boardings.
+No query/identity/journey errors or stop/summary marker. Final boarding7976.
+Active sample IDs86406,86553,104751,122260; do not claim their arrivals.
+
+Recommended moving to0.12.0: switch allowance is exhausted, so waiting yields
+only further sampled outcomes. Enough for next development trial, not stable
+release validation. No stop command/restart performed; existing0.11.0 may still
+be running. Re-read its log if it continues. Next0.12.0 loading needs a fresh
+restart and identity/save/hash verification, never a second DLL in old process.
+Package verified at11:01:46Z:183299bytes, ZIP SHA
+e090857f7fbd7a4171c40aa21fdf24171e268d552efef4ff0be937cb6b5a23cc,
+source `dadbab9`; implementation `beadb5c`. Both pushed toorigin/dev.
+
 ## Prepared — 0.12.0 selection; keep 0.11.0 running
 
 User authorized next implementation while current samples finish. Build-v12a

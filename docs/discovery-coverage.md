@@ -117,6 +117,26 @@ Raw evidence is ignored under `analysis/native-bridge/build-v11a`:
 `tpf-bridge-312-7380832.log`, `live-run.json`,
 `early-discovery-snapshot.json`, and `s2-faringdon-checkpoint.json`.
 
+### Readiness checkpoint — 2026-10-11, 11:08 UTC
+
+The capture has consumed its 32-attempt allowance: 32 distinct staged changes
+and 32 both-world boardings, including 27 cross-platform boardings. Twelve
+passengers received detailed samples: seven reached their original destinations,
+one had confirmed home invalidation (not arrival), and four remain travelling.
+Twenty boardings were unsampled. No query/identity/journey errors or stop/summary
+markers appear in the preserved snapshot. The last boarding was at callback7976.
+
+This is sufficient evidence to move to the prepared0.12.0 selection trial; no
+more switching opportunities can be exercised by this loaded instance. Further
+running can only complete its remaining samples. Those samples (86406,86553,
+104751,122260) remain explicitly unresolved if the user ends the run. This is
+a partial development trial, not complete journey coverage or a stable release.
+No stop command or restart was performed during this readiness check.
+
+Ignored `build-v11a/readiness-checkpoint.json` records the counts, identities and
+outcomes; `readiness-checkpoint.log` preserves the exact98,499-byte snapshot,
+SHA256 `337d3b442ef7a6c8a7b7294fe2cc0e2a902955e62ecd8c83bba808bb893b14ff`.
+
 ## Prepared artifacts
 
 Ignored build: `analysis/native-bridge/build-v11a`. The trial ZIP contains the

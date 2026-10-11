@@ -1317,3 +1317,18 @@ Prepared separate build-v12a; not loaded. Existing0.11.0 capture remains running
 with20 boardings,4 sampled original arrivals,1 home invalidation and4 active
 samples atcallback5400. Eleven other boardings are unsampled. No restart or
 additional diagnostic save needed during implementation.
+
+### 0.11.0 readiness check — full switch allowance consumed
+
+At11:08Z, verified32 distinct changes and32 both-world boardings,27 cross-platform.
+Twelve lifetime samples:7 original arrivals,1 confirmed home invalidation and4
+ongoing journeys;20 other boardings are unsampled. No query/identity/journey
+errors or stop marker. Preserved exact log snapshot and structured audit under
+ignored build-v11a; [details](discovery-coverage.md).
+
+Recommended proceeding to prepared0.12.0 because the current instance cannot
+perform further switches. Remaining samples may finish if left running, but
+are not required to begin the next development trial and are not counted as
+arrivals. No stop or restart performed.0.12.0 package ZIP verified183299bytes,
+SHA256 `e090857f7fbd7a4171c40aa21fdf24171e268d552efef4ff0be937cb6b5a23cc`;
+source `dadbab9`, implementation `beadb5c`, already pushed todev.
