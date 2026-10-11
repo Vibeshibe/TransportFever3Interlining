@@ -1,5 +1,22 @@
 # Session handoff — 2026-10-11
 
+## Live — 0.13.1 direction-selection trial running
+
+User restarted and confirmed normal-speed unpause. Verified fresh LinuxPID77940/
+start1298881, WindowsPID316; no previous bridge. Correct baseline loaded12:12:47Z,
+ready12:14:17Z; all executable/save/DLL/report/package hashes match. Loader at
+12:15:08Z returnedtfx_start0; startup0.13.1,continuous1,reachable_endpoint_hints,
+passenger/callback limits0 verified. No reinjection or rebuild ofbuild-v13b.
+
+Log `analysis/native-bridge/build-v13b/tpf-bridge-316-13152169.log`. Preflight, loader and
+live-run.json receipts adjacent. Watcher7762 is a read-only10-minute monitor;
+expiry does not stop the bridge. Worlds1/2 0x2cbdda10/0x2cbdcd50. Read actual
+log for thread/current counts. At startup no boarding/arrival claimed. Monitor
+Wimborne→Faringdon source queues, >32 boardings and actual callback costs;
+then later episodes, line edits/new service and save/restart before stable release.
+
+Older prepared/not-loaded claims below are superseded. Main remains unchanged.
+
 ## Next — user restarting for prepared 0.13.1
 
 Implementation **73f3a32** pushed todev. All17 checks passed and hashes verified.

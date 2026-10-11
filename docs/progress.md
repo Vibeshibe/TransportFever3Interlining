@@ -1481,3 +1481,13 @@ underbuild-v13b, SHA256 `8bd20680130a230083cc426c13a79c0da1044ddb590173aafbf3176
 User agreed to restart and leave the same disposable baseline paused; actual
 readiness and fresh-process verification remain pending.0.13.1 is not loaded.
 Preserved0.13.0 log/audit asbefore-v13b-restart.json/.log before any restart.
+
+### 0.13.1 direction-selection trial loaded
+
+Verified fresh PID77940/start1298881, WindowsPID316, baseline/executable/artifact
+hashes and absent previous bridge. Actual baseline load12:12:47Z,ready12:14:17Z.
+Loader at12:15:08Z returned0;0.13.1 startup confirms reachable_endpoint_hints,
+continuous mode and no lifetime cutoffs. User confirmed normal-speed unpause;
+both worlds began observations (0x2cbdda10/0x2cbdcd50). No boarding claim at startup.
+Watcher7762 reads logs/process only; log `tpf-bridge-316-13152169.log` and receipts underbuild-v13b.
+Live coverage/performance/continuation gates remain pending; main unchanged.
