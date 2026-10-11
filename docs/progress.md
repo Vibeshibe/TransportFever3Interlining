@@ -1345,3 +1345,9 @@ at startup. Watcher17862; evidence under ignored`analysis/native-bridge/build-v1
 Previous0.11.0 run ended on restart with final periodic8400 totals unchanged:
 32 boardings,7 sampled arrivals,1 lifecycle outcome,4 unresolved samples and20
 unsampled boardings. No summary/error marker; retain its partial-run designation.
+
+User confirmed normal-speed unpause. Both worlds deliver successful updates.
+First three boardings confirmed:72701 and109709 S2→S1 on98398 atcallbacks201/224,
+Melksham→Wimborne;72084 S3→S2 on98388 at308, Melksham→Faringdon. All three
+sampled, final destinations pending, no query errors. Repeated switches on the
+same train/stop are observed; broader throughput comparison remains open.

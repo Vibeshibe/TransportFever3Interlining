@@ -1,14 +1,19 @@
 # Session handoff — 2026-10-11
 
-## Current — 0.12.0 loaded; awaiting normal-speed unpause
+## Current — 0.12.0 running after confirmed normal-speed unpause
 
 User restarted and loaded the verified disposable pre-trial baseline. Fresh
 Linux PID50787/start946352, Windows PID308; no previous bridge mappings.
 Actual load11:14:02Z, ready11:15:38Z; executable/save/DLL/report/package hashes
 match. Loaded build-v12a at11:16:57.599991Z; `tfx_start=0`, version0.12.0,
 ABI1–8, `selection=per_vehicle_leg_hints` and32/4/18000 limits confirmed.
-No second injection needed. Async normal-speed unpause request is pending;
-no updates/boardings claimed at startup. Watcher session17862.
+No second injection needed. User confirmed normal-speed unpause; both worlds
+deliver successful updates. Watcher session17862, thread592, worlds1/2
+0x378eeb00/0x378ede40. First three both-world boardings:72701 at201 and109709
+at224 switched S2→S1 on98398, Melksham→Wimborne;72084 at308 switched S3→S2
+on98388, Melksham→Faringdon. All sampled, destinations pending, no errors at
+this early checkpoint. This demonstrates repeated switching in one stop but
+does not establish a general throughput gain or completed journeys.
 
 Log:`analysis/native-bridge/build-v12a/tpf-bridge-308-9660888.log`.
 `preflight-process.json`, `loader-list.json`, `loader-result.json`, `live-run.json`
