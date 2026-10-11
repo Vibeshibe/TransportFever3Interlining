@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.11.0 discovery coverage implemented; fourteen offline checks passed, live trial pending
+- Status: In progress — 0.12.0 selection implemented; fourteen offline checks passed, not loaded; 0.11.0 live trial continues
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 

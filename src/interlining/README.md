@@ -1,5 +1,9 @@
 # Candidate policy prototype
 
+Version 0.12.0 improves [boarding-window selection](../../docs/boarding-window-selection.md)
+with per-vehicle searches and successful-leg hints. Every candidate still uses
+the unchanged full validator and deferred revalidation; no ETA policy is added.
+
 Version 0.11.0 improves [bounded discovery coverage](../../docs/discovery-coverage.md)
 without changing the candidate policy or the shared SDK.
 

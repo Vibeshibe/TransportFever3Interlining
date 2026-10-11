@@ -34,6 +34,7 @@ static struct {
     uint32_t assigned_vehicle, station_mismatch, selected_skips, validation_calls;
     uint32_t peak_trackers, indexed_picks, fallback_picks, hint_station_mismatch;
     uint32_t priority_picks, lookahead_reads, pages_drained, ready_logged;
+    uint32_t preferred_picks, tracking_callbacks, boarding_wait_callbacks;
 } metrics;
 /* The consumer permits only one staged/unconfirmed boarding. Keep the route
  * copies until the host's deferred validator runs; no cache authorizes a write. */
@@ -47,6 +48,8 @@ static uint32_t discovery_remaining;
 static int32_t ready_hints[TFX_READY_HINTS];
 static uint32_t ready_head, ready_count, evaluation_cursor;
 static int32_t last_ready_stop[TFX_PILOT_VEHICLES];
+static tfx_station_search station_search[TFX_PILOT_VEHICLES];
+static int32_t search_line[TFX_PILOT_VEHICLES], search_stop[TFX_PILOT_VEHICLES];
 static uint32_t line_count, line_cursor, line_replacement_cursor, line_stops[TFX_PILOT_LINES];
 static uint32_t vehicle_replacement_cursor;
 static uint32_t person_count, vehicle_count, vehicle_cursor, person_cursor, person_replacement_cursor;
@@ -138,7 +141,8 @@ static void discover(tfx_context context, uint64_t sequence) {
                 tfx_line_stop board = {.struct_size = sizeof(board)};
                 tfx_status board_status = api.v4.v3.v2.read_line_stop(context, leg.line, leg.boarding_stop, &board);
                 if (board_status == TFX_OK)
-                    tfx_station_remember(&station_cache, leg.person, board.station_group, leg.line);
+                    tfx_station_remember_leg(&station_cache, leg.person, board.station_group,
+                        leg.line, leg.boarding_stop, leg.alighting_stop);
                 else if (board_status == TFX_NOT_FOUND) tfx_station_forget(&station_cache, leg.person);
                 else { error("discovery_boarding_stop", board_status); return; }
             } else if (status == TFX_OK) tfx_station_forget(&station_cache, leg.person);
@@ -167,6 +171,7 @@ static void discover(tfx_context context, uint64_t sequence) {
         int32_t slot = tfx_pilot_remember_bounded(vehicles, &vehicle_count, &vehicle_replacement_cursor, TFX_PILOT_VEHICLES, list.vehicles[i]);
         if (slot >= 0) {
             last_ready_stop[slot] = -1;
+            search_line[slot] = search_stop[slot] = -1;
             for (unsigned p = 0; p < 32; ++p) last_reason[p][slot] = 0;
         }
     }
@@ -236,18 +241,19 @@ static void report_metrics(uint64_t sequence) {
         unsigned count = tfx_station_bucket_size(&station_cache.buckets[i]);
         indexed_people += count; indexed_stations += count != 0;
     }
-    char text[768];
+    char text[1024];
     snprintf(text, sizeof(text), "pilot_totals sequence=%llu staged=%u applied=%u boarded=%u sampled=%u sampled_arrivals=%u sampled_lifecycle=%u unsampled_boardings=%u active_trackers=%u active_samples=%u peak_trackers=%u pending_boarding=%u unresolved_tracked=%u sampled_unresolved=%u\n",
         (unsigned long long)sequence, passenger_count, applied, boarded, sampled, arrived, lifecycle, released,
         active_trackers(), active_samples(), metrics.peak_trackers, (unsigned)boarding_pending(),
         passenger_count - arrived - lifecycle - released, sampled - arrived - lifecycle);
     log_line(text);
-    snprintf(text, sizeof(text), "pilot_discovery sequence=%llu callbacks=%u scans=%u waiting_reads=%u line_samples=%u vehicle_reads=%u passenger_screens=%u stale_waiting=%u same_line=%u assigned_vehicle=%u station_mismatch=%u selected_skips=%u validations=%u indexed_picks=%u fallback_picks=%u hint_station_mismatch=%u indexed_people=%u indexed_stations=%u priority_picks=%u lookahead_reads=%u pages_drained=%u page_pending=%u\n",
+    snprintf(text, sizeof(text), "pilot_discovery sequence=%llu callbacks=%u scans=%u waiting_reads=%u line_samples=%u vehicle_reads=%u passenger_screens=%u stale_waiting=%u same_line=%u assigned_vehicle=%u station_mismatch=%u selected_skips=%u validations=%u indexed_picks=%u fallback_picks=%u hint_station_mismatch=%u indexed_people=%u indexed_stations=%u priority_picks=%u lookahead_reads=%u pages_drained=%u page_pending=%u preferred_picks=%u tracking_callbacks=%u boarding_wait_callbacks=%u\n",
         (unsigned long long)sequence, metrics.discovery_callbacks, metrics.scan_calls, metrics.waiting_reads,
         metrics.line_samples, metrics.vehicle_reads, metrics.passenger_screens, metrics.stale_waiting,
         metrics.same_line, metrics.assigned_vehicle, metrics.station_mismatch, metrics.selected_skips, metrics.validation_calls,
         metrics.indexed_picks, metrics.fallback_picks, metrics.hint_station_mismatch, indexed_people, indexed_stations,
-        metrics.priority_picks, metrics.lookahead_reads, metrics.pages_drained, discovery_remaining);
+        metrics.priority_picks, metrics.lookahead_reads, metrics.pages_drained, discovery_remaining,
+        metrics.preferred_picks, metrics.tracking_callbacks, metrics.boarding_wait_callbacks);
     log_line(text);
 }
 static void summary(const char *reason) {
@@ -474,9 +480,9 @@ static void evaluate(tfx_context context, uint64_t sequence) {
     uint32_t checks = vehicle_count < 4 ? vehicle_count : 4;
     for (uint32_t i = 0; i < checks && failures < 8; ++i) {
         uint32_t vi = vehicle_count;
-        /* Alternate the first pick between recent loading-index hints and the
-         * global sweep. Neither source may monopolize evaluation. */
-        if (i == 0 && (evaluation_cursor++ & 1u) == 0) {
+        /* Favor observed loading windows on three of four first picks. The
+         * fourth and remaining vehicle reads retain global exploration. */
+        if (i == 0 && (evaluation_cursor++ & 3u) != 3u) {
             int32_t hinted = ready_take();
             for (uint32_t j = 0; j < vehicle_count; ++j)
                 if (hinted >= 0 && vehicles[j] == hinted) { vi = j; ++metrics.priority_picks; break; }
@@ -490,6 +496,11 @@ static void evaluate(tfx_context context, uint64_t sequence) {
         if (status != TFX_OK) { error("vehicle", status); return; }
         if (!loading_ready(&v)) { last_ready_stop[vi] = -1; continue; }
         ready_remember(v.vehicle);
+        tfx_station_search *search = &station_search[vi];
+        if (search_line[vi] != v.line || search_stop[vi] != v.stop_index) {
+            *search = (tfx_station_search){.line = -1, .boarding_stop = -1, .alighting_stop = -1};
+            search_line[vi] = v.line; search_stop[vi] = v.stop_index;
+        }
         ++ready;
         tfx_line_stop arriving = {.struct_size = sizeof(arriving)};
         status = api.v4.v3.v2.read_line_stop(context, v.line, v.stop_index, &arriving);
@@ -510,12 +521,22 @@ static void evaluate(tfx_context context, uint64_t sequence) {
         uint32_t attempted = 0, checked_count = 0;
         int32_t checked[4];
         int staged = 0;
+        /* A prior successful leg is a ranking hint, never a policy shortcut.
+         * Every fourth opportunity explores other legs with its own cursor. */
+        int prefer = (search->selections++ & 3u) != 3u && search->line >= 0;
         for (uint32_t j = 0; j < 4 && attempted < 1; ++j) {
             /* Prioritize this arriving station, with one global exploration
              * slot if screening reaches the fourth candidate. Never read the
              * same person twice in a callback or trust a cached eligibility. */
-            int32_t person = j < 3 ? tfx_station_next(&station_cache, arriving.station_group,
-                v.line, checked, checked_count) : -1;
+            int32_t person = -1;
+            if (j < 3 && prefer) {
+                person = tfx_station_pick(&station_cache, arriving.station_group, v.line,
+                    &search->preferred_cursor, search, checked, checked_count);
+                if (person >= 0) ++metrics.preferred_picks;
+            }
+            if (j < 3 && person < 0)
+                person = tfx_station_pick(&station_cache, arriving.station_group, v.line,
+                    &search->cursor, NULL, checked, checked_count);
             int focused = person >= 0;
             uint32_t pi = 32;
             if (focused) ++metrics.indexed_picks;
@@ -545,7 +566,8 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             status = api.v4.v3.v2.read_line_stop(context, leg.line, leg.boarding_stop, &board);
             if (status == TFX_NOT_FOUND) { tfx_station_forget(&station_cache, person); continue; }
             if (status != TFX_OK) { error("waiting_stop", status); return; }
-            tfx_station_remember(&station_cache, person, board.station_group, leg.line);
+            tfx_station_remember_leg(&station_cache, person, board.station_group,
+                leg.line, leg.boarding_stop, leg.alighting_stop);
             if (board.station_group != arriving.station_group) {
                 ++metrics.station_mismatch; metrics.hint_station_mismatch += focused; continue;
             }
@@ -588,6 +610,9 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                 p->line = request.line; p->vehicle = request.candidate_vehicle;
                 p->boarding_stop = request.boarding_stop; p->alighting_stop = request.alighting_stop;
                 ++passenger_count; staged = 1;
+                search->line = proposal.expected.line;
+                search->boarding_stop = proposal.expected.boarding_stop;
+                search->alighting_stop = proposal.expected.alighting_stop;
                 tfx_station_forget(&station_cache, person);
                 unsigned active = active_trackers();
                 if (active > metrics.peak_trackers) metrics.peak_trackers = active;
@@ -639,9 +664,11 @@ static void sample(tfx_context context, void *unused) {
     uint64_t sequence = observation.dispatch_sequence;
     /* Separate tracking and discovery budgets. Paired callback phases cover both
      * alternating worlds; a pending boarding is tracked on EVERY callback. */
-    int pending_before = lifecycle_pending();
-    if (passenger_count && (tracking_blocked || pending_before || attempt_reserved() || boarding_pending() || passenger_count == TFX_PASSENGER_LIMIT ||
+    int pending_before = lifecycle_pending(), awaiting_boarding = boarding_pending();
+    if (passenger_count && (tracking_blocked || pending_before || attempt_reserved() || awaiting_boarding || passenger_count == TFX_PASSENGER_LIMIT ||
             (active_trackers() && (sequence / 2) % 2 == 0) || sequence == TFX_OBSERVATION_LIMIT)) {
+        ++metrics.tracking_callbacks;
+        metrics.boarding_wait_callbacks += awaiting_boarding != 0;
         for (unsigned i = 0; i < TFX_TRACKER_SLOTS && !pilot_done; ++i)
             if (passengers[i].record) track_change(context, &passengers[i], sequence);
         if (!pilot_done) settle_trackers(sequence);
@@ -679,7 +706,9 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     memset(line_stops, 0, sizeof(line_stops));
     memset(&discovery_page, 0, sizeof(discovery_page)); discovery_remaining = 0;
     ready_head = ready_count = evaluation_cursor = 0;
-    for (unsigned i = 0; i < TFX_PILOT_VEHICLES; ++i) last_ready_stop[i] = -1;
+    memset(station_search, 0, sizeof(station_search));
+    for (unsigned i = 0; i < TFX_PILOT_VEHICLES; ++i)
+        last_ready_stop[i] = search_line[i] = search_stop[i] = -1;
     person_count = vehicle_count = vehicle_cursor = person_cursor = person_replacement_cursor = 0;
     failures = attempts = accepted = logged = ready = special_waiting_samples = 0;
     memset(&pending_candidate, 0, sizeof(pending_candidate));
@@ -688,7 +717,7 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));
     char text[768];
-    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=drained_pages station_buckets=64 station_people=128 vehicle_slots=128 line_slots=64 vehicle_lookahead=12 journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s platform_policy=native_same_station\n",
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=drained_pages station_buckets=64 station_people=128 vehicle_slots=128 line_slots=64 vehicle_lookahead=12 selection=per_vehicle_leg_hints journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s platform_policy=native_same_station\n",
         (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_OBSERVATION_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS, (unsigned)IT_MAX_LEG_HOPS, (unsigned)TFX_JOURNEY_SAMPLE_LIMIT, TFX_BOARDING_GRACE_CALLBACKS,
         TFX_FULL_JOURNEY_TRACKING ? "full" : "sampled");
     log_line(text);

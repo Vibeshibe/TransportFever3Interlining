@@ -1,9 +1,14 @@
 # Shared native bridge — bounded passenger pilot
 
+Version 0.12.0 improves [selection during boarding windows](../docs/boarding-window-selection.md):
+independent passenger searches per vehicle, preferred compatible-leg hints and
+more frequent ready-vehicle selection. Fourteen offline checks pass; build-v12a
+is prepared but not loaded. The 0.11.0 live capture continues independently.
+
 Version 0.11.0 improves [discovery coverage](../docs/discovery-coverage.md):
 drained scan pages, larger station/vehicle hint caches and a ready-vehicle
 priority queue. It retains four sampled journeys and the existing route and
-mutation guards. Prepared build-v11a requires its integrated live trial.
+mutation guards. Its integrated live trial has confirmed boardings and sampled arrivals.
 
 Version0.10.1 fixes bounded return legs crossing the end of a line stop list.
 See [return-terminus fix and trial](../docs/return-terminus-fix.md).

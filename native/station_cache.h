@@ -6,7 +6,13 @@
 /* Discovery hints only. Fresh copied queries must authorize every proposal. */
 #define TFX_STATION_BUCKETS 64u
 #define TFX_STATION_PEOPLE 128u
-typedef struct tfx_station_hint { int32_t person, line; } tfx_station_hint;
+typedef struct tfx_station_hint { int32_t person, line, boarding_stop, alighting_stop; } tfx_station_hint;
+/* Separate cursors keep preferred legs from advancing general exploration.
+ * Each arriving vehicle owns one search; these fields only rank fresh reads. */
+typedef struct tfx_station_search {
+    uint32_t cursor, preferred_cursor, selections;
+    int32_t line, boarding_stop, alighting_stop;
+} tfx_station_search;
 typedef struct tfx_station_bucket {
     int32_t station_group;
     uint32_t count, read_cursor, replace_cursor;
@@ -28,8 +34,8 @@ static inline uint32_t tfx_station_bucket_size(const tfx_station_bucket *bucket)
     for (uint32_t i = 0; i < bucket->count; ++i) count += bucket->people[i].person >= 0;
     return count;
 }
-static inline void tfx_station_remember(tfx_station_cache *cache, int32_t person,
-                                      int32_t station_group, int32_t line) {
+static inline void tfx_station_remember_leg(tfx_station_cache *cache, int32_t person,
+        int32_t station_group, int32_t line, int32_t boarding_stop, int32_t alighting_stop) {
     if (person < 0 || station_group < 0 || line < 0) return;
     int32_t target = -1;
     for (uint32_t b = 0; b < cache->count; ++b) {
@@ -39,6 +45,8 @@ static inline void tfx_station_remember(tfx_station_cache *cache, int32_t person
             if (bucket->people[i].person != person) continue;
             if (bucket->station_group == station_group) {
                 bucket->people[i].line = line;
+                bucket->people[i].boarding_stop = boarding_stop;
+                bucket->people[i].alighting_stop = alighting_stop;
                 return; /* Refresh without resetting round-robin position. */
             }
             bucket->people[i].person = -1;
@@ -58,17 +66,25 @@ static inline void tfx_station_remember(tfx_station_cache *cache, int32_t person
         if (bucket->people[i].person < 0) { slot = i; break; }
     if (slot == bucket->count) slot = bucket->count < TFX_STATION_PEOPLE ?
         bucket->count++ : bucket->replace_cursor++ % TFX_STATION_PEOPLE;
-    bucket->people[slot] = (tfx_station_hint){person, line};
+    bucket->people[slot] = (tfx_station_hint){person, line, boarding_stop, alighting_stop};
 }
-static inline int32_t tfx_station_next(tfx_station_cache *cache, int32_t station_group,
-                                     int32_t arriving_line, const int32_t *checked,
-                                     uint32_t checked_count) {
+static inline void tfx_station_remember(tfx_station_cache *cache, int32_t person,
+                                      int32_t station_group, int32_t line) {
+    tfx_station_remember_leg(cache, person, station_group, line, -1, -1);
+}
+static inline int32_t tfx_station_pick(tfx_station_cache *cache, int32_t station_group,
+        int32_t arriving_line, uint32_t *cursor, const tfx_station_search *preferred,
+        const int32_t *checked, uint32_t checked_count) {
     for (uint32_t b = 0; b < cache->count; ++b) {
         tfx_station_bucket *bucket = &cache->buckets[b];
         if (bucket->station_group != station_group) continue;
         for (uint32_t n = 0; n < bucket->count; ++n) {
-            const tfx_station_hint *hint = &bucket->people[bucket->read_cursor++ % bucket->count];
+            uint32_t *position = cursor ? cursor : &bucket->read_cursor;
+            const tfx_station_hint *hint = &bucket->people[(*position)++ % bucket->count];
             if (hint->person < 0 || hint->line == arriving_line) continue;
+            if (preferred && (hint->line != preferred->line ||
+                hint->boarding_stop != preferred->boarding_stop ||
+                hint->alighting_stop != preferred->alighting_stop)) continue;
             uint32_t duplicate = 0;
             for (uint32_t i = 0; i < checked_count; ++i) duplicate |= checked[i] == hint->person;
             if (!duplicate) return hint->person;
@@ -76,5 +92,9 @@ static inline int32_t tfx_station_next(tfx_station_cache *cache, int32_t station
         break;
     }
     return -1;
+}
+static inline int32_t tfx_station_next(tfx_station_cache *cache, int32_t station_group,
+        int32_t arriving_line, const int32_t *checked, uint32_t checked_count) {
+    return tfx_station_pick(cache, station_group, arriving_line, NULL, NULL, checked, checked_count);
 }
 #endif

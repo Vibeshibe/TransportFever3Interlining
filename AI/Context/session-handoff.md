@@ -1,8 +1,33 @@
 # Session handoff — 2026-10-11
 
+## Prepared — 0.12.0 selection; keep 0.11.0 running
+
+User authorized next implementation while current samples finish. Build-v12a
+now gives each vehicle independent general/preferred passenger cursors, ranks
+the last successful source line/boarding/alighting leg on three of four picks,
+and favors ready vehicles on three of four first picks. All passengers still
+receive fresh full validation; ABI/native mutation and 32/4/18000 bounds remain.
+No ETA logic or extra simultaneous pending boarding. Added selection/tracking
+counters. No game injection or changes to loaded build-v11a during development.
+
+All fourteen native invocations pass; current report hashes verified. Same
+mixed-direction fixture: old consumer7–8 vs new12–13 switches in120callbacks,
+both compatible source lines old0/16/new16/16 phases. Two opposite-direction
+trains: new at least10 switches each across8phases; old left a train unserved in
+some cases. Synthetic results, not a promise of clearing a live queue. Existing
+worst query budget63/64; new discovery fixture44/64. No further unchanged-suite
+rerun needed. [Scope, evidence and fingerprints](../../docs/boarding-window-selection.md).
+DLL SHA29a9dfca0052c1890dd34d7d9dcd4164d6f2873d5522696e3220c63df2e75a3b;
+report SHA483474668d0c175eb4db0b51a027aecc66643e2efdd0eef0a8031a7a6f3dc527.
+
+0.12.0 is NOT loaded. Continue the current0.11.0 capture below; next live test
+needs a fresh process, not a second injection. Latest periodic0.11.0 checkpoint
+5400:20 changes/boardings,9 lifetime samples,4 original arrivals,1 home
+invalidation,4 active samples,11 unsampled boardings. No logged query errors or
+stop marker. Re-read the live log before using these counts.
 
 
-## Current — 0.11.0 running after confirmed normal-speed unpause
+## Live — 0.11.0 running after confirmed normal-speed unpause
 
 Fresh user-restarted baseline verified on 2026-10-11: Linux PID 44582/start
 723426, Windows PID 312. No prior bridge mapping. Save/executable/artifact

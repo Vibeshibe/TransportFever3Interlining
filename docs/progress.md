@@ -1296,3 +1296,24 @@ limit throughput, but the precise cause of the remaining queue is unproven.
 Documented early coverage improvement and limitations in
 [discovery coverage](discovery-coverage.md). Documentation-only checkpoint;
 the loaded binary and previously passing fourteen-test result are unchanged.
+
+## 2026-10-11 — 0.12.0 boarding-window selection prepared
+
+Implemented the user's request to continue development while0.11.0 completes
+its sampled journeys. Per-vehicle general/preferred search cursors prevent
+opposite-direction trains from consuming one shared station cursor. Successful
+source-leg hints rank subsequent candidates, with one-in-four general exploration;
+ready vehicles receive three-of-four first picks. Fresh validation, native
+mutation, ABI8, query limits and single pending boarding remain unchanged.
+
+All fourteen native checks pass. The same mixed-direction fixture improves from
+7–8 to12–13 switches in120callbacks; both compatible source lines served in all
+sixteen phases versus none previously. Simultaneous opposite-direction trials
+serve at least ten passengers per train in all eight phases. Worst query budget
+remains63/64. These synthetic results do not establish live throughput. Report
+hashes verified; details in [boarding-window selection](boarding-window-selection.md).
+
+Prepared separate build-v12a; not loaded. Existing0.11.0 capture remains running,
+with20 boardings,4 sampled original arrivals,1 home invalidation and4 active
+samples atcallback5400. Eleven other boardings are unsampled. No restart or
+additional diagnostic save needed during implementation.

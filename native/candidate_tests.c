@@ -199,6 +199,25 @@ static void station_cache_tests(void) {
     CHECK(cache.count == TFX_STATION_BUCKETS);
     CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == -1);
     CHECK(tfx_station_next(&cache, 1000 + TFX_STATION_BUCKETS + 3, 1, NULL, 0) >= 1000);
+    memset(&cache, 0, sizeof(cache));
+    tfx_station_remember_leg(&cache, 42, 10, 2, 5, 0);
+    tfx_station_remember_leg(&cache, 43, 10, 2, 1, 2);
+    tfx_station_remember_leg(&cache, 44, 10, 3, 6, 0);
+    tfx_station_search first = {.line = 2, .boarding_stop = 5, .alighting_stop = 0};
+    tfx_station_search second = {.line = 2, .boarding_stop = 1, .alighting_stop = 2};
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 42);
+    CHECK(tfx_station_pick(&cache, 10, 1, &second.preferred_cursor, &second, NULL, 0) == 43);
+    /* Separate vehicles and general/preferred searches do not consume each
+     * other's position. Unrelated source lines remain available to exploration. */
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.cursor, NULL, NULL, 0) == 42);
+    CHECK(tfx_station_pick(&cache, 10, 1, &second.cursor, NULL, NULL, 0) == 42);
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.cursor, NULL, NULL, 0) == 43);
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.cursor, NULL, NULL, 0) == 44);
+    tfx_station_remember_leg(&cache, 42, 10, 2, 1, 2);
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == -1);
+    CHECK(tfx_station_bucket_size(&cache.buckets[0]) == 3);
+    tfx_station_forget(&cache, 43);
+    CHECK(tfx_station_pick(&cache, 10, 1, &second.preferred_cursor, &second, NULL, 0) == 42);
     puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
 }
 static void wrap_route_tests(void) {
