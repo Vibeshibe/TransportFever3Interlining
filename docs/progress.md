@@ -1473,3 +1473,11 @@ All17 final0.13.1 checks passed; binary/report fingerprints verified.
 - `prefetch-comparison.json` SHA256 `ea379237ce9614f1327c36112088b5c5b27cdf9362c93d17fb7613f808089602`
 
 No0.13.1 injection; current0.13.0 reached28 boardings by4098 with no logged stop.
+
+### 0.13.1 package ready; user restarting
+
+Implementation73f3a32 pushed todev. Verified206200-byte release-candidate ZIP
+underbuild-v13b, SHA256 `8bd20680130a230083cc426c13a79c0da1044ddb590173aafbf317693794488f`.
+User agreed to restart and leave the same disposable baseline paused; actual
+readiness and fresh-process verification remain pending.0.13.1 is not loaded.
+Preserved0.13.0 log/audit asbefore-v13b-restart.json/.log before any restart.

@@ -1,5 +1,23 @@
 # Session handoff — 2026-10-11
 
+## Next — user restarting for prepared 0.13.1
+
+Implementation **73f3a32** pushed todev. All17 checks passed and hashes verified.
+Package `analysis/native-bridge/build-v13b/TPF3Interlining-0.13.1-rc.zip`,206200bytes,
+SHA256 `8bd20680130a230083cc426c13a79c0da1044ddb590173aafbf317693794488f`.
+DLL `d61dd61ef9c6c506bfcfe4e4c42b54b780673c8771852eacf2a4513da36ad7a7`;
+report `5b7e076ecc2257cc289d5f907637f882cbde63d890b25c09d4cabd430c42aa77`.
+Manifest/receipt adjacent; source implements reachable-endpoint ranking before
+first success for mixed-direction queues, same continuous mode and native guards.
+
+User replied **“I’ll restart and leave it paused”**. Await actual readiness, verify
+fresh PID/start, actual loaded baseline, executable/save/package hashes, no previous
+bridge. Then use matchingProton with freshWindowsPID to loadbuild-v13b; do not use
+oldPID68878/312 and do not assume restart completed from the future-tense reply.
+0.13.1 is NOT loaded. Exact0.13.0 snapshot before restart saved as
+`build-v13a/before-v13b-restart.json/.log`; read its counts, not older checkpoints.
+Main unchanged; stable gate still pending. Package contains no game assets/saves.
+
 ## Active development — 0.13.1 direction-prefetch fix
 
 Live0.13.0 still missed return queues: S2 vehicle98388 only96845 S1→S2 (1235/1237),
