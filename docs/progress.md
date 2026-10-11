@@ -1269,3 +1269,12 @@ Prepared build-v11a with 32 attempts, four detailed samples and 18,000 callbacks
 no game changes or injection during implementation. Existing 0.10.1 remains
 paused pending one restart for the integrated trial. Details, hashes and limits:
 [discovery coverage](discovery-coverage.md).
+
+
+### 0.11.0 loaded into the restarted baseline
+
+Fresh process 44582/start 723426 (Windows 312), actual pre-trial save and all
+fingerprints verified. No old bridge mapped. Loading at 10:38:57Z returned
+`tfx_start=0`; startup confirms the new discovery configuration and 32/4/18000
+trial bounds. Awaiting normal-speed unpause; no live boarding result claimed.
+Evidence is under ignored `analysis/native-bridge/build-v11a`.

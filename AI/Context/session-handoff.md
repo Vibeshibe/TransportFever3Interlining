@@ -1,7 +1,24 @@
 # Session handoff — 2026-10-11
 
 
-## Current — 0.11.0 built and tested; awaiting one restart for live trial
+
+## Current — 0.11.0 loaded; awaiting confirmed normal-speed unpause
+
+Fresh user-restarted baseline verified on 2026-10-11: Linux PID 44582/start
+723426, Windows PID 312. No prior bridge mapping. Save/executable/artifact
+hashes match; actual save loaded at 10:36:51Z, ready at 10:37:52Z. Loaded
+build-v11a (`b888541`) at 10:38:57Z; `tfx_start=0`, banner 0.11.0/ABI1–8,
+drained pages and 64×128 station hints/128 vehicles/64 lines confirmed.
+
+Log: `analysis/native-bridge/build-v11a/tpf-bridge-312-7380832.log`.
+`live-run.json`, `preflight-process.json` and `loader-result.json` preserve
+identity and fingerprints. User has been asked to unpause; do not claim
+simulation observations or boardings yet. After confirmation, update live-run,
+start the prepared watcher and monitor ready opportunities/hint coverage,
+especially S2 toward Faringdon at Wimborne. No second DLL injection needed.
+
+
+## Previous — 0.11.0 built and tested; awaiting one restart for live trial
 
 The user asked to continue implementation after the paused discovery audit.
 Version 0.11.0 now drains every returned scan page, one waiting leg per callback;
