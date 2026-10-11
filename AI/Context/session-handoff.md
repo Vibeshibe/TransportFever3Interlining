@@ -1,5 +1,23 @@
 # Session handoff — 2026-10-11
 
+## Latest — 0.12.0 switch cap reached; source-line coverage gap repeats
+
+At11:27Z all32 changes confirmed boarding, last at2576. Seven lifetime samples:
+2 original arrivals72701/109709,1 home invalidation75515,4 active IDs100621,
+111528,72084,85913;25 unsampled boardings. No errors or summary/stop marker.
+Current DLL cannot switch more passengers; continuing only follows samples.
+No stop command issued. Ignoredbuild-v12a `attempt-cap-checkpoint.json/.log`
+preserves exact evidence. Read fresh log for later outcomes.
+
+Second S1 return departure at Wimborne: user first6 S3/3 S1/1 S2, later12 S3
+and none switched. Vehicle98594 served2 S2 passengers109362/119096 at2342/2349,
+with36/33 spare places at validation. No S3 switch. These were attempts25/26,
+so the32 cap does not explain this event. S3 individuals not captured; exact
+eligibility/screening remains unproven. Two repeated opportunities now support
+improving selection across source lines sharing compatible legs. Do not treat
+it as a platform rejection. No next implementation started yet. Evidence:
+`wimborne-s1-faringdon-02.json/.log`; docs/boarding-window-selection.md.
+
 ## Current — 0.12.0 running after confirmed normal-speed unpause
 
 User restarted and loaded the verified disposable pre-trial baseline. Fresh

@@ -1361,3 +1361,16 @@ places but picked an opposite-direction S2 passenger and rejected correctly.
 Remaining S3 individuals were not exhaustively inspected; exact selection
 bottleneck remains unproven. Documented same-source preference/exploration
 limitation and preserved raw event underbuild-v12a. Running build unchanged.
+
+### Repeated S3 queue miss; 0.12.0 switch allowance consumed
+
+Second S1 return stop on98594 confirms2 S2→S1 boardings at2342/2349, with36/33
+free places at validation and no S3 switch. User updated initial6 S3 waiters to12
+remaining. S3 individuals were not exhaustively screened. Attempts25/26 show
+the global cap was not responsible; cross-source selection coverage remains
+the next implementation focus. Event02 evidence preserved, running code unchanged.
+
+At11:27Z:32 both-world boardings, last2576;7 samples,2 original arrivals,1 home
+invalidation,4 active samples,25 unsampled boardings. No logged errors. The
+capture can now only complete samples; later missed boardings occur after the
+switch cap. Exact snapshot and audit saved underbuild-v12a. No stop command issued.

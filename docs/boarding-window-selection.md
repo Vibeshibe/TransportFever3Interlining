@@ -92,3 +92,24 @@ source line, so it can favor remaining S2 hints before general exploration;
 the exact cause of each missed S3 opportunity remains unproven. Continue the
 trial; do not weaken route guards or claim the entire queue was evaluated.
 Ignored `build-v12a/wimborne-s1-faringdon-01.json` and `.log` preserve the event.
+
+### Repeated S1 return opportunity and attempt cap
+
+The user reported another arrival, initially6 S3/3 S1/1 S2 waiters, then12 S3
+waiters remaining with none boarding S1. For vehicle98594, the log confirms
+109362 and119096 switching S2→S1 and boarding both worlds at2342/2349. Spare
+places at validation were36/33. No S3 switch was recorded for this stop. The
+initial S2 count differs from the two observed boardings; queue membership may
+have changed during the observation. Preserve both observations without assuming
+individual eligibility or exhaustive screening of the twelve S3 passengers.
+
+These were attempts25/26, before the cap; the cap did not cause this missed S3
+opportunity. Same-source selection versus broader compatible-leg coverage is
+the next implementation focus. Evidence:`wimborne-s1-faringdon-02.json/.log`.
+
+At11:27Z all32 attempts had confirmed boarding, last at2576. Seven lifetime
+samples: two original arrivals (72701/109709), one home invalidation (75515),
+four still travelling (100621/111528/72084/85913);25 other boardings unsampled.
+No errors or stop/summary marker. The loaded trial now only tracks remaining
+samples; later departures cannot produce new switches. Evidence is preserved
+in ignored`attempt-cap-checkpoint.json/.log`. This remains a partial trial.
