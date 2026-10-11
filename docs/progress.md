@@ -1547,3 +1547,13 @@ Do not claim live>32 yet. Main remains unchanged; package and fresh live trial n
 - `tpf_shared_bridge.dll`: `a9649f3bfa4f9885d30d21bfa8513af53ee9dab39ae157040de4aeac1bee915f`
 - `capacity-tests.json`: `f596db431dc8b2f968814d98f3e7e1b51a468f4290a02a8fea7e430d168ac3a2`
 - `pipeline-comparison.json`: `1cb40519ea57caa9844261db39148ec62138cb46281bdd7aaaa0500fbd1350cc`
+
+### 0.14.0 packaged; user restarting
+
+Implementation9906589 pushed toorigin/dev. Verified202559-byte ZIP
+`analysis/native-bridge/build-v14a/TPF3Interlining-0.14.0-rc.zip`, SHA256
+`1b7d226644a3f92d35a8e004b82091d96e4fdf97cdfe54f20537df2ad17440ea`.
+Manifest pins source, compatibility, tests and packaged artifacts. No game assets
+or saves included. User agreed to restart and leave the disposable original
+baseline paused; actual readiness and fresh-process verification remain pending.
+No0.14.0 injection yet. Preserved old log asbuild-v13b/before-v14a-restart.json/.log.

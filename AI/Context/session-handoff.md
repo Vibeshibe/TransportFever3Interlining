@@ -1,5 +1,17 @@
 # Session handoff — 2026-10-11
 
+## Next live action — user restarting for packaged 0.14.0
+
+Implementation **9906589** pushed todev. Package verified202559bytes under
+`analysis/native-bridge/build-v14a/TPF3Interlining-0.14.0-rc.zip`, SHA256
+`1b7d226644a3f92d35a8e004b82091d96e4fdf97cdfe54f20537df2ad17440ea`.
+Manifest/receipt adjacent. User answered **“I’ll restart and leave it paused”**;
+await actual readiness. No0.14.0 injection yet. Verify fresh process/start, actual
+loaded baseline, executable/save/artifact hashes and no old DLL before loading.
+Use matchingProton and newly enumerated WindowsPID, never old316 by assumption.
+Ask for normal-speed unpause only after successful startup. Old capture saved as
+build-v13b/before-v14a-restart.json/.log. Main unchanged; live gates remain.
+
 ## Current — 0.14.0 implemented and offline-validated; live trial pending
 
 User requested the next implementation. Prepared separate **build-v14a**, not
