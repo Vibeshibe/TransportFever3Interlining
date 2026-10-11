@@ -23,8 +23,15 @@ synthetic tests are not game FPS evidence. No stable promotion yet.
 DLL SHA256 `4a39e2765bf0b8388945e71f6722e8533df03b50d27d3494cc151fb2b9fc201f`;
 report SHA256 `dd1702a5a0c0aa3dbfde41a929bab33e2b5714e3d94718d2261c8e5e345da5ee`.
 
-Next: commit/push dev, prepare package, then ask
-for a **fresh restart** and disposable pre-trial baseline paused. Never inject
+Implementation **37a21aa** pushed toorigin/dev. Package verified200881bytes:
+`build-v13a/TPF3Interlining-0.13.0-rc.zip`, SHA256
+`c95368158cc60a9255bca4ee98dcffa1dd47f590f26f6a09735221d57a239199`.
+Manifest/receipt are adjacent; all included artifact hashes verified.
+
+**Asked user for a fresh restart and disposable pre-trial baseline paused.**
+Await readiness, then verify new process/start/save/hash and absent old bridge;
+load0.13.0 with matchingProton and freshWindowsPID. Ask for normal-speed unpause
+only after startup is verified. Never inject
 into the old 0.12.0 process. Live gate: >32 boardings, S3 return opportunities,
 later journeys, sampled destinations, timing; then line edits/new service and
 save/restart. Broad large-network coverage and automatic session reset/loading

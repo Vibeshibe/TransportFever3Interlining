@@ -1401,3 +1401,15 @@ See [continuous scope, validation and release gates](continuous-operation.md).
 Build-v13a is not loaded; main remains unchanged.0.12.0 log now records a third
 original arrival (111528,3156/3157), leaving3 active samples. Its32 switches all
 boarded; no new changes are possible in that DLL. Preserved implementation snapshot.
+
+### 0.13.0 candidate packaged and pushed
+
+Implementation `37a21aa` pushed toorigin/dev. Verified200881-byte package
+`analysis/native-bridge/build-v13a/TPF3Interlining-0.13.0-rc.zip`, SHA256
+`c95368158cc60a9255bca4ee98dcffa1dd47f590f26f6a09735221d57a239199`.
+Manifest pins source, executable compatibility and every packaged artifact;
+archive integrity and contents verified. No game files/saves bundled.
+
+Requested fresh game restart and paused disposable pre-trial baseline for the
+continuous trial. Existing PID50787/start946352 still maps0.12.0;0.13.0 has not
+been injected or installed. Main is unchanged; live gate remains pending.
