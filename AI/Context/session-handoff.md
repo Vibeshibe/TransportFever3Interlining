@@ -2,7 +2,7 @@
 
 
 
-## Current — 0.11.0 loaded; awaiting confirmed normal-speed unpause
+## Current — 0.11.0 running after confirmed normal-speed unpause
 
 Fresh user-restarted baseline verified on 2026-10-11: Linux PID 44582/start
 723426, Windows PID 312. No prior bridge mapping. Save/executable/artifact
@@ -12,10 +12,28 @@ drained pages and 64×128 station hints/128 vehicles/64 lines confirmed.
 
 Log: `analysis/native-bridge/build-v11a/tpf-bridge-312-7380832.log`.
 `live-run.json`, `preflight-process.json` and `loader-result.json` preserve
-identity and fingerprints. User has been asked to unpause; do not claim
-simulation observations or boardings yet. After confirmation, update live-run,
-start the prepared watcher and monitor ready opportunities/hint coverage,
-especially S2 toward Faringdon at Wimborne. No second DLL injection needed.
+identity and fingerprints. User confirmed normal-speed unpause. Initial updates
+are successful in both worlds; no boarding claimed at startup. Watcher session
+17585, thread 592; worlds 1/2 at 0x2b2def20/0x2b2dfbe0. Monitor ready
+opportunities/hint coverage, especially S2 toward Faringdon at Wimborne.
+No second DLL injection needed.
+
+Checkpoint callback 2400: twelve applied changes and twelve both-world boardings;
+five lifetime samples, one original arrival (115753→75525 at 2136–2137), one
+resolved home invalidation (75515, not arrival), three active samples, seven
+unsampled boardings. No logged query errors/stop marker. Current samples are
+72084, 93862 and 121614. Trial still running; check fresh log before using counts.
+
+User visually observed one S1→S2 switch at Wimborne toward Faringdon. Log confirms
+108249 boarded S2 vehicle98388 at1277 after staging1275: S1 5→0 to S2 5→0,
+different boarding/alighting platforms, 35 free places. Unsampled arrival unknown.
+Do not claim all21 reported S1/S3 waiters were validated or served. S1 arriving
+shortly after is NOT an exclusion: no ETA comparison exists. One validation per
+discovery callback and waiting for boarding confirmation can limit throughput;
+the precise bottleneck for that departure remains unproven. Early missed S3
+opportunity had no ready log. Coverage improved145 hints at600 versus58 in0.10.1,
+but hints are not individually eligible passengers. See
+[partial live evidence](../../docs/discovery-coverage.md).
 
 
 ## Previous — 0.11.0 built and tested; awaiting one restart for live trial

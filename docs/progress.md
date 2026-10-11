@@ -1278,3 +1278,21 @@ fingerprints verified. No old bridge mapped. Loading at 10:38:57Z returned
 `tfx_start=0`; startup confirms the new discovery configuration and 32/4/18000
 trial bounds. Awaiting normal-speed unpause; no live boarding result claimed.
 Evidence is under ignored `analysis/native-bridge/build-v11a`.
+
+### 0.11.0 partial live result: S2 return boarding confirmed
+
+After user-confirmed unpause, callback 2400 records twelve changes and twelve
+both-world boardings. Five detailed samples include one original arrival
+(115753→75525 at 2136–2137), one resolved home invalidation and three active
+journeys. Seven boardings are unsampled; no final-arrival claim for those.
+No query errors or stop marker at this checkpoint; capture remains running.
+
+Confirmed the user's visible S1→S2 switch at Wimborne toward Faringdon:
+108249 boarded98388 in both worlds at1277, preserving the 5→0 leg while changing
+both platforms. This is one confirmed passenger, not proof that all21 reported
+waiters were evaluated. S1's subsequent arrival does not affect selection;
+there is no ETA comparison. Bounded evaluation and boarding confirmation can
+limit throughput, but the precise cause of the remaining queue is unproven.
+Documented early coverage improvement and limitations in
+[discovery coverage](discovery-coverage.md). Documentation-only checkpoint;
+the loaded binary and previously passing fourteen-test result are unchanged.

@@ -82,7 +82,40 @@ The trial retains 32 attempts, four journey samples and 18,000 callbacks. This
 is bounded sampling, not complete instantaneous enumeration. Cold startup,
 larger networks, mixed directions, short dwell times and the one-pending-boarding
 rule can still limit throughput. Offline results do not prove every eligible
-passenger will board in the game; live validation is pending.
+passenger will board in the game. Partial live evidence follows.
+
+### Live checkpoint — 2026-10-11, callback 2,400
+
+Fresh baseline/process verification and loading succeeded; the user confirmed
+normal-speed unpause. Twelve distinct changes and twelve both-world boardings
+are confirmed. Five passengers received detailed journey samples: one reached
+the original destination, one resolved home invalidation (not an arrival), and
+three remain active. Seven boardings were unsampled; their final arrivals are
+unknown. No query errors or stop marker were logged at this checkpoint.
+
+The user-reported S2 departure from Wimborne toward Faringdon produced a confirmed
+S1→S2 switch: person 108249, vehicle 98388, staged at 1275, boarded in both worlds
+at 1277. Both boarding and fixed alighting platforms differ; the planned leg
+remains Wimborne→Faringdon, stops 5→0. There were 35 free places at validation.
+This passenger was unsampled. Only one switch is confirmed for that departure;
+the user's reported 21 S1/S3 waiters were not all individually validated.
+
+The implementation does not compare the following S1 train's arrival time.
+One full candidate validation per discovery callback, pauses for pending
+boarding, mixed-direction hints and short loading windows can limit throughput.
+The exact bottleneck for this departure has not been isolated. An earlier
+user-reported missed S3 opportunity had no matching ready log; later cache
+contents cannot reconstruct that loading window.
+
+At callback 600, discovery retained 145 station hints versus 58 in the earlier
+0.10.1 run. At 2400 it retained 241 hints across twenty stations and had performed
+fifty validations. Hints are not proven eligible passengers. Person 115753
+reached original destination 75525 in both worlds at 2136–2137 after the changed
+train leg and a native bus connection. The trial remains incomplete.
+
+Raw evidence is ignored under `analysis/native-bridge/build-v11a`:
+`tpf-bridge-312-7380832.log`, `live-run.json`,
+`early-discovery-snapshot.json`, and `s2-faringdon-checkpoint.json`.
 
 ## Prepared artifacts
 
