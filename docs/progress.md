@@ -1351,3 +1351,13 @@ First three boardings confirmed:72701 and109709 S2→S1 on98398 atcallbacks201/2
 Melksham→Wimborne;72084 S3→S2 on98388 at308, Melksham→Faringdon. All three
 sampled, final destinations pending, no query errors. Repeated switches on the
 same train/stop are observed; broader throughput comparison remains open.
+
+### User-observed S1 return departure: three S2 boardings, S3 queue remains
+
+At Wimborne toward Faringdon, user reported16 S1/5 S3/3 S2 waiters and the S2
+queue clearing during boarding. Confirmed three S2→S1 boardings on98398 at
+1240/1245/1249; no S3 switch logged for that stop. Last validation1258 had15 free
+places but picked an opposite-direction S2 passenger and rejected correctly.
+Remaining S3 individuals were not exhaustively inspected; exact selection
+bottleneck remains unproven. Documented same-source preference/exploration
+limitation and preserved raw event underbuild-v12a. Running build unchanged.

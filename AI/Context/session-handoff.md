@@ -15,6 +15,16 @@ on98388, Melksham→Faringdon. All sampled, destinations pending, no errors at
 this early checkpoint. This demonstrates repeated switching in one stop but
 does not establish a general throughput gain or completed journeys.
 
+Live user-reported S1 Wimborne→Faringdon opportunity:16 S1/5 S3/3 S2 waiters.
+Confirmed all three S2→S1 boardings on98398 (75645/108642/107729 at1240/1245/1249).
+No S3→S1 switch logged for this stop. Last check1258 still15 free places,
+but selected opposite-direction S2 person112636 and rejected alighting mismatch.
+Individual S3 waiters not inspected; precise miss cause unproven. Source-line
+leg preference can favor one queue before general exploration. Preserve this
+coverage gap for next implementation; current trial continues unchanged.
+Ignored `wimborne-s1-faringdon-01.json/.log` inbuild-v12a; see live evidence in
+[boarding-window selection](../../docs/boarding-window-selection.md).
+
 Log:`analysis/native-bridge/build-v12a/tpf-bridge-308-9660888.log`.
 `preflight-process.json`, `loader-list.json`, `loader-result.json`, `live-run.json`
 preserve fresh identity and evidence. Monitor per-stop switching, preferred picks,

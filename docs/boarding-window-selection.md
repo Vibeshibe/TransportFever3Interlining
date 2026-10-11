@@ -71,3 +71,24 @@ destinations. No persistent installation or stable release is claimed.
 - Test report SHA256: `483474668d0c175eb4db0b51a027aecc66643e2efdd0eef0a8031a7a6f3dc527`.
 - Report timestamp: `2026-10-11T10:58:38.563903Z`.
 - Raw old-consumer comparison: `build-v12a/baseline-comparison.json`.
+
+## Early live evidence — S1 at Wimborne toward Faringdon
+
+The prepared build was loaded after fresh process/save/hash verification on
+2026-10-11; the user confirmed normal-speed unpause. During S1 vehicle98398's
+return stop, the user reported16 S1,5 S3 and3 S2 waiters, then observed the S2
+queue clear while some S3 passengers remained on the shared platform.
+
+The log confirms three S2→S1 changes preserving Wimborne→Faringdon (5→0):
+75645 boarded both worlds at1240,108642 at1245,107729 at1249. All three were
+unsampled; final destinations remain unknown. No S3→S1 switch was logged for
+this stop. At1258 the same train still had15 free places; the next logged
+validation rejected112636's opposite-direction S2 leg1→2 as alighting mismatch.
+
+This supports the user's report and identifies incomplete selection coverage,
+not a platform-access rejection or proven ineligibility of the five S3 waiters.
+Their individual records were not captured. Successful-leg ranking includes
+source line, so it can favor remaining S2 hints before general exploration;
+the exact cause of each missed S3 opportunity remains unproven. Continue the
+trial; do not weaken route guards or claim the entire queue was evaluated.
+Ignored `build-v12a/wimborne-s1-faringdon-01.json` and `.log` preserve the event.
