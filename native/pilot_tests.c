@@ -34,7 +34,7 @@ static tfx_status waiting(tfx_context c, int32_t id, tfx_waiting_leg *out) {
      * must skip remembered passengers in a lagging replica without re-switching. */
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = id, .destination = 777,
         .line = id == 100 + TFX_PASSENGER_LIMIT ? substitute_line : source_line, .boarding_stop = id == 100 + TFX_PASSENGER_LIMIT ? substitute_board : source_board,
-        .alighting_stop = (id == 100 + TFX_PASSENGER_LIMIT ? substitute_board : source_board) + leg_hops, .vehicle = -1};
+        .alighting_stop = ((id == 100 + TFX_PASSENGER_LIMIT ? substitute_board : source_board) + leg_hops) % 6, .vehicle = -1};
     if (waiting_sentinel && (id == 100 || id == 100 + TFX_PASSENGER_LIMIT)) out->vehicle = waiting_sentinel;
     if (screening_misses && id < 103) out->boarding_stop = 0;
     if (indexed_target && id != indexed_target && id != 100 + TFX_PASSENGER_LIMIT) out->boarding_stop = 0;
@@ -63,7 +63,7 @@ static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
 static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop *out) {
     BEGIN(out);
     if (discovery_removed || (arriving_missing && index == substitute_board)) return TFX_NOT_FOUND;
-    int32_t position = index - (line == substitute_line ? substitute_board : source_board) + 1;
+    int32_t position = (index - (line == substitute_line ? substitute_board : source_board) + 6) % 6 + 1;
     *out = (tfx_line_stop){.struct_size = sizeof(*out), .line = line, .stop_index = index,
         .stop_count = 6, .station_group = 1000 + position, .station_entity = 2000 + position,
         .station_index = 0, .terminal = 1, .passenger_load_enabled = 1,
@@ -71,7 +71,7 @@ static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop
     if (line == substitute_line && index == substitute_board) {
         out->terminal = (int32_t)boarding_terminal; out->has_alternative_terminals = alternatives_enabled;
     }
-    if (line == substitute_line && index == substitute_board + leg_hops) out->terminal = (int32_t)alighting_terminal;
+    if (line == substitute_line && index == (substitute_board + leg_hops) % 6) out->terminal = (int32_t)alighting_terminal;
     if (route_changed == 1 && line == substitute_line && index == 1 + leg_hops) out->terminal = 9;
     if (route_changed == 2 && index == 2) out->station_group += 50;
     return TFX_OK;
@@ -135,7 +135,7 @@ static tfx_status journey(tfx_context c, int32_t id, tfx_person_journey *out) {
     unsigned bit = 1u << (world - 1);
     *out = (tfx_person_journey){.struct_size = sizeof(*out), .world_id = world, .person = id,
         .destination = wrong_destination ? 999 : 777, .line = substitute_line, .boarding_stop = substitute_board,
-        .alighting_stop = substitute_board + leg_hops, .vehicle = wrong_vehicle ? 88 : 99,
+        .alighting_stop = (substitute_board + leg_hops) % 6, .vehicle = wrong_vehicle ? 88 : 99,
         .flags = arrived[index] & bit ? TFX_JOURNEY_AT_BUILDING :
             boarded[index] & bit ? TFX_JOURNEY_ONBOARD : TFX_JOURNEY_WAITING};
     return TFX_OK;
@@ -490,6 +490,11 @@ int main(void) {
     reset(); tick(); CHECK(staged == 1); alternatives_enabled = 1; queries = 0;
     CHECK(requests[0].revalidate(7, &requests[0]) == TFX_EXPECTED_STATE_CHANGED);
     puts("PASS: native-platform proposals and deferred rejection of selected/configured platform changes.");
+    reset(); source_board = substitute_board = 5; tick(); CHECK(staged == 1);
+    CHECK(requests[0].expected.boarding_stop == 5 && requests[0].expected.alighting_stop == 0 &&
+        requests[0].boarding_stop == 5 && requests[0].alighting_stop == 0);
+    boarded[0] = 3; ticks(2); CHECK(strstr(output, "pilot_boarded_both"));
+    puts("PASS: consumer stages last-to-first native stop indices and confirms boarding.");
     home_clear_tests();
     reset(); leg_hops = 4; tick(); CHECK(staged == 1);
     CHECK(requests[0].expected.line == 501 && requests[0].line == 902 &&

@@ -1,5 +1,10 @@
 # Candidate policy prototype
 
+Latest native version0.10.1 supports bounded forward travel across the end of
+each line stop list. See [return-terminus fix](../../docs/return-terminus-fix.md).
+Earlier version-specific exclusions below are historical; repeated-station legs
+and complete circuits remain excluded.
+
 `candidate.lua` is a pure Lua module, independent of engine bindings or an
 extender. It accepts copied snapshots and produces a proposal or a reason to
 retain the current journey. It is not loaded by the probe and cannot modify

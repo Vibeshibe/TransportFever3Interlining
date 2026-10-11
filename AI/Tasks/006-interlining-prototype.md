@@ -251,3 +251,15 @@ The user cancelled0.9.1 after eight both-world boardings and eight original arri
 zero errors. Native stop returned0; watcher ended. Stopped partial audit passes;
 unsampled and multi-stop/express live coverage remain pending. Next integrated
 cross-platform run needs a fresh game process, not another read-only replay.
+
+## 2026-10-11 — Return-terminus fix ready
+
+Recovered0.10.0 partial capture:12 boardings,5 across platforms,4 sampled original
+arrivals,4 unresolved samples,4 unsampled boardings,zero errors. No automatic
+summary or explanation of capture ending. No game process remains.
+
+Version0.10.1 fixes bounded last-to-first stop-list traversal on either line.
+All13 native invocations pass,63/64 worst query budget; report/binary hashes
+verified on recovery. Build-v10b/package prepared, not loaded. Next integrated
+trial targets Wimborne→Faringdon; no extra diagnostics-only replay needed.
+See [return-terminus fix](../../docs/return-terminus-fix.md).

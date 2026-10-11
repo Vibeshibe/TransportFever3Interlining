@@ -1,4 +1,31 @@
-# Session handoff — 2026-10-09
+# Session handoff — 2026-10-11
+
+## Current — 0.10.1 verified and packaged; game not running
+
+Recovered interrupted five-file0.10.1 fix and build-v10b. All13 test invocations
+completed on2026-10-09; hashes verified against current executables and CMake
+reports no work required. Reviewed bounded modular traversal, index0 retention,
+repeated/full-loop exclusions and63/64 budget. No unchanged-suite rerun needed.
+[Scope and trial](../../docs/return-terminus-fix.md).
+
+Wimborne→Faringdon S3 return6→0/S1 return5→0 was excluded by0.10.0.0.10.1 permits
+up to4 forward intervals across each line's boundary, with no save-specific IDs.
+Different list lengths and express skips are tested. ABI/mutation/discovery
+unchanged. Build-v10b NOT loaded; next integrated trial needs fresh process/save/
+hash verification and paused disposable baseline. No game process found today;
+do not reuse old process IDs, world addresses or watcher sessions below.
+
+Mutable DLL SHA c26352cba241b8c4bcbc2ad238944caa4e7e3e1670057af1ffb5e673f44f94e8;
+report SHA140cea8bd1766cae41a87c5e922188ed70146a919316cb5c68c5a006f0bac4ae.
+Package build-v10b/TPF3Interlining-0.10.1-trial.zip:32 attempts,4 samples,18000
+callbacks. No stable release/automatic install. Await fresh user readiness.
+
+Recovered0.10.0 ends at4800:12 changes/boardings,5 cross-platform boardings,
+8 samples,4 original arrivals,4 unresolved samples,4 unsampled boardings,0 errors.
+Cross-platform105864 reached original71932 at2929/2932. No summary/stop marker;
+ending cause unknown. build-v10a/recovered-audit.json preserves evidence.
+Old live-run status and historical watcher/process claims below are stale.
+
 
 ## Latest — 0.10.0 live after confirmed unpause
 

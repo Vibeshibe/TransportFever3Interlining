@@ -44,7 +44,7 @@ static tfx_status presence(tfx_context c, int32_t id, tfx_entity_presence *out) 
     BEGIN(out); CHECK(id == 777); *out = (tfx_entity_presence){sizeof(*out), id, present, 0}; return TFX_OK;
 }
 static tfx_status loading(tfx_context c, int32_t line, int32_t stop, tfx_stop_vehicles *out) {
-    BEGIN(out); CHECK(line == 20 && stop == 2);
+    BEGIN(out); CHECK(line == 20 && stop == vehicle.stop_index);
     *out = (tfx_stop_vehicles){.struct_size = sizeof(*out), .line = line, .stop_index = stop,
         .count = indexed, .vehicles = {99}}; return TFX_OK;
 }
@@ -139,7 +139,7 @@ static void route_tests(void) {
     expect(IT_ALIGHTING_MISMATCH); /* Do not skip wrong-station first visit for later matching visit. */
     route_fixture(3); stops[7].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
     route_fixture(3); for (unsigned i = 4; i < 8; ++i) stops[i].stop_count = 4;
-    expect(IT_ALIGHTING_MISMATCH); /* End of route; never wrap. */
+    CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_NOT_FOUND); /* Wrapped stop absent from this fixture. */
     route_fixture(3); stops[0].stop_count = leg.alighting_stop; expect(IT_UNSUPPORTED_LEG);
     route_fixture(3); leg.alighting_stop = 0; expect(IT_UNSUPPORTED_LEG);
     route_fixture(3); leg.boarding_stop = -1; expect(IT_UNSUPPORTED_LEG);
@@ -187,6 +187,37 @@ static void station_cache_tests(void) {
     CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == -1);
     CHECK(tfx_station_next(&cache, 119, 1, NULL, 0) == 119);
     puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
+}
+static void wrap_route_tests(void) {
+    it_candidate result;
+    /* Different list lengths and offsets: return to first terminus, source-only
+     * wrap, replacement-only wrap, and both routes wrapping over four intervals. */
+    for (int hops = 1; hops <= IT_MAX_LEG_HOPS; ++hops) {
+        for (unsigned mode = 1; mode <= 3; ++mode) {
+            route_fixture(hops);
+            int old_start = mode & 1 ? 6 : 1, new_start = mode & 2 ? 7 : 2;
+            leg.boarding_stop = old_start; leg.alighting_stop = (old_start + hops) % 7;
+            vehicle.stop_index = new_start;
+            for (int i = 0; i <= hops; ++i) {
+                stops[i].stop_index = (old_start + i) % 7;
+                stops[hops + 1 + i].stop_index = (new_start + i) % 8;
+            }
+            /* The loading fixture accepts arbitrary configured replacement index. */
+            CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+            CHECK(result.alighting_stop == (new_start + hops) % 8 && result.route.original_count == (unsigned)hops + 1);
+            CHECK(result.expected.alighting_stop == leg.alighting_stop && result.expected.destination == 777);
+            CHECK(query_count <= 18);
+            if (hops > 1) {
+                stops[hops + 2] = stops[2 * hops + 1]; stops[hops + 2].stop_index = (new_start + 1) % 8;
+                CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
+                CHECK(result.alighting_stop == (new_start + 1) % 8); /* Express across boundary. */
+            }
+        }
+    }
+    route_fixture(1); leg.boarding_stop = 6; leg.alighting_stop = 0; stops[0].stop_index = 6; stops[1].stop_index = 0;
+    stops[1].station_group = stops[0].station_group; expect(IT_UNSUPPORTED_LEG);
+    route_fixture(1); leg.alighting_stop = 0; expect(IT_UNSUPPORTED_LEG); /* Six intervals exceeds cap. */
+    puts("PASS: cyclic stop-list boundary on either/both routes, bounded multi-hop/express wrap, original endpoint and repeated/full-loop exclusions.");
 }
 static void cross_platform_tests(void) {
     fixture(); stops[2].terminal = 2; vehicle.arrival_terminal = 2;
@@ -247,6 +278,7 @@ int main(void) {
     CHECK(tfx_pilot_remember_bounded(small, &count, &cursor, 16, 99) == -1);
     route_tests();
     cross_platform_tests();
+    wrap_route_tests();
     fixture(); it_candidate result;
     CHECK(it_validate_candidate(&platform_api, 7, 42, 99, &result) == TFX_OK && result.reason == IT_CANDIDATE);
     CHECK(result.dispatch_sequence == 123 && result.proposed_line == 20 && result.boarding_stop == 2 && result.alighting_stop == 3);
@@ -256,11 +288,11 @@ int main(void) {
     fixture(); leg.vehicle = -3; expect(IT_UNSUPPORTED_WAITING_STATE);
     fixture(); leg.vehicle = 99; expect(IT_ALREADY_ASSIGNED);
     fixture(); leg.alighting_stop = 6; expect(IT_UNSUPPORTED_LEG);
-    fixture(); leg.boarding_stop = INT32_MAX; expect(IT_UNSUPPORTED_LEG);
+    fixture(); leg.alighting_stop = INT32_MAX; expect(IT_UNSUPPORTED_LEG);
     fixture(); vehicle.line = 10; expect(IT_SAME_LINE);
     fixture(); vehicle.load_state = 5; expect(IT_VEHICLE_NOT_LOADING);
     fixture(); vehicle.user_stopped = 1; expect(IT_VEHICLE_NOT_LOADING);
-    fixture(); stops[2].stop_count = 3; expect(IT_UNSUPPORTED_LEG);
+    fixture(); leg.alighting_stop = leg.boarding_stop; expect(IT_UNSUPPORTED_LEG);
     fixture(); stops[3].has_alternative_terminals = 1; expect(IT_ALTERNATIVE_TERMINALS);
     fixture(); stops[2].station_entity = 101; expect(IT_BOARDING_MISMATCH);
     fixture(); stops[3].station_group = 3000; expect(IT_ALIGHTING_MISMATCH);

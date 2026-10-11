@@ -1,5 +1,8 @@
 # Shared native bridge — bounded passenger pilot
 
+Version0.10.1 fixes bounded return legs crossing the end of a line stop list.
+See [return-terminus fix and trial](../docs/return-terminus-fix.md).
+
 The bridge provides one centrally owned terminal-update interception and a small
 versioned C API with copied queries and a staged waiting-leg change operation.
 Version0.10.0 adds [cross-platform boarding](../docs/cross-platform-trial.md) within

@@ -1189,3 +1189,26 @@ verification. Do not claim installation or gameplay validation without running i
   both worlds observed. New log tpf-bridge-312-20897483.log and live-run.json retain
   evidence. Early callbacks/candidate exclusions only; no new live success claimed.
   Capture runs with32 attempts,4 full samples,18000 callbacks. No line/vehicle edits.
+
+## 2026-10-11 — Recover cross-platform evidence and finish 0.10.1
+
+- Recovered interrupted last-to-first fix from2026-10-09. A shuttle returning to
+  its first terminus crosses the line-list boundary (fixture S3:6→0,S1:5→0),
+  which0.10.0 rejected. Generic modulo traversal now permits up to4 forward
+  intervals on either/both routes, retaining native indices, original destination,
+  ordered station sequence and existing platform/capacity/deferred checks.
+- Reviewed tests for different route lengths, multi-interval and express crossing,
+  missing/invalid stops, repeated stations and actual consumer boarding. All13
+  invocations had passed; verified report hashes against executable artifacts and
+  CMake reports no work required. Worst query allowance remains63/64.
+- Prepared build-v10b/package, not loaded. DLL SHA
+  `c26352cba241b8c4bcbc2ad238944caa4e7e3e1670057af1ffb5e673f44f94e8`;
+  report SHA `140cea8bd1766cae41a87c5e922188ed70146a919316cb5c68c5a006f0bac4ae`.
+  [Scope and integrated trial](return-terminus-fix.md). No stable release claim.
+- Recovered0.10.0 log ends at4800:12 successful changes/boardings,5 cross-platform
+  boardings,4 sampled original arrivals (including cross-platform105864),4
+  unresolved samples,4 unsampled boardings,zero logged errors. No summary/stop
+  marker; recording end cause unknown. Partial audit retained in build-v10a.
+  Log SHA `e1734ecf1643806831f0bad76e58fb8c18db3cfb8bfda141e69c5a95a9f1f1e3`.
+- No current game process found. Await fresh disposable baseline readiness;
+  old PIDs/world pointers/watcher details are invalid for the next trial.
