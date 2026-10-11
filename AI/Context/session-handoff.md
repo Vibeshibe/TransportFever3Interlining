@@ -1,5 +1,28 @@
 # Session handoff — 2026-10-11
 
+## Latest — 0.14.0 partial throughput; pause investigation to conserve usage
+
+User has1% usage left; preserve evidence and defer further investigation.
+Local15:04 S3 left7 S1 waiters, some switched (direction unspecified).
+15:07 S2→Faringdon:16 S1/6 S3 waiting, user observed one S1→S2 switch;
+subsequent S1 served two S3.15:09 S3 towardMelksham: no observed switches.
+15:10 S1→Faringdon:2 own/5 S3/4 S2, user observed no switches.
+Do not equate UI counts with individually validated candidates, but shared return
+queues remain intended candidates; do not invent exclusions or ETA selection.
+
+One preserved snapshot at13:13:25Z:3000callbacks,24 staged/applied/confirmed
+boardings,7 samples,2 original arrivals,1 lifecycle outcome,4 active samples,
+17 unsampled boardings. Peak pending3 confirms concurrent boarding is exercised;
+capacity_holds0,peaktrackers7. No query-error/timeout/summary markers. Latest
+performance2400:mean172.352µs,p95 upper512µs,max14293µs,peak41queries/2145reads/
+52753bytes. Investigate the14.293ms outlier; do not claim stable performance.
+Evidence:build-v14a/reported-opportunities-01.json/.log. Individual departure
+matching and exact causes remain unexamined; no additional mutation or restart.
+Next session: correlate these windows with ready vehicles, candidate selections,
+tracking/discovery phases and queue coverage before another implementation.
+0.14.0 is not stable; preserve current log even if game is closed. User may pause
+or quit after this checkpoint. Main unchanged.
+
 ## Active — 0.14.0 loaded; user unpaused, conserve remaining usage
 
 Fresh LinuxPID88445/start1435269, WindowsPID308; original baseline ready13:01:35Z.
