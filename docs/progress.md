@@ -1332,3 +1332,16 @@ are not required to begin the next development trial and are not counted as
 arrivals. No stop or restart performed.0.12.0 package ZIP verified183299bytes,
 SHA256 `e090857f7fbd7a4171c40aa21fdf24171e268d552efef4ff0be937cb6b5a23cc`;
 source `dadbab9`, implementation `beadb5c`, already pushed todev.
+
+## 2026-10-11 — 0.12.0 integrated trial loaded
+
+Verified the user-restarted process50787/start946352 (Windows308), original
+pre-trial save, executable and prepared artifact/package fingerprints. Actual
+save load11:14:02Z, ready11:15:38Z. No previous bridge mapped. Loading at
+11:16:57Z returned`tfx_start=0`; startup confirms0.12.0, per-vehicle leg hints
+and32/4/18000 bounds. Requested normal-speed unpause; no boarding result claimed
+at startup. Watcher17862; evidence under ignored`analysis/native-bridge/build-v12a`.
+
+Previous0.11.0 run ended on restart with final periodic8400 totals unchanged:
+32 boardings,7 sampled arrivals,1 lifecycle outcome,4 unresolved samples and20
+unsampled boardings. No summary/error marker; retain its partial-run designation.
