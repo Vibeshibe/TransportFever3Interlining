@@ -1,5 +1,27 @@
 # Session handoff — 2026-10-11
 
+## Latest live finding — 0.13.1 partly fixes Wimborne, still misses waiters
+
+S1 vehicle98398 return stop5:102185 S3→S1 staged1231/boarded1243;
+75645 S2→S1 1246/1248;112732 S3→S1 1251/1253. All preserve Faringdon endpoint.
+User initially12 S1/2 S3/3 S2, updated S3 to5, later reported4 S3/3 S2 remaining.
+Record the two confirmed S3 and one S2 boardings; do not infer passenger identities
+or eligibility solely by subtraction of UI queue counts. Exact snapshot under
+build-v13b/wimborne-s1-return-01.json/.log. Thread596 (this run).
+
+First staged passenger waited12callbacks before boarding; current global pending
+boarding gate prevents more switches meanwhile.1254 also spent a general exploration
+check on an outbound S2 leg. These are observed delays, not a complete attribution
+for all remaining waiters. Live selection improved but queue clearance unresolved.
+At1200callbacks:mean150.243us,p95 upper512us,max1094us,peak43queries/1979reads/
+43563bytes. Read fresh log for current totals; watcher7762 lasts10minutes only.
+
+Current0.13.1 is still running unchanged. No next build started or restart needed.
+Next implementation direction: bounded multiple pending boardings, with explicit
+capacity/reservation accounting, bounded scheduling and tested duplicate/deadline/
+failure guards. Do not lift the single-pending guard without replacing its safety
+and processing constraints. Stable promotion and live>32 remain pending.
+
 ## Live — 0.13.1 direction-selection trial running
 
 User restarted and confirmed normal-speed unpause. Verified fresh LinuxPID77940/

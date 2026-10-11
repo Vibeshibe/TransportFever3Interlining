@@ -1491,3 +1491,26 @@ continuous mode and no lifetime cutoffs. User confirmed normal-speed unpause;
 both worlds began observations (0x2cbdda10/0x2cbdcd50). No boarding claim at startup.
 Watcher7762 reads logs/process only; log `tpf-bridge-316-13152169.log` and receipts underbuild-v13b.
 Live coverage/performance/continuation gates remain pending; main unchanged.
+
+### 0.13.1 Wimborne return: both source queues served, incomplete clearance
+
+User reported S1 approaching Wimborne with12 own waiters,initially2 then5 S3,
+and3 S2. After departure they reported4 S3 and3 S2 remaining. Confirmed onS1
+vehicle98398:102185 S3→S1 staged1231/boarded1243;75645 S2→S1 1246/1248;
+112732 S3→S1 1251/1253. All preserve planned Wimborne→Faringdon endpoint.
+Thus two S3 plus one S2 switched; queue-count differences are not identity counts.
+Other passengers may arrive while boarding; no individual remaining-queue capture.
+
+First change waited12callbacks for boarding confirmation. Consumer blocks new
+switches during that wait. After the third boarding,1254 selected an outbound
+S2 leg and rejected alighting mismatch. Sparse logging does not enumerate every
+later check, so these are measured delays, not an exhaustive cause attribution.
+This confirms improved live direction selection but not complete queue coverage.
+Evidence `build-v13b/wimborne-s1-return-01.json/.log` preserves this event.
+
+At1200updates:mean150.243us,p95 upper512us,max1094us,peak43queries/1979reads/
+43563bytes. No logged error at the event checkpoint. Current0.13.1 stays loaded;
+no0.13.2 implementation or restart requested. Next throughput work should examine
+bounded concurrent pending boardings, with fresh capacity/reservation accounting,
+per-update query budgets, duplicate guards and exact confirmation timeouts tested
+before any live increase. Do not simply remove the pending-boarding guard.
