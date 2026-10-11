@@ -63,3 +63,37 @@ or vehicle edits. Observe Wimborne→Faringdon: original6→0 and replacement5�
 should be eligible when the remaining checks pass. Confirm both-world boarding
 and sample the original destination. These indices describe the fixture only.
 No additional read-only replay is required before this trial.
+
+## Live checkpoint — 2026-10-11, 10:13 UTC
+
+The verified baseline is running with 0.10.1. At callback 1,800, six passengers
+have switched and boarded in both worlds, including three cross-platform
+boardings and a two-interval leg. Return-to-first-stop boarding is confirmed in
+both directions between the two lines:
+
+- Passenger 30574: S1 5→0 replaced by S3 6→0, boarded at callback 213.
+- Passenger 118180: S3 6→0 replaced by S1 5→0, boarded at callback 1,497.
+
+Neither is yet a confirmed original-destination arrival. Passenger 30574's
+destination assignment was invalidated in both worlds; another passenger's home
+was invalidated. Both outcomes were recorded without an arrival claim and
+switching continued. Four sampled journeys remain active; no errors are logged.
+
+The user reported approximately 17 potential S1/S3 passengers missing an S2
+departure toward Faringdon at Wimborne, followed by shared boarding on S1.
+A read-only snapshot found six S3 passengers with planned stops 6→0 and S2
+vehicle 98388 at stop 5 with 33 free places. Its loading state was already 4;
+the implementation accepts state 3. These are repeated reads from one world
+only, taken while running; the second world was unavailable. They do not prove
+eligibility during the earlier loading window or identify all 17 passengers.
+No switching attempt onto that S2 departure appears in the log.
+
+Discovery/timing is the leading explanation for the missed opportunity, not an
+established cause. At callback 1,200, 149 of 177 passenger screens examined a
+different station; only 14 picks used station hints, against 163 global picks.
+Review station-hint coverage and ready-vehicle scheduling before expanding the
+accepted loading states. Preserve the current loading and revalidation guards.
+
+Ignored evidence: `build-v10b/live-checkpoint.json`,
+`wimborne-s2-opportunity-01.log` and its JSON metadata. Capture remains active;
+this checkpoint is not a completed-trial result.

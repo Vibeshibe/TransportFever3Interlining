@@ -2,6 +2,17 @@
 
 ## Current — 0.10.1 live after confirmed unpause
 
+Checkpoint 10:13 UTC / callback 1800: six both-world boardings, including
+S1 5→0 → S3 6→0 (30574) and S3 6→0 → S1 5→0 (118180). Three cross-platform
+boardings, one two-interval leg. Zero confirmed final arrivals, two resolved
+lifecycle invalidations, four active samples, no logged errors. 30574 is an
+invalidated destination, not an arrival. User-reported S2 miss at Wimborne is
+preserved in `build-v10b/wimborne-s2-opportunity-01.*`: one-world snapshot finds
+six S3 6→0 waiters and S2 vehicle 98388 with 33 places but load_state=4. Exact
+miss cause unproven; investigate station-hint coverage/ready-vehicle scheduling.
+Do not relax load_state=3 or claim all 17 reported passengers were validated.
+See [live evidence](../../docs/return-terminus-fix.md).
+
 Implementation `4cc0d71` is pushed to `origin/dev`. Fresh verified baseline loaded
 on 2026-10-11; Linux PID 33707/start 502346, Windows PID 308. No old bridge
 was mapped. Executable, save and artifact hashes match the prepared package.

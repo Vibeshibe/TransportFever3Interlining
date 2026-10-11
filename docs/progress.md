@@ -1223,3 +1223,14 @@ or arrival result claimed at startup. Capture and process identity are preserved
 in ignored `analysis/native-bridge/build-v10b/live-run.json`; next check is
 return-to-first-terminus eligibility, actual boarding and sampled destinations.
 Package ZIP checksum: `2c1ad23b592264f564aa383322757440883f4ac6b9f4ec1e5b7e12afe31b547b`.
+
+### 0.10.1 early live evidence and reported S2 miss
+
+At callback 1,800: six both-world boardings, including both S1↔S3 last-to-first
+return legs toward Faringdon, three cross-platform boardings and one two-interval
+leg. No final arrivals yet; two lifecycle invalidations resolved without counting
+arrivals. Capture continues. Preserved user-reported missed S2 departure and a
+one-world observational snapshot showing six S3 return-leg waiters, 33 free
+places on S2, but loading state already outside the accepted window. Discovery
+or scheduling may explain the miss; exact cause remains unproven. See
+[checkpoint and limitations](return-terminus-fix.md).
