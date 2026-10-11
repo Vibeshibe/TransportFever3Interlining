@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-project(tpf_shared_bridge VERSION 0.12.0 LANGUAGES C ASM)
+project(tpf_shared_bridge VERSION 0.13.0 LANGUAGES C ASM)
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Use a Windows x64 toolchain")
 endif()
 set(CMAKE_C_STANDARD 11)
+option(TFX_CONTINUOUS "Continuous consumer without lifetime attempt/callback cutoffs" OFF)
 add_compile_options(-Wall -Wextra -Werror)
 set(TFX_PILOT_OBSERVATION_LIMIT "3600" CACHE STRING "Pilot callback cap (1..36000)")
 if(NOT TFX_PILOT_OBSERVATION_LIMIT MATCHES "^[1-9][0-9]*$" OR TFX_PILOT_OBSERVATION_LIMIT GREATER 36000)
@@ -33,6 +34,7 @@ if(TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE AND (TFX_PILOT_PASSENGER_LIMIT LESS 2 OR
 endif()
 add_library(tpf_shared_bridge SHARED host.c backend.c queries.c mutation.c candidate_probe.c ../src/interlining/native_candidate.c slot.c entry.S)
 target_compile_definitions(tpf_shared_bridge PRIVATE TFX_OBSERVATION_LIMIT=${TFX_PILOT_OBSERVATION_LIMIT}
+    TFX_CONTINUOUS=$<BOOL:${TFX_CONTINUOUS}>
     TFX_PASSENGER_LIMIT=${TFX_PILOT_PASSENGER_LIMIT}
     TFX_JOURNEY_SAMPLE_LIMIT=${TFX_PILOT_JOURNEY_SAMPLE_LIMIT}
     TFX_RESERVE_LAST_FOR_LIFECYCLE=$<BOOL:${TFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE}>)
@@ -82,3 +84,10 @@ target_compile_definitions(host_capacity_tests PRIVATE TFX_PASSENGER_LIMIT=32)
 
 add_executable(discovery_tests discovery_tests.c candidate_probe.c ../src/interlining/native_candidate.c)
 target_compile_definitions(discovery_tests PRIVATE TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4)
+
+add_executable(continuous_host_tests continuous_host_tests.c host.c)
+target_compile_definitions(continuous_host_tests PRIVATE TFX_CONTINUOUS=1 TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4)
+add_executable(continuous_tests discovery_tests.c candidate_probe.c ../src/interlining/native_candidate.c)
+target_compile_definitions(continuous_tests PRIVATE TFX_CONTINUOUS=1 TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4 TFX_TEST_CONTINUOUS=1)
+
+add_executable(query_performance_tests query_performance_tests.c host.c queries.c mutation.c)

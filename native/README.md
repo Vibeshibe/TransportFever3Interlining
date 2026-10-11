@@ -1,9 +1,11 @@
-# Shared native bridge — bounded passenger pilot
+# Shared native bridge — continuous interlining candidate
 
-Version 0.12.0 improves [selection during boarding windows](../docs/boarding-window-selection.md):
-independent passenger searches per vehicle, preferred compatible-leg hints and
-more frequent ready-vehicle selection. Fourteen offline checks pass; build-v12a
-is prepared but not loaded. The 0.11.0 live capture continues independently.
+Version 0.13.0 adds [continuous operation](../docs/continuous-operation.md),
+cross-source endpoint selection and ABI9 paged line discovery. Lifetime passenger
+and callback cutoffs can be disabled with `--continuous`; per-update budgets,
+boarding confirmation and route guards remain. Offline validation passes; a fresh
+live trial is required before stable promotion. The prior 0.12.0 trial reached
+32 confirmed boardings but repeatedly missed the S3 queue at return departures.
 
 Version 0.11.0 improves [discovery coverage](../docs/discovery-coverage.md):
 drained scan pages, larger station/vehicle hint caches and a ready-vehicle
@@ -87,6 +89,8 @@ directory and restart the game before testing a changed bridge.
 Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `query_tests.exe`,
 `candidate_tests.exe`, `host_batch_tests.exe`, `host_capacity_tests.exe`,
 `pilot_tests.exe`, `pilot_reserve_tests.exe`, `pilot_sampled_tests.exe`,
+`discovery_tests.exe`, `continuous_tests.exe`, `continuous_host_tests.exe`,
+`query_performance_tests.exe`,
 `journey_probe_tests.exe`, `journey_snapshot.exe`,
 `boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).

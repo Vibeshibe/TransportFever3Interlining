@@ -29,7 +29,13 @@ def main():
                         help="concurrent full journeys, 1..5; defaults to full tracking up to 5 attempts, otherwise 4")
     parser.add_argument("--reserve-last-attempt-for-lifecycle", action="store_true",
                         help="trial pacing: keep final attempt unused until a tracked lifecycle outcome is confirmed")
+    parser.add_argument("--continuous", action="store_true",
+                        help="remove lifetime attempt/callback cutoffs; retain bounded per-update work")
     args = parser.parse_args()
+    if args.continuous:
+        args.passenger_limit = 32
+        if args.reserve_last_attempt_for_lifecycle:
+            parser.error("continuous mode cannot reserve a final attempt")
     if not 1 <= args.passenger_limit <= 32:
         parser.error("--passenger-limit must be between 1 and 32")
     if args.journey_sample_limit is None:
@@ -73,6 +79,7 @@ def main():
         "-DCMAKE_SYSTEM_NAME=Windows", f"-DCMAKE_C_COMPILER={compiler}",
         f"-DCMAKE_ASM_COMPILER={compiler}", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
         f"-DTFX_PILOT_OBSERVATION_LIMIT={args.observation_limit}",
+        f"-DTFX_CONTINUOUS={'ON' if args.continuous else 'OFF'}",
         f"-DTFX_PILOT_PASSENGER_LIMIT={args.passenger_limit}",
         f"-DTFX_PILOT_JOURNEY_SAMPLE_LIMIT={args.journey_sample_limit}",
         f"-DTFX_PILOT_RESERVE_LAST_FOR_LIFECYCLE={'ON' if args.reserve_last_attempt_for_lifecycle else 'OFF'}",

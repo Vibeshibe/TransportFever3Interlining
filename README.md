@@ -2,8 +2,11 @@
 
 Research and development for passengers using overlapping Transport Fever 3
 services, including boarding the next suitable vehicle and varied preferences.
-A passive probe and experimental read-only native bridge exist. No interlining
-behavior fix is active yet.
+An experimental native bridge switches eligible passengers between overlapping
+services; live trials have confirmed boarding and sampled destination arrivals.
+[Version 0.13.0](docs/continuous-operation.md) adds continuous operation and
+selection across source queues. It is a release candidate awaiting live validation,
+not an automatically installed or stable release.
 
 ## Layout
 

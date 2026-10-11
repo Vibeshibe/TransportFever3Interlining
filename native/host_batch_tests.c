@@ -14,11 +14,14 @@ static tfx_status expected_request, expected_results[2];
 static unsigned expected_attempts[2];
 static tfx_context stale;
 static uint64_t expired_ticket;
+static uint64_t arrival_bits;
+static unsigned journey_mode, journey_wrong;
 
 tfx_status tfx_query_waiting(tfx_reader *r, int32_t person, tfx_waiting_leg *out) {
     (void)r;
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = person,
-        .line = 10, .boarding_stop = 1, .alighting_stop = 2, .vehicle = -1, .destination = 99};
+        .line = 10, .boarding_stop = 1, .alighting_stop = 2, .vehicle = -1, .destination = 99,
+        .arrival_time_bits = arrival_bits};
     return TFX_OK;
 }
 tfx_status tfx_query_waiting_raw(tfx_reader *r, int32_t p, unsigned char out[32]) {
@@ -29,10 +32,17 @@ tfx_status tfx_query_waiting_raw(tfx_reader *r, int32_t p, unsigned char out[32]
 #define STUB2(name, type) tfx_status name(tfx_reader *r, int32_t a, int32_t b, type *out) { \
     (void)r; (void)a; (void)b; (void)out; return TFX_QUERY_UNAVAILABLE; }
 STUB1(tfx_query_scan, tfx_waiting_page)
+STUB1(tfx_query_scan_lines, tfx_line_page)
 STUB1(tfx_query_vehicle, tfx_vehicle)
 STUB1(tfx_query_platforms, tfx_person_platforms)
 STUB1(tfx_query_presence, tfx_entity_presence)
-STUB1(tfx_query_journey, tfx_person_journey)
+tfx_status tfx_query_journey(tfx_reader *r, int32_t person, tfx_person_journey *out) {
+    if (!journey_mode) return TFX_QUERY_UNAVAILABLE;
+    *out = (tfx_person_journey){.struct_size = sizeof(*out), .world_id = r->world_id,
+        .person = person, .destination = 99, .line = 20, .vehicle = journey_wrong ? 51 : 50,
+        .boarding_stop = 1, .alighting_stop = 2, .flags = TFX_JOURNEY_ONBOARD};
+    return TFX_OK;
+}
 STUB1(tfx_query_lifecycle, tfx_person_lifecycle)
 STUB2(tfx_query_stop, tfx_line_stop)
 STUB2(tfx_query_stop_terminals, tfx_stop_terminals)
@@ -55,6 +65,10 @@ static tfx_status write_change(tfx_reader *r, const tfx_waiting_leg_change *q,
 }
 static void client(tfx_context context, void *unused) {
     (void)unused;
+    if (journey_mode) {
+        tfx_person_journey j = {.struct_size = sizeof(j)};
+        CHECK(api.read_person_journey(context, people[0], &j) == TFX_OK); return;
+    }
     if (readback && expired_ticket) {
         tfx_change_result result = {.struct_size = sizeof(result), .ticket = 12345};
         tfx_change_result unchanged = result;

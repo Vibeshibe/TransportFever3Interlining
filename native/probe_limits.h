@@ -2,6 +2,12 @@
 #define TFX_PROBE_LIMITS_H
 /* Bound unconfirmed home loss; both-world home invalidation is a separate outcome. */
 #define TFX_HOME_CLEAR_GRACE_CALLBACKS 32u
+#ifndef TFX_CONTINUOUS
+#define TFX_CONTINUOUS 0
+#endif
+#if TFX_CONTINUOUS != 0 && TFX_CONTINUOUS != 1
+#error "Continuous mode must be 0 or 1"
+#endif
 /* Research bounds are explicit build inputs, never runtime API overrides. */
 #ifndef TFX_OBSERVATION_LIMIT
 #define TFX_OBSERVATION_LIMIT 3600
@@ -30,8 +36,11 @@
 #if TFX_PASSENGER_LIMIT > 5 && TFX_JOURNEY_SAMPLE_LIMIT > 4
 #error "Larger trials permit at most four concurrent journey samples"
 #endif
+#if TFX_CONTINUOUS && TFX_PASSENGER_LIMIT <= TFX_JOURNEY_SAMPLE_LIMIT
+#error "Continuous records must hold journey samples plus one pending boarding"
+#endif
 #define TFX_TRACKER_SLOTS (TFX_JOURNEY_SAMPLE_LIMIT + 1)
-#define TFX_FULL_JOURNEY_TRACKING (TFX_JOURNEY_SAMPLE_LIMIT == TFX_PASSENGER_LIMIT)
+#define TFX_FULL_JOURNEY_TRACKING (!TFX_CONTINUOUS && TFX_JOURNEY_SAMPLE_LIMIT == TFX_PASSENGER_LIMIT)
 /* Dispatch callbacks, not game seconds. Missing either replica at this deadline
  * stops new changes; it does not refund the attempt or attempt a rollback. */
 #define TFX_BOARDING_GRACE_CALLBACKS 600u

@@ -20,6 +20,7 @@ tfx_status tfx_query_waiting(tfx_reader *, int32_t person, tfx_waiting_leg *out)
 tfx_status tfx_query_stop_terminals(tfx_reader *, int32_t line, int32_t stop, tfx_stop_terminals *out);
 tfx_status tfx_query_stop(tfx_reader *, int32_t line, int32_t stop, tfx_line_stop *out);
 tfx_status tfx_query_scan(tfx_reader *, int32_t first_entity, tfx_waiting_page *out);
+tfx_status tfx_query_scan_lines(tfx_reader *, int32_t first_entity, tfx_line_page *out);
 tfx_status tfx_query_stop_vehicles(tfx_reader *, int32_t line, int32_t stop, tfx_stop_vehicles *out);
 tfx_status tfx_query_vehicle(tfx_reader *, int32_t vehicle, tfx_vehicle *out);
 tfx_status tfx_query_platforms(tfx_reader *, int32_t person, tfx_person_platforms *out);

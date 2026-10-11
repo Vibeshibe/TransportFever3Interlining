@@ -1374,3 +1374,30 @@ At11:27Z:32 both-world boardings, last2576;7 samples,2 original arrivals,1 home
 invalidation,4 active samples,25 unsampled boardings. No logged errors. The
 capture can now only complete samples; later missed boardings occur after the
 switch cap. Exact snapshot and audit saved underbuild-v12a. No stop command issued.
+
+## 2026-10-11 — 0.13.0 continuous implementation and processing checks
+
+Documented both S3 queue misses before implementation. Endpoint hints now rank
+across source lines and prefer a different compatible source queue. All proposals
+still pass fresh full validation. The mixed-direction fixture serves20/20 eligible
+passengers across16 phases, compared with recorded0.12.0's12–13/20.
+
+Added explicit continuous mode: no lifetime passenger/callback cutoff, recycled
+outcome records, bounded samples and sparse per-person waiting-episode guards.
+Later journeys require fresh native waiting timestamps and prior both-world
+boarding. Host tests cover4,096 episodes; consumer stress stages5,185 requests in
+66,500 callbacks, including new demand-free service, deletion/recreation and
+stale-request recovery. ABI9 adds paged line discovery; older ABI layouts remain.
+
+Added native query-cost benchmark, live callback/query/read/byte telemetry,
+bounded detailed logging and a reusable suite runner. Final copied-memory
+measurements: sparse page mean3.769us/p95 3.800us/max1060.600us;64 waiting queries
+mean209.622us/p95 396.700us/max979.900us. Synthetic data underWine, not measured game FPS. Existing worst
+fixture remains within64queries. All17 final invocations passed; executable and DLL fingerprints verified.
+DLL SHA256 `4a39e2765bf0b8388945e71f6722e8533df03b50d27d3494cc151fb2b9fc201f`;
+report SHA256 `dd1702a5a0c0aa3dbfde41a929bab33e2b5714e3d94718d2261c8e5e345da5ee`.
+
+See [continuous scope, validation and release gates](continuous-operation.md).
+Build-v13a is not loaded; main remains unchanged.0.12.0 log now records a third
+original arrival (111528,3156/3157), leaving3 active samples. Its32 switches all
+boarded; no new changes are possible in that DLL. Preserved implementation snapshot.

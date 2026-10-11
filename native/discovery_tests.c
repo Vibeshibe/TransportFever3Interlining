@@ -5,6 +5,12 @@
 #include <string.h>
 #include "candidate_probe.h"
 #include "probe_limits.h"
+#ifdef TFX_TEST_CONTINUOUS
+#include <windows.h>
+#define TEST_REQUESTS 8192
+#else
+#define TEST_REQUESTS TFX_PASSENGER_LIMIT
+#endif
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 #define FIRST 100
 #define PEOPLE 241
@@ -16,14 +22,24 @@ static tfx_client client;
 static uint64_t sequence;
 static unsigned queries, peak, window, missing_target, staged, boarding_reads, scan_calls;
 static unsigned mixed_directions, changed_hints, dual_arrival;
+static unsigned epoch, network_only, new_line, auto_arrive, reject_once, reject_before;
 static unsigned seen[PEOPLE], duplicate_staging[PEOPLE], seen_vehicles[82];
-static tfx_waiting_leg_change requests[TFX_PASSENGER_LIMIT];
+static tfx_waiting_leg_change requests[TEST_REQUESTS];
+static uint64_t request_sequence[TEST_REQUESTS];
+static unsigned request_rejected[TEST_REQUESTS];
 static char output[262144];
 #define BEGIN(out) do { CHECK(c == 7 && (out)->struct_size == sizeof(*(out))); ++queries; } while (0)
-static void log_line(const char *s) { CHECK(strlen(output) + strlen(s) < sizeof(output)); strcat(output, s); }
+static void log_line(const char *s) {
+#ifdef TFX_TEST_CONTINUOUS
+    CHECK(!strstr(s, "candidate_query_error") && !strstr(s, "pilot_summary"));
+    if (strncmp(s, "pilot_totals ", 13) && strncmp(s, "pilot_discovery ", 16)) return;
+    if (strlen(output) + strlen(s) >= sizeof(output)) output[0] = 0;
+#endif
+    CHECK(strlen(output) + strlen(s) < sizeof(output)); strcat(output, s);
+}
 static int32_t demand_line(int32_t person) {
     return person < 180 ? SOURCE + (mixed_directions && person >= 140) :
-        person == 180 ? SUBSTITUTE : 1000 + (person - 181) / 4;
+        person == 180 ? (network_only ? SOURCE : SUBSTITUTE) : 1000 + (person - 181) / 4;
 }
 static int opposite(int32_t person) {
     return mixed_directions && person < 180 && ((person - FIRST) % 4 ||
@@ -49,12 +65,13 @@ static tfx_status waiting(tfx_context c, int32_t person, tfx_waiting_leg *out) {
     int32_t line = demand_line(person);
     *out = (tfx_waiting_leg){.struct_size = sizeof(*out), .person = person, .line = line,
         .boarding_stop = line < 1000 ? 5 : 0, .alighting_stop = line < 1000 ? 0 : 1,
-        .vehicle = -1, .destination = 777};
+        .vehicle = -1, .destination = 777, .arrival_time_bits = epoch};
     if (opposite(person)) { out->boarding_stop = 1; out->alighting_stop = 2; }
     return TFX_OK;
 }
 static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop *out) {
     BEGIN(out); CHECK(index >= 0 && index < 6);
+    if (network_only && !new_line && line == SUBSTITUTE) return TFX_NOT_FOUND;
     int32_t group = line < 1000 ? (index == 5 ? 1001 : index == 0 ? 1002 : 1003 + index) :
         10000 + (line - 1000) * 10 + index;
     if (mixed_directions && line < 1000 && index == 1) group = 1001;
@@ -85,14 +102,14 @@ static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
     BEGIN(out); CHECK(id == TARGET || (dual_arrival && id == OPPOSITE_TARGET) || (id >= 50000 && id < 50080));
     int rail = id >= TARGET;
     ++seen_vehicles[rail ? 80 + (unsigned)(id - TARGET) : (unsigned)(id - 50000)];
-    if (rail && missing_target) return TFX_NOT_FOUND;
+    if (rail && (missing_target || (network_only && !new_line))) return TFX_NOT_FOUND;
     if (rail && window) ++boarding_reads;
     *out = (tfx_vehicle){.struct_size = sizeof(*out), .vehicle = id,
         .line = rail ? SUBSTITUTE : 1000 + (id - 50000) / 2,
         .stop_index = rail && window ? (id == TARGET ? 5 : 1) : 0, .state = 2,
         .load_state = rail && window ? 3 : 4, .arrival_locked = 1,
         .arrival_station_index = 0, .arrival_terminal = rail ? 2 : 0,
-        .passenger_capacity = 100, .passenger_places_left = 100 - staged, .passengers_onboard = staged}; return TFX_OK;
+        .passenger_capacity = 10000, .passenger_places_left = 10000 - staged, .passengers_onboard = staged}; return TFX_OK;
 }
 static tfx_status platforms(tfx_context c, int32_t person, tfx_person_platforms *out) {
     BEGIN(out); *out = (tfx_person_platforms){.struct_size = sizeof(*out), .person = person,
@@ -110,51 +127,66 @@ static tfx_status lifecycle(tfx_context c, int32_t id, tfx_person_lifecycle *out
         .world_id = (unsigned)((sequence-1)%2)+1, .flags = 3, .target = 777, .destinations = {555, -1, 777}}; return TFX_OK;
 }
 static tfx_status request(tfx_context c, const tfx_waiting_leg_change *r, uint64_t *ticket) {
-    CHECK(c == 7 && staged < TFX_PASSENGER_LIMIT && window && !missing_target);
-    CHECK(r->expected.person >= 100 && r->expected.person < 180);
+    CHECK(c == 7 && staged < TEST_REQUESTS && window && !missing_target);
+    CHECK(r->expected.person >= 100 && r->expected.person < (network_only ? 181 : 180));
     /* Stale direction hints cannot authorize boarding. */
     CHECK(!opposite(r->expected.person) || (dual_arrival && r->candidate_vehicle == OPPOSITE_TARGET));
-    CHECK(!duplicate_staging[r->expected.person-FIRST]++);
+    CHECK(duplicate_staging[r->expected.person-FIRST] != epoch + 1);
+    if (reject_before) { reject_before = 0; return TFX_EXPECTED_STATE_CHANGED; }
+    if (!reject_once) duplicate_staging[r->expected.person-FIRST] = epoch + 1;
     CHECK(r->line == SUBSTITUTE);
     if (r->candidate_vehicle == OPPOSITE_TARGET) {
         CHECK(dual_arrival && opposite(r->expected.person) && r->boarding_stop == 1 && r->alighting_stop == 2);
     } else CHECK(r->candidate_vehicle == TARGET && r->boarding_stop == 5 && r->alighting_stop == 0);
     queries += 2; CHECK(r->revalidate(c, r) == TFX_OK); queries += 5;
+    request_sequence[staged] = sequence; request_rejected[staged] = reject_once;
+    reject_once = 0;
     requests[staged++] = *r; *ticket = staged; return TFX_OK;
 }
 static tfx_status result(tfx_context c, uint64_t ticket, tfx_change_result *out) {
     BEGIN(out); CHECK(ticket && ticket <= staged);
     *out = (tfx_change_result){.struct_size = sizeof(*out), .ticket = ticket,
-        .person = requests[ticket-1].expected.person, .status = TFX_OK, .engine_attempted = 1}; return TFX_OK;
+        .person = requests[ticket-1].expected.person,
+        .status = request_rejected[ticket-1] ? TFX_EXPECTED_STATE_CHANGED : TFX_OK,
+        .engine_attempted = !request_rejected[ticket-1]}; return TFX_OK;
 }
 static tfx_status journey(tfx_context c, int32_t person, tfx_person_journey *out) {
     BEGIN(out);
-    unsigned i = 0;
-    while (i < staged && requests[i].expected.person != person) ++i;
-    CHECK(i < staged);
+    unsigned i = staged;
+    while (i && requests[i-1].expected.person != person) --i;
+    CHECK(i); --i;
     *out = (tfx_person_journey){.struct_size = sizeof(*out), .person = person,
         .world_id = (unsigned)((sequence-1)%2)+1, .destination = 777, .line = SUBSTITUTE,
         .boarding_stop = requests[i].boarding_stop, .alighting_stop = requests[i].alighting_stop,
-        .vehicle = requests[i].candidate_vehicle, .flags = TFX_JOURNEY_ONBOARD}; return TFX_OK;
+        .vehicle = requests[i].candidate_vehicle,
+        .flags = auto_arrive && sequence - request_sequence[i] > 32 ? TFX_JOURNEY_AT_BUILDING : TFX_JOURNEY_ONBOARD}; return TFX_OK;
+}
+static tfx_status scan_lines(tfx_context c, int32_t first, tfx_line_page *out) {
+    BEGIN(out); (void)first;
+    *out = (tfx_line_page){.struct_size = sizeof(*out), .next_entity = -1,
+        .count = new_line ? 1u : 0u, .lines = {SUBSTITUTE}};
+    return TFX_OK;
 }
 tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
-    CHECK(version == 8 || version == 7); base->abi_version = version;
-    base->capabilities = version == 8 ? 511 : 255;
+    CHECK(version == 9 || version == 8 || version == 7); base->abi_version = version;
+    base->capabilities = version == 9 ? 1023 : version == 8 ? 511 : 255;
     base->register_client = registration; base->read_observation = observation;
     tfx_api_v5 *api = (tfx_api_v5 *)base;
     api->v4.v3.v2.read_waiting_leg = waiting; api->v4.v3.v2.scan_waiting_people = scan;
     api->v4.v3.v2.read_line_stop = stop; api->v4.v3.read_vehicle = vehicle;
     api->v4.v3.read_stop_vehicles = loading; api->v4.read_person_platforms = platforms;
     api->read_terminal = terminal; api->read_entity_presence = presence;
-    if (version == 8) ((tfx_api_v8 *)base)->read_stop_terminals = terminals;
+    if (version >= 8) ((tfx_api_v8 *)base)->read_stop_terminals = terminals;
     ((tfx_api_v7 *)base)->read_person_lifecycle = lifecycle;
     ((tfx_api_v6 *)base)->request_waiting_leg_change = request;
     ((tfx_api_v6 *)base)->read_change_result = result; ((tfx_api_v6 *)base)->read_person_journey = journey;
+    if (version == 9) ((tfx_api_v9 *)base)->scan_lines = scan_lines;
     return TFX_OK;
 }
 static void reset(void) {
     sequence = window = missing_target = staged = boarding_reads = scan_calls = 0;
     mixed_directions = changed_hints = dual_arrival = 0;
+    epoch = network_only = new_line = auto_arrive = reject_once = reject_before = 0;
     memset(seen_vehicles, 0, sizeof(seen_vehicles));
     memset(seen, 0, sizeof(seen)); memset(duplicate_staging, 0, sizeof(duplicate_staging)); output[0] = 0;
     CHECK(tfx_register_candidate_probe(log_line) == TFX_OK);
@@ -164,6 +196,7 @@ static void tick(void) {
     if (queries > peak) peak = queries; CHECK(queries <= 64);
 }
 static void ticks(unsigned n) { while (n--) tick(); }
+#ifndef TFX_TEST_CONTINUOUS
 static void warm(unsigned phase) {
     reset(); ticks(600 + phase); CHECK(!staged);
     for (unsigned i = 0; i < PEOPLE; ++i) CHECK(seen[i]);
@@ -235,3 +268,30 @@ int main(void) {
     printf("PASS: all 241 waiters learned across sparse pages; 80-person rail queue survives 40 bus stations/81 vehicles; 16 boarding-window phases, repeated switches and stale/deleted priority hints; peak=%u/64 queries.\n", peak);
     return 0;
 }
+#else
+int main(void) {
+    CHECK(TFX_CONTINUOUS);
+    reset(); network_only = auto_arrive = 1; window = 1;
+    ticks(900); CHECK(!staged); /* Replacement has no waiting passengers and does not exist yet. */
+    new_line = 1; reject_once = reject_before = 1;
+    LARGE_INTEGER start, finish, frequency;
+    QueryPerformanceFrequency(&frequency); QueryPerformanceCounter(&start);
+    for (epoch = 1; epoch <= 64; ++epoch) {
+        ticks(1024);
+        CHECK(!tfx_pilot_complete());
+        if (epoch == 1) CHECK(staged > 32);
+        if (epoch == 2) {
+            new_line = 0; unsigned before = staged; ticks(64); CHECK(staged == before);
+            new_line = 1;
+        }
+    }
+    QueryPerformanceCounter(&finish);
+    CHECK(staged >= 4096 && sequence > 36000 && !tfx_pilot_complete());
+    CHECK(!reject_before && !reject_once);
+    CHECK(strstr(output, "canceled=1 continuous=1"));
+    printf("PASS: continuous consumer staged=%u callbacks=%llu; repeated episodes, bounded record recycling, same-wait suppression, new demand-free line, removal/recreation, canceled stale request; peak=%u/64 queries; fixture_average_us=%.3f (mock queries, not game cost).\n",
+        staged, (unsigned long long)sequence, peak,
+        (double)(finish.QuadPart-start.QuadPart)*1e6/(double)frequency.QuadPart/(64.0*1024.0+64.0));
+    return 0;
+}
+#endif

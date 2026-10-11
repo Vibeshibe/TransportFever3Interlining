@@ -1,5 +1,42 @@
 # Session handoff — 2026-10-11
 
+## Latest — 0.13.0 continuous release candidate implemented
+
+User authorized implementation after documenting two S3 queue misses and wants
+stable continuous operation with performance evidence. Work is on dev. See
+[continuous-operation scope and gates](../../docs/continuous-operation.md).
+
+Prepared **build-v13a**, **not loaded**. Build uses `--continuous`, 32 recycled
+records, four journey samples, no lifetime attempt/callback stop. ABI9 discovers
+lines independently of waiting demand; endpoint hints alternate source queues.
+Episode guards allow later journeys only after both-world boarding and a fresh
+native waiting timestamp. Same-wait duplicates and uncertain-write failures remain
+blocked. Full route/terminal/capacity and deferred exact-state checks remain.
+
+Offline evidence: 5,185 staged requests / 66,500 callbacks; 4,096 host episodes;
+20/20 compatible passengers in all16 mixed-direction timing phases (0.12:12–13).
+Final ReadProcessMemory synthetic benchmark: mean3.769us/p95 3.800us sparse
+page; mean209.622us/p95 396.700us 64-query batch; maxima1.061ms/0.980ms. All17 final invocations passed using `tools/test_native_bridge.py`; executable
+and DLL fingerprints match `build-v13a/capacity-tests.json`. Live telemetry measures callback costs;
+synthetic tests are not game FPS evidence. No stable promotion yet.
+
+DLL SHA256 `4a39e2765bf0b8388945e71f6722e8533df03b50d27d3494cc151fb2b9fc201f`;
+report SHA256 `dd1702a5a0c0aa3dbfde41a929bab33e2b5714e3d94718d2261c8e5e345da5ee`.
+
+Next: commit/push dev, prepare package, then ask
+for a **fresh restart** and disposable pre-trial baseline paused. Never inject
+into the old 0.12.0 process. Live gate: >32 boardings, S3 return opportunities,
+later journeys, sampled destinations, timing; then line edits/new service and
+save/restart. Broad large-network coverage and automatic session reset/loading
+remain limitations. Keep docs/progress and this section current.
+
+Old0.12 log now reaches3300 observations:32 boardings,3 observed original arrivals
+(the third is111528 at3156/3157),1home invalidation,3 active samples and25 unsampled.
+Last periodic3000 totals predate that arrival. Snapshot implementation-checkpoint
+underbuild-v12a preserves evidence; no stop or game edits performed. Read fresh
+process/log state before any live action. Older “current/latest” sections below
+are historical snapshots and their preparation claims are superseded.
+
 ## Latest — 0.12.0 switch cap reached; source-line coverage gap repeats
 
 At11:27Z all32 changes confirmed boarding, last at2576. Seven lifetime samples:

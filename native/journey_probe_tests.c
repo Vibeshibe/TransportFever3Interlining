@@ -62,6 +62,11 @@ int main(int argc, char **argv) {
         CHECK(platforms.v7.v6.v5.v4.v3.v2.base.capabilities == (mutable ? 511u : 479u) && platforms.read_stop_terminals);
         tfx_stop_terminals options = {.struct_size = sizeof(options)};
         CHECK(platforms.read_stop_terminals(0, 1, 0, &options) == TFX_STALE_CONTEXT);
+        tfx_api_v9 network = {.v8.v7.v6.v5.v4.v3.v2.base.struct_size = sizeof(network)};
+        CHECK(get_api(9, &network.v8.v7.v6.v5.v4.v3.v2.base) == TFX_OK);
+        CHECK(network.v8.v7.v6.v5.v4.v3.v2.base.capabilities == (mutable ? 1023u : 991u) && network.scan_lines);
+        tfx_line_page page = {.struct_size = sizeof(page)};
+        CHECK(network.scan_lines(0, 0, &page) == TFX_STALE_CONTEXT);
         CHECK(start(NULL) == TFX_UNSUPPORTED_BUILD);
         FreeLibrary(module);
         puts("PASS: DLL preserves ABI6/7, provides ABI8 copied terminals and refuses the unsupported fixture executable.");

@@ -15,7 +15,7 @@ technical findings in `AI/Context/` or `docs/` and link to them.
 | [005](005-shared-extender.md) | Build a reusable native extension | In progress: ABI 6 onboard save/restart and transfer journey observed | Assistant | 004 supplies a bounded intervention candidate |
 | [006](006-interlining-prototype.md) | Implement and validate alternative boarding | In progress: two completed journeys; one saved onboard checkpoint | Assistant; user tests | 002, 003; 004–005 if needed |
 | [007](007-passenger-preferences.md) | Add varied journey-sensitive preferences | Pending | Assistant; user tests | 006 correctness established |
-| [008](008-stable-release.md) | Validate and promote a stable milestone | Pending | Assistant; user tests | 006; 007 if included in release |
+| [008](008-stable-release.md) | Validate and promote a stable milestone | In progress: 0.13.0 continuous candidate, live gate pending | Assistant; user tests | 006; 007 if included in release |
 
 Task 002 has a logged same-terminal S1/S3 reference; full eligibility remains unresolved.
 Task 003's passive probe loaded and dispatched all four event types in Test 1. Task 004

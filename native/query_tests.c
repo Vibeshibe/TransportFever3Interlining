@@ -689,6 +689,21 @@ int main(void) {
     CHECK(tfx_query_scan(&r, 1024, &page) == TFX_OK && page.count == 1 && page.persons[0] == 1026 && page.next_entity == -1);
     for (unsigned i = 0; i < 20; ++i) many_masks[i][0] = 3;
     CHECK(tfx_query_scan(&r, 0, &page) == TFX_OK && page.count == 16 && page.next_entity == 16);
+    memset(many_masks, 0, sizeof(many_masks));
+    tfx_line_page line_page = {.struct_size = sizeof(line_page)};
+    many_masks[1026][0] = 1u << 2; /* Line without waiting/person components. */
+    CHECK(tfx_query_scan_lines(&r, 0, &line_page) == TFX_OK && !line_page.count && line_page.next_entity == 1024);
+    CHECK(tfx_query_scan_lines(&r, 1024, &line_page) == TFX_OK && line_page.count == 1 && line_page.lines[0] == 1026);
+    for (unsigned i = 0; i < 20; ++i) many_masks[i][0] = 1u << 2;
+    CHECK(tfx_query_scan_lines(&r, 0, &line_page) == TFX_OK && line_page.count == 16 && line_page.next_entity == 16);
+    tfx_line_page saved_page = line_page;
+    r.queries_left = 0;
+    CHECK(tfx_query_scan_lines(&r, 0, &line_page) == TFX_QUERY_BUDGET_EXHAUSTED && !memcmp(&line_page, &saved_page, sizeof(line_page)));
+    CHECK(tfx_query_scan_lines(&r, -1, &line_page) == TFX_INVALID_ARGUMENT);
+    tfx_api_v9 v9 = {.v8.v7.v6.v5.v4.v3.v2.base.struct_size = sizeof(v9)};
+    CHECK(tfx_get_api(9, &v9.v8.v7.v6.v5.v4.v3.v2.base) == TFX_OK && v9.v8.v7.v6.v5.v4.v3.v2.base.capabilities == 1023);
+    CHECK(v9.scan_lines(0, 0, &line_page) == TFX_STALE_CONTEXT);
+    puts("PASS: ABI9 demand-independent line pages, sparse/dense pagination, unchanged error output, query budget and stale context.");
     fixture(); r = reader();
     vector_at(rows[1], handles[1], 16);
     CHECK(tfx_query_waiting(&r, 1, &leg) == TFX_OK && !leg.flags);

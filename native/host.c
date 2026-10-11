@@ -3,6 +3,7 @@
 #include <string.h>
 #include "host.h"
 #include "probe_limits.h"
+#include "episode_guard.h"
 
 static SRWLOCK lock = SRWLOCK_INIT;
 static tfx_client clients[TFX_MAX_CLIENTS];
@@ -22,14 +23,23 @@ static struct {
     tfx_change_result result;
 } changes[CHANGE_HISTORY];
 static uint64_t ticket_counter, pending[TFX_MAX_CLIENTS];
-static uint32_t pending_count, engine_attempts;
+static uint32_t pending_count;
+static uint64_t engine_attempts;
 static int applying, mutation_failed;
 /* IDs, not world-specific pointers: replicated passengers share identity. */
+#if TFX_CONTINUOUS
+static tfx_episode_map episodes;
+#else
 static int32_t attempted_people[TFX_PASSENGER_LIMIT];
-static int person_attempted(int32_t person) {
+#endif
+static int person_attempted(const tfx_waiting_leg *leg) {
+#if TFX_CONTINUOUS
+    return !tfx_episode_allowed(tfx_episode_get(&episodes, leg->person, 0), leg);
+#else
     for (unsigned i = 0; i < engine_attempts; ++i)
-        if (attempted_people[i] == person) return 1;
+        if (attempted_people[i] == leg->person) return 1;
     return 0;
+#endif
 }
 static char current_client[TFX_CLIENT_ID_SIZE];
 static tfx_apply_change current_writer;
@@ -132,6 +142,13 @@ static tfx_status scan_waiting_people(tfx_context context, int32_t first_entity,
     ReleaseSRWLockShared(&lock);
     return status;
 }
+static tfx_status scan_lines(tfx_context context, int32_t first_entity, tfx_line_page *out) {
+    AcquireSRWLockShared(&lock);
+    tfx_status status = query_context(context);
+    if (status == TFX_OK) status = tfx_query_scan_lines(current_reader, first_entity, out);
+    ReleaseSRWLockShared(&lock);
+    return status;
+}
 
 static tfx_status read_stop_vehicles(tfx_context context, int32_t line, int32_t stop, tfx_stop_vehicles *out) {
     AcquireSRWLockShared(&lock);
@@ -174,10 +191,14 @@ static tfx_status read_entity_presence(tfx_context context, int32_t entity, tfx_
 }
 
 static tfx_status read_person_journey(tfx_context context, int32_t person, tfx_person_journey *out) {
-    AcquireSRWLockShared(&lock);
+    AcquireSRWLockExclusive(&lock);
     tfx_status status = query_context(context);
     if (status == TFX_OK) status = tfx_query_journey(current_reader, person, out);
-    ReleaseSRWLockShared(&lock);
+#if TFX_CONTINUOUS
+    if (status == TFX_OK && out->person == person)
+        tfx_episode_observe(tfx_episode_get(&episodes, person, 0), out);
+#endif
+    ReleaseSRWLockExclusive(&lock);
     return status;
 }
 
@@ -201,8 +222,8 @@ static tfx_status request_waiting_leg_change(tfx_context context, const tfx_wait
     if (status != TFX_OK) goto done;
     if (applying) { status = TFX_BUSY; goto done; }
     if (!current_writer) { status = TFX_QUERY_UNAVAILABLE; goto done; }
-    if (mutation_failed || engine_attempts >= TFX_PASSENGER_LIMIT ||
-        person_attempted(request->expected.person) || pending_count == TFX_MAX_CLIENTS || ticket_counter == UINT64_MAX) {
+    if (mutation_failed || (!TFX_CONTINUOUS && engine_attempts >= TFX_PASSENGER_LIMIT) ||
+        person_attempted(&request->expected) || pending_count == TFX_MAX_CLIENTS || ticket_counter == UINT64_MAX) {
         status = TFX_LIMIT_REACHED; goto done;
     }
     if (request->dispatch_sequence != sequence) { status = TFX_EXPECTED_STATE_CHANGED; goto done; }
@@ -210,6 +231,9 @@ static tfx_status request_waiting_leg_change(tfx_context context, const tfx_wait
     status = tfx_query_waiting(current_reader, request->expected.person, &live);
     if (status != TFX_OK) goto done;
     if (memcmp(&live, &request->expected, sizeof(live))) { status = TFX_EXPECTED_STATE_CHANGED; goto done; }
+#if TFX_CONTINUOUS
+    if (!tfx_episode_get(&episodes, request->expected.person, 1)) { status = TFX_SYSTEM_ERROR; goto done; }
+#endif
     unsigned char raw[32];
     status = tfx_query_waiting_raw(current_reader, request->expected.person, raw);
     if (status != TFX_OK) goto done;
@@ -248,14 +272,15 @@ static tfx_status read_change_result(tfx_context context, uint64_t ticket, tfx_c
 }
 
 tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
-    if (version < TFX_ABI_VERSION || version > TFX_STOP_TERMINALS_ABI_VERSION) return TFX_ABI_MISMATCH;
+    if (version < TFX_ABI_VERSION || version > TFX_LINE_SCAN_ABI_VERSION) return TFX_ABI_MISMATCH;
     size_t size = version == TFX_ABI_VERSION ? sizeof(*out) :
         version == TFX_QUERY_ABI_VERSION ? sizeof(tfx_api_v2) :
         version == TFX_VEHICLE_ABI_VERSION ? sizeof(tfx_api_v3) :
         version == TFX_PLATFORM_ABI_VERSION ? sizeof(tfx_api_v4) :
         version == TFX_TERMINAL_ABI_VERSION ? sizeof(tfx_api_v5) :
         version == TFX_CHANGE_ABI_VERSION ? sizeof(tfx_api_v6) :
-        version == TFX_LIFECYCLE_ABI_VERSION ? sizeof(tfx_api_v7) : sizeof(tfx_api_v8);
+        version == TFX_LIFECYCLE_ABI_VERSION ? sizeof(tfx_api_v7) :
+        version == TFX_STOP_TERMINALS_ABI_VERSION ? sizeof(tfx_api_v8) : sizeof(tfx_api_v9);
     if (!out || out->struct_size != size) return TFX_INVALID_ARGUMENT;
     *out = (tfx_api){sizeof(*out), TFX_ABI_VERSION, TFX_CAP_TERMINAL_OBSERVATION,
         register_client, unregister_client, read_observation};
@@ -301,6 +326,10 @@ tfx_status tfx_get_api(uint32_t version, tfx_api *out) {
         out->capabilities |= TFX_CAP_STOP_TERMINALS;
         ((tfx_api_v8 *)out)->read_stop_terminals = read_stop_terminals;
     }
+    if (version >= TFX_LINE_SCAN_ABI_VERSION) {
+        out->capabilities |= TFX_CAP_LINE_SCAN;
+        ((tfx_api_v9 *)out)->scan_lines = scan_lines;
+    }
     return TFX_OK;
 }
 
@@ -345,8 +374,8 @@ tfx_status tfx_dispatch_with_writer(uint32_t delta_seconds_bits, tfx_reader *rea
     for (unsigned i = 0; i < pending_count; ++i) {
         unsigned slot = (unsigned)(pending[i] % CHANGE_HISTORY);
         if (changes[slot].result.status != TFX_PENDING) continue;
-        tfx_status status = mutation_failed || engine_attempts >= TFX_PASSENGER_LIMIT ||
-            person_attempted(changes[slot].request.expected.person) || dispatch_attempts
+        tfx_status status = mutation_failed || (!TFX_CONTINUOUS && engine_attempts >= TFX_PASSENGER_LIMIT) ||
+            person_attempted(&changes[slot].request.expected) || dispatch_attempts
             ? TFX_LIMIT_REACHED : TFX_OK;
         if (status == TFX_OK) {
             AcquireSRWLockExclusive(&lock);
@@ -362,10 +391,15 @@ tfx_status tfx_dispatch_with_writer(uint32_t delta_seconds_bits, tfx_reader *rea
         uint32_t attempted = 0;
         if (status == TFX_OK)
             status = current_writer(reader, &changes[slot].request, changes[slot].raw, &attempted, writer_user);
-        /* At most one engine attempt per dispatch, and once per person across
-         * worlds/clients. An uncertain postcondition blocks ALL later writes. */
+        /* At most one engine attempt per dispatch; the episode (or bounded
+         * trial person) guard is shared across worlds/clients. An uncertain postcondition blocks ALL later writes. */
         if (attempted) {
+#if TFX_CONTINUOUS
+            tfx_episode_begin(tfx_episode_get(&episodes, changes[slot].request.expected.person, 0), &changes[slot].request);
+            ++engine_attempts;
+#else
             attempted_people[engine_attempts++] = changes[slot].request.expected.person;
+#endif
             ++dispatch_attempts;
             if (status != TFX_OK) mutation_failed = 1;
         }

@@ -14,6 +14,8 @@ extern "C" {
 #define TFX_CHANGE_ABI_VERSION 6u
 #define TFX_LIFECYCLE_ABI_VERSION 7u
 #define TFX_STOP_TERMINALS_ABI_VERSION 8u
+#define TFX_LINE_SCAN_ABI_VERSION 9u
+#define TFX_CAP_LINE_SCAN 512u
 #define TFX_CAP_STOP_TERMINALS 256u
 #define TFX_STOP_TERMINALS_SIZE 16u
 #define TFX_CAP_PERSON_LIFECYCLE 128u
@@ -234,6 +236,19 @@ typedef struct tfx_api_v8 {
     tfx_api_v7 v7;
     tfx_status (*read_stop_terminals)(tfx_context, int32_t line, int32_t stop, tfx_stop_terminals *out);
 } tfx_api_v8;
+
+/* Paged line-component IDs, including services without waiting passengers.
+ * Results are discovery hints; every stop/vehicle is subsequently read fresh. */
+typedef struct tfx_line_page {
+    uint32_t struct_size, count;
+    int32_t next_entity;
+    uint32_t reserved;
+    int32_t lines[TFX_WAITING_PAGE_SIZE];
+} tfx_line_page;
+typedef struct tfx_api_v9 {
+    tfx_api_v8 v8;
+    tfx_status (*scan_lines)(tfx_context, int32_t first_entity, tfx_line_page *out);
+} tfx_api_v9;
 
 /* struct_size must match the requested API version. No engine pointers cross this ABI. */
 __declspec(dllexport) tfx_status tfx_get_api(uint32_t version, tfx_api *out);

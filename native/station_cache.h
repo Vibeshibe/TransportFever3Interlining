@@ -6,12 +6,12 @@
 /* Discovery hints only. Fresh copied queries must authorize every proposal. */
 #define TFX_STATION_BUCKETS 64u
 #define TFX_STATION_PEOPLE 128u
-typedef struct tfx_station_hint { int32_t person, line, boarding_stop, alighting_stop; } tfx_station_hint;
+typedef struct tfx_station_hint { int32_t person, line, boarding_stop, alighting_stop, alighting_group; } tfx_station_hint;
 /* Separate cursors keep preferred legs from advancing general exploration.
  * Each arriving vehicle owns one search; these fields only rank fresh reads. */
 typedef struct tfx_station_search {
     uint32_t cursor, preferred_cursor, selections;
-    int32_t line, boarding_stop, alighting_stop;
+    int32_t line, boarding_stop, alighting_stop, alighting_group;
 } tfx_station_search;
 typedef struct tfx_station_bucket {
     int32_t station_group;
@@ -44,6 +44,8 @@ static inline void tfx_station_remember_leg(tfx_station_cache *cache, int32_t pe
         for (uint32_t i = 0; i < bucket->count; ++i) {
             if (bucket->people[i].person != person) continue;
             if (bucket->station_group == station_group) {
+                if (bucket->people[i].line != line || bucket->people[i].boarding_stop != boarding_stop ||
+                    bucket->people[i].alighting_stop != alighting_stop) bucket->people[i].alighting_group = -1;
                 bucket->people[i].line = line;
                 bucket->people[i].boarding_stop = boarding_stop;
                 bucket->people[i].alighting_stop = alighting_stop;
@@ -66,7 +68,16 @@ static inline void tfx_station_remember_leg(tfx_station_cache *cache, int32_t pe
         if (bucket->people[i].person < 0) { slot = i; break; }
     if (slot == bucket->count) slot = bucket->count < TFX_STATION_PEOPLE ?
         bucket->count++ : bucket->replace_cursor++ % TFX_STATION_PEOPLE;
-    bucket->people[slot] = (tfx_station_hint){person, line, boarding_stop, alighting_stop};
+    bucket->people[slot] = (tfx_station_hint){person, line, boarding_stop, alighting_stop, -1};
+}
+static inline void tfx_station_destination(tfx_station_cache *cache, int32_t person,
+        int32_t station_group, int32_t alighting_group) {
+    for (uint32_t b = 0; b < cache->count; ++b) {
+        tfx_station_bucket *bucket = &cache->buckets[b];
+        if (bucket->station_group != station_group) continue;
+        for (uint32_t i = 0; i < bucket->count; ++i)
+            if (bucket->people[i].person == person) { bucket->people[i].alighting_group = alighting_group; return; }
+    }
 }
 static inline void tfx_station_remember(tfx_station_cache *cache, int32_t person,
                                       int32_t station_group, int32_t line) {
@@ -78,13 +89,20 @@ static inline int32_t tfx_station_pick(tfx_station_cache *cache, int32_t station
     for (uint32_t b = 0; b < cache->count; ++b) {
         tfx_station_bucket *bucket = &cache->buckets[b];
         if (bucket->station_group != station_group) continue;
-        for (uint32_t n = 0; n < bucket->count; ++n) {
+        /* Try another source line first within the preferred endpoint. A second
+         * pass serves the previous source if no different source remains. */
+        unsigned passes = preferred && preferred->alighting_group >= 0 ? 2u : 1u;
+        for (unsigned pass = 0; pass < passes; ++pass) for (uint32_t n = 0; n < bucket->count; ++n) {
             uint32_t *position = cursor ? cursor : &bucket->read_cursor;
             const tfx_station_hint *hint = &bucket->people[(*position)++ % bucket->count];
             if (hint->person < 0 || hint->line == arriving_line) continue;
-            if (preferred && (hint->line != preferred->line ||
-                hint->boarding_stop != preferred->boarding_stop ||
-                hint->alighting_stop != preferred->alighting_stop)) continue;
+            if (preferred) {
+                if (preferred->alighting_group >= 0) {
+                    if (hint->alighting_group != preferred->alighting_group ||
+                        (!pass && hint->line == preferred->line)) continue;
+                } else if (hint->line != preferred->line || hint->boarding_stop != preferred->boarding_stop ||
+                           hint->alighting_stop != preferred->alighting_stop) continue;
+            }
             uint32_t duplicate = 0;
             for (uint32_t i = 0; i < checked_count; ++i) duplicate |= checked[i] == hint->person;
             if (!duplicate) return hint->person;

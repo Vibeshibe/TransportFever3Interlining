@@ -28,13 +28,17 @@ static const unsigned char entry_bytes[16] = {
 void *tfx_original;
 extern void tfx_terminal_entry(void);
 static unsigned char *image;
-static volatile LONG start_state, enabled, simulation_thread, observed, rejected;
+static volatile LONG start_state, enabled, simulation_thread, rejected;
+static volatile LONG64 observed;
 #ifndef TFX_OBSERVE_PERSON
 static tfx_engine_changes change_operations;
 #endif
 static uint64_t world_addresses[4];
 static uint32_t world_count;
 static HANDLE ownership, log_file = INVALID_HANDLE_VALUE;
+static LARGE_INTEGER perf_frequency;
+static uint64_t perf_count, perf_total_us, perf_max_us, perf_histogram[32];
+static uint32_t perf_max_queries, perf_max_reads, perf_max_bytes, verbose_lines;
 
 static int copy_memory(void *unused, uint64_t address, void *out, size_t size) {
     (void)unused;
@@ -43,10 +47,41 @@ static int copy_memory(void *unused, uint64_t address, void *out, size_t size) {
 }
 
 static void log_line(const char *message) {
+    /* Continuous mode retains periodic totals/errors, with bounded detailed
+     * diagnostics. Avoid per-passenger disk flushes on the simulation thread. */
+    if (TFX_CONTINUOUS && (!strncmp(message, "change_", 7) || !strncmp(message, "candidate_result ", 17) ||
+        !strncmp(message, "pilot_journey ", 14) || !strncmp(message, "pilot_left_vehicle ", 19) ||
+        !strncmp(message, "pilot_staged ", 13) || !strncmp(message, "pilot_sample ", 13) ||
+        !strncmp(message, "pilot_boarded_both ", 19) || !strncmp(message, "pilot_result ", 13) || !strncmp(message, "pilot_request_skipped ", 22))) {
+        if (verbose_lines >= 2000) return;
+        ++verbose_lines;
+    }
     DWORD written;
     if (log_file != INVALID_HANDLE_VALUE)
         WriteFile(log_file, message, (DWORD)strlen(message), &written, NULL);
-    if (log_file != INVALID_HANDLE_VALUE && !strncmp(message, "change_", 7)) FlushFileBuffers(log_file);
+    if (!TFX_CONTINUOUS && log_file != INVALID_HANDLE_VALUE && !strncmp(message, "change_", 7)) FlushFileBuffers(log_file);
+}
+static void record_performance(LARGE_INTEGER begin, const tfx_reader *reader) {
+    LARGE_INTEGER end; QueryPerformanceCounter(&end);
+    if (!perf_frequency.QuadPart) return;
+    uint64_t us = (uint64_t)(((end.QuadPart - begin.QuadPart) * 1000000 + perf_frequency.QuadPart - 1) / perf_frequency.QuadPart);
+    ++perf_count; perf_total_us += us; if (us > perf_max_us) perf_max_us = us;
+    unsigned bucket = 0; while (bucket < 31 && us > (UINT64_C(1) << bucket)) ++bucket;
+    ++perf_histogram[bucket];
+    uint32_t queries = 64 - reader->queries_left, reads = 8192 - reader->reads_left,
+        bytes = 1024 * 1024 - reader->bytes_left;
+    if (queries > perf_max_queries) perf_max_queries = queries;
+    if (reads > perf_max_reads) perf_max_reads = reads;
+    if (bytes > perf_max_bytes) perf_max_bytes = bytes;
+    if (perf_count % 1200) return;
+    uint64_t cumulative = 0; unsigned p95 = 0;
+    for (; p95 < 31; ++p95) { cumulative += perf_histogram[p95]; if (cumulative >= (perf_count * 95 + 99) / 100) break; }
+    char text[320];
+    snprintf(text, sizeof(text), "bridge_performance callbacks=%llu mean_us=%.3f p95_upper_us=%llu max_us=%llu peak_queries=%u peak_reads=%u peak_bytes=%u detailed_lines=%u\n",
+        (unsigned long long)perf_count, (double)perf_total_us / (double)perf_count,
+        (unsigned long long)(UINT64_C(1) << p95), (unsigned long long)perf_max_us,
+        perf_max_queries, perf_max_reads, perf_max_bytes, verbose_lines);
+    log_line(text);
 }
 
 static int open_log(HMODULE self) {
@@ -122,9 +157,10 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     LONG thread = (LONG)GetCurrentThreadId();
     LONG owner = InterlockedCompareExchange(&simulation_thread, thread, 0);
     if (owner && owner != thread) { InterlockedIncrement(&rejected); return; }
-    LONG count = InterlockedIncrement(&observed);
-    if (count > TFX_OBSERVATION_LIMIT) return;
+    LONG64 count = InterlockedIncrement64(&observed);
+    if (!TFX_CONTINUOUS && count > TFX_OBSERVATION_LIMIT) return;
     uint32_t bits;
+    LARGE_INTEGER perf_begin; QueryPerformanceCounter(&perf_begin);
     memcpy(&bits, &delta, sizeof(bits));
     tfx_reader reader;
     tfx_reader_init(&reader, (uint64_t)(uintptr_t)world, (uint64_t)(uintptr_t)image, copy_memory, NULL);
@@ -146,13 +182,14 @@ void tfx_observe(void *system, void *world, void *update_data, float delta) {
     tfx_status status = tfx_dispatch_with_writer(bits, &reader, tfx_apply_waiting_change, &change_operations);
     int complete = tfx_pilot_complete();
 #endif
+    record_performance(perf_begin, &reader);
     if (count <= 8 || count % 300 == 0 || count == TFX_OBSERVATION_LIMIT || status != TFX_OK) {
         char line[256];
-        snprintf(line, sizeof(line), "observation=%ld thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
-                 count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
+        snprintf(line, sizeof(line), "observation=%llu thread=%lu world=%p delta_bits=%08x status=%u rejected=%ld\n",
+                 (unsigned long long)count, GetCurrentThreadId(), world, bits, status, InterlockedCompareExchange(&rejected, 0, 0));
         log_line(line);
     }
-    if (count == TFX_OBSERVATION_LIMIT || complete) {
+    if ((!TFX_CONTINUOUS && count == TFX_OBSERVATION_LIMIT) || complete) {
         InterlockedExchange(&enabled, 0);
         log_line("Pilot observation complete; hook forwards only. No further changes permitted.\n");
         FlushFileBuffers(log_file);
@@ -170,11 +207,12 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
 #ifdef TFX_OBSERVE_PERSON
     const char *mode = "read-only journey observer";
 #else
-    const char *mode = "bounded passenger changes";
+    const char *mode = TFX_CONTINUOUS ? "continuous passenger changes" : "bounded passenger changes";
 #endif
     char banner[192];
-    snprintf(banner, sizeof(banner), "TPF shared bridge 0.12.0; %s; limit=%u; ABI=1,2,3,4,5,6,7,8\n",
-        mode, (unsigned)TFX_OBSERVATION_LIMIT);
+    QueryPerformanceFrequency(&perf_frequency);
+    snprintf(banner, sizeof(banner), "TPF shared bridge 0.13.0; %s; limit=%u; ABI=1,2,3,4,5,6,7,8,9\n",
+        mode, TFX_CONTINUOUS ? 0u : (unsigned)TFX_OBSERVATION_LIMIT);
     log_line(banner);
     tfx_status status = TFX_UNSUPPORTED_BUILD;
     if (!supported_file()) { log_line("Refused: executable SHA-256 mismatch or unreadable.\n"); goto fail; }

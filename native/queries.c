@@ -223,7 +223,7 @@ tfx_status tfx_query_stop_terminals(tfx_reader *r, int32_t line, int32_t stop_in
     return TFX_OK;
 }
 
-tfx_status tfx_query_scan(tfx_reader *r, int32_t first_entity, tfx_waiting_page *out) {
+static tfx_status scan_entities(tfx_reader *r, int32_t first_entity, tfx_waiting_page *out, int line_scan) {
     if (!out || out->struct_size != sizeof(*out) || first_entity < 0) return TFX_INVALID_ARGUMENT;
     TRY(begin_query(r));
     vector rows, masks;
@@ -240,7 +240,7 @@ tfx_status tfx_query_scan(tfx_reader *r, int32_t first_entity, tfx_waiting_page 
     TRY(read_bytes(r, masks.begin + (uint64_t)first_entity * 16, copied, (size_t)limit * 16));
     for (uint64_t i = 0; i < limit; ++i) {
         int32_t entity = first_entity + (int32_t)i;
-        int waiting = r->types[WAITING], person = r->types[PERSON];
+        int waiting = r->types[line_scan ? LINE : WAITING], person = r->types[line_scan ? LINE : PERSON];
         result.next_entity = (uint64_t)entity + 1 < count ? entity + 1 : -1;
         if (!(copied[i][waiting / 64] & (UINT64_C(1) << (waiting % 64))) ||
             !(copied[i][person / 64] & (UINT64_C(1) << (person % 64)))) continue;
@@ -249,6 +249,17 @@ tfx_status tfx_query_scan(tfx_reader *r, int32_t first_entity, tfx_waiting_page 
     }
     *out = result;
     return TFX_OK;
+}
+tfx_status tfx_query_scan(tfx_reader *r, int32_t first_entity, tfx_waiting_page *out) {
+    return scan_entities(r, first_entity, out, 0);
+}
+tfx_status tfx_query_scan_lines(tfx_reader *r, int32_t first_entity, tfx_line_page *out) {
+    if (!out || out->struct_size != sizeof(*out)) return TFX_INVALID_ARGUMENT;
+    tfx_waiting_page page = {.struct_size = sizeof(page)};
+    TRY(scan_entities(r, first_entity, &page, 1));
+    tfx_line_page result = {.struct_size = sizeof(result), .count = page.count, .next_entity = page.next_entity};
+    memcpy(result.lines, page.persons, sizeof(result.lines));
+    *out = result; return TFX_OK;
 }
 
 /* Bounded Swiss-table copies. Scan occupied slots instead of calling engine

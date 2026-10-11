@@ -203,8 +203,8 @@ static void station_cache_tests(void) {
     tfx_station_remember_leg(&cache, 42, 10, 2, 5, 0);
     tfx_station_remember_leg(&cache, 43, 10, 2, 1, 2);
     tfx_station_remember_leg(&cache, 44, 10, 3, 6, 0);
-    tfx_station_search first = {.line = 2, .boarding_stop = 5, .alighting_stop = 0};
-    tfx_station_search second = {.line = 2, .boarding_stop = 1, .alighting_stop = 2};
+    tfx_station_search first = {.line = 2, .boarding_stop = 5, .alighting_stop = 0, .alighting_group = -1};
+    tfx_station_search second = {.line = 2, .boarding_stop = 1, .alighting_stop = 2, .alighting_group = -1};
     CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 42);
     CHECK(tfx_station_pick(&cache, 10, 1, &second.preferred_cursor, &second, NULL, 0) == 43);
     /* Separate vehicles and general/preferred searches do not consume each
@@ -218,6 +218,14 @@ static void station_cache_tests(void) {
     CHECK(tfx_station_bucket_size(&cache.buckets[0]) == 3);
     tfx_station_forget(&cache, 43);
     CHECK(tfx_station_pick(&cache, 10, 1, &second.preferred_cursor, &second, NULL, 0) == 42);
+    tfx_station_destination(&cache, 42, 10, 20);
+    tfx_station_destination(&cache, 44, 10, 20);
+    first.alighting_group = 20;
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 44);
+    first.line = 3;
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 42);
+    tfx_station_remember_leg(&cache, 42, 10, 2, 2, 3); /* Changed leg loses endpoint hint. */
+    CHECK(tfx_station_pick(&cache, 10, 1, &first.preferred_cursor, &first, NULL, 0) == 44);
     puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
 }
 static void wrap_route_tests(void) {

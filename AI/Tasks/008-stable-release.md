@@ -1,6 +1,6 @@
 # 008 — Validate and promote a stable milestone
 
-- Status: Pending
+- Status: In progress — 0.13.0 continuous release candidate, live gate pending
 - Owner: Assistant prepares; user provides gameplay testing
 - Dependencies: 006 validated; 007 if preference variation is included
 
@@ -22,6 +22,11 @@ gameplay release.
       `main` and record its tag/commit and validation evidence.
 
 ## Validation and open questions
+
+The [0.13.0 continuous candidate](../../docs/continuous-operation.md) removes
+lifetime cutoffs and adds performance telemetry and offline stress validation.
+Live continuation beyond 32 boardings, cross-source fairness, later journeys,
+network edits and measured game responsiveness remain release gates.
 
 No release is currently eligible. Keep ongoing work and milestone pushes on
 `dev`; define version and artifact format when the implementation path is known.
