@@ -55,6 +55,9 @@ phase, plus at least four per train in every simultaneous-arrival phase.
 
 Build directory: ignored `analysis/native-bridge/build-v12a`. Limits remain
 32 distinct attempts, four concurrent journey samples and 18,000 callbacks.
+Package: `TPF3Interlining-0.12.0-trial.zip` in that directory; its manifest
+records source and file hashes. It contains the mutable DLL, loader, test and
+comparison reports, and instructions. The test-only observer is excluded.
 Version 0.12.0 has **not** been loaded. Continue the existing 0.11.0 capture;
 do not inject this DLL into its process. The next integrated trial requires one
 fresh restart, disposable baseline, process/save/hash verification and paused

@@ -142,8 +142,11 @@ The consumer drains every returned scan page over successive callbacks, reading
 one waiting leg per callback. It retains 32 global fallback people, 64 demand
 lines, 128 vehicles and up to 128 hints in each of 64 station groups. At most
 four vehicles and four people enter evaluation; three passenger positions prefer
-the arriving station. A sixteen-ID ready-vehicle queue alternates with global
-vehicle scanning. Without a full validation, up to twelve extra vehicle reads
+the arriving station. A sixteen-ID ready-vehicle queue supplies three of four
+first vehicle picks, with global exploration on the fourth and remaining reads.
+Each vehicle has independent general/preferred station searches; successful-leg
+hints rank three of four opportunities, with fresh validation for every person.
+Without a full validation, up to twelve extra vehicle reads
 can seed that queue for later evaluation. Every hint is re-read before use.
 See [discovery coverage and limits](../docs/discovery-coverage.md). At most one
 full validation plus fresh host revalidation precedes a write. Tracking uses

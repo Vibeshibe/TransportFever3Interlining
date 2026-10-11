@@ -20,10 +20,12 @@ rerun needed. [Scope, evidence and fingerprints](../../docs/boarding-window-sele
 DLL SHA29a9dfca0052c1890dd34d7d9dcd4164d6f2873d5522696e3220c63df2e75a3b;
 report SHA483474668d0c175eb4db0b51a027aecc66643e2efdd0eef0a8031a7a6f3dc527.
 
+Package location: `analysis/native-bridge/build-v12a/TPF3Interlining-0.12.0-trial.zip`;
+verify its manifest and receipt before loading. Source implementation `beadb5c`.
 0.12.0 is NOT loaded. Continue the current0.11.0 capture below; next live test
 needs a fresh process, not a second injection. Latest periodic0.11.0 checkpoint
-5400:20 changes/boardings,9 lifetime samples,4 original arrivals,1 home
-invalidation,4 active samples,11 unsampled boardings. No logged query errors or
+6000:22 changes/boardings,9 lifetime samples,4 original arrivals,1 home
+invalidation,4 active samples,13 unsampled boardings. No logged query errors or
 stop marker. Re-read the live log before using these counts.
 
 
