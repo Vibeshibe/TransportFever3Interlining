@@ -1413,3 +1413,18 @@ archive integrity and contents verified. No game files/saves bundled.
 Requested fresh game restart and paused disposable pre-trial baseline for the
 continuous trial. Existing PID50787/start946352 still maps0.12.0;0.13.0 has not
 been injected or installed. Main is unchanged; live gate remains pending.
+
+### 0.13.0 continuous trial loaded
+
+User restarted and paused the disposable pre-trial baseline. Verified fresh
+LinuxPID68878/start1187665, WindowsPID312, no old bridge mappings, executable/save/
+DLL/report/package hashes and actual load11:54:25Z, ready11:55:06Z. Loader returned
+`tfx_start=0` at11:56:05Z; log confirms0.13.0/ABI1–9,continuous=1 and lifetime
+passenger/callback limits0. The startup-log selector initially included isolated
+fixture logs; corrected to the verified WindowsPID312 log without reinjection.
+
+User confirmed normal-speed unpause. First observations succeed in both worlds
+(thread592; world1 0x312d2df0,world2 0x312d3ab0). No boarding/performance claim at
+this startup checkpoint. Log and identity receipts are under ignored build-v13a;
+`watch_live.py` only reads logs/process state and cannot stop or mutate the game.
+Monitoring repeated source queues, continuation beyond32 and callback costs.

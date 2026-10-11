@@ -1,5 +1,23 @@
 # Session handoff — 2026-10-11
 
+## Live — 0.13.0 continuous trial running
+
+User restarted and confirmed normal-speed unpause. LinuxPID68878/start1187665,
+WindowsPID312; baseline/executable/artifact/package hashes verified, no previous
+bridge. Save loaded11:54:25Z, ready11:55:06Z. Loader at11:56:05Z returned0;
+startup confirms0.13.0/ABI1–9,continuous1,passenger_limit0/callback_limit0.
+Thread592, worlds1/2 0x312d2df0/0x312d3ab0; initial observations status0.
+
+Log `analysis/native-bridge/build-v13a/tpf-bridge-312-12009040.log`.
+`live-run.json`, preflight/loader receipts and watch-checkpoint.json are adjacent.
+`watch_live.py` is a read-only ten-minute log monitor; it does NOT stop the bridge
+when it exits. Requires escalated process visibility, otherwise /proc is hidden.
+No reinjection. Begin live gate: >32 confirmed boardings, S3 return opportunities,
+sampled destinations, later episodes and bridge_performance costs. Initially no
+line/vehicle edits. Release candidate remains experimental; main unchanged.
+
+Older prepared/not-loaded statements below are historical and superseded.
+
 ## Latest — 0.13.0 continuous release candidate implemented
 
 User authorized implementation after documenting two S3 queue misses and wants
