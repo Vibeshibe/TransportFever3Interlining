@@ -1,5 +1,28 @@
 # Session handoff — 2026-10-11
 
+## Current — 0.14.0 implemented and offline-validated; live trial pending
+
+User requested the next implementation. Prepared separate **build-v14a**, not
+loaded. Continuous mode permits four unconfirmed boardings with conservative
+per-vehicle capacity holds, one new request per dispatch, paired tracking phases
+and immediate result checks. Four full samples plus four pending slots; original
+route/identity checks, both-world confirmations and exact deadlines remain.
+See [design and final checks](../../docs/pending-boardings.md).
+
+All18 native checks passed; executable/DLL fingerprints verified. Same delayed
+fixture: old0.13.1 one versus new four staged in12callbacks before any boarding.
+Worst64/64 queries; continuous stress5185changes/66500callbacks; host4096episodes.
+`capacity-tests.json` and `pipeline-comparison.json` underbuild-v14a. Initial
+fixture/capacity diagnostic failures fixed; final run clean. No running DLL rebuilt.
+
+Current0.13.1 game remains LinuxPID77940/Windows316. At4800:31 boardings,6 sampled
+arrivals,4 active samples,21 unsampled; no logged errors. Snapshot underbuild-v13b
+`v14-development-checkpoint.json/.log`. Fresh log may have newer counts.
+Next: commit/push, package0.14.0, request restart into disposable original baseline
+paused, verify fresh process/save/hashes and no old DLL, load then request unpause.
+Live throughput/performance, >32, network edits and save/restart remain gates.
+Main unchanged. Earlier current/latest sections are historical snapshots.
+
 ## Latest live finding — 0.13.1 partly fixes Wimborne, still misses waiters
 
 S1 vehicle98398 return stop5:102185 S3→S1 staged1231/boarded1243;

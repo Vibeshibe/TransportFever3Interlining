@@ -1514,3 +1514,36 @@ no0.13.2 implementation or restart requested. Next throughput work should examin
 bounded concurrent pending boardings, with fresh capacity/reservation accounting,
 per-update query budgets, duplicate guards and exact confirmation timeouts tested
 before any live increase. Do not simply remove the pending-boarding guard.
+
+## 2026-10-11 — 0.14.0 concurrent boarding implementation
+
+User requested the next implementation after the partial 0.13.1 Wimborne queue
+clearance. Continuous mode now supports four pending boardings, one new request
+per dispatch, four full journey samples and per-vehicle conservative seat holds.
+Every pending mutation result is checked before another request. Selection and
+tracking use separate phases; deadlines, duplicate guards, both-world boarding,
+fresh capacity and deferred route/state validation remain. Bounded modes keep
+one pending boarding. See [design and evidence](pending-boardings.md).
+
+The exact 0.13.1 consumer stages one passenger in the delayed twelve-callback
+fixture; 0.14.0 stages four before any boarding confirmation. Regressions exercise
+partial replicas, shrinking capacity, pending/failed results, cancellation/retry,
+exact timeout of a later pending passenger, wrong boarding/destination and four
+samples alongside four pending passengers. Worst fixture remains 64/64 queries.
+Initial test failures exposed inconsistent mocked capacity fields and an early
+zero-capacity gate hiding the original rejection reason; both were corrected.
+
+All 18 final native suite invocations pass; report executable/DLL hashes verified.
+Continuous stress retains 5,185 requests over 66,500 callbacks; host 4,096 episodes.
+Native synthetic 64-query mean190.295µs/p95 280.700µs/max379.200µs; not game FPS.
+Prepared separate build-v14a; not loaded. No running DLL or game files changed.
+
+Existing 0.13.1 at4,800 callbacks:31 confirmed boardings,6 sampled original
+arrivals,4 active samples,21 unsampled boardings; no query error/summary marker.
+Bridge mean167.557µs/p95 upper512µs/max1902µs,peak45queries/2302reads/56041bytes.
+Snapshot `build-v13b/v14-development-checkpoint.json/.log` preserves this point.
+Do not claim live>32 yet. Main remains unchanged; package and fresh live trial next.
+
+- `tpf_shared_bridge.dll`: `a9649f3bfa4f9885d30d21bfa8513af53ee9dab39ae157040de4aeac1bee915f`
+- `capacity-tests.json`: `f596db431dc8b2f968814d98f3e7e1b51a468f4290a02a8fea7e430d168ac3a2`
+- `pipeline-comparison.json`: `1cb40519ea57caa9844261db39148ec62138cb46281bdd7aaaa0500fbd1350cc`

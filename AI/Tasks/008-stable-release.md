@@ -1,6 +1,6 @@
 # 008 — Validate and promote a stable milestone
 
-- Status: In progress — 0.13.0 continuous release candidate, live gate pending
+- Status: In progress — 0.14.0 concurrent boarding candidate, live gate pending
 - Owner: Assistant prepares; user provides gameplay testing
 - Dependencies: 006 validated; 007 if preference variation is included
 
@@ -23,8 +23,9 @@ gameplay release.
 
 ## Validation and open questions
 
-The [0.13.0 continuous candidate](../../docs/continuous-operation.md) removes
+The [continuous candidate](../../docs/continuous-operation.md) removes
 lifetime cutoffs and adds performance telemetry and offline stress validation.
+[0.14.0](../../docs/pending-boardings.md) adds four pending boarding slots.
 Live continuation beyond 32 boardings, cross-source fairness, later journeys,
 network edits and measured game responsiveness remain release gates.
 

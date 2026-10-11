@@ -36,10 +36,16 @@
 #if TFX_PASSENGER_LIMIT > 5 && TFX_JOURNEY_SAMPLE_LIMIT > 4
 #error "Larger trials permit at most four concurrent journey samples"
 #endif
-#if TFX_CONTINUOUS && TFX_PASSENGER_LIMIT <= TFX_JOURNEY_SAMPLE_LIMIT
-#error "Continuous records must hold journey samples plus one pending boarding"
+#ifndef TFX_PENDING_BOARDING_LIMIT
+#define TFX_PENDING_BOARDING_LIMIT (TFX_CONTINUOUS ? 4 : 1)
 #endif
-#define TFX_TRACKER_SLOTS (TFX_JOURNEY_SAMPLE_LIMIT + 1)
+#if TFX_PENDING_BOARDING_LIMIT < 1 || TFX_PENDING_BOARDING_LIMIT > 4
+#error "Pending boarding slots must be between 1 and 4"
+#endif
+#if TFX_CONTINUOUS && TFX_PASSENGER_LIMIT < TFX_JOURNEY_SAMPLE_LIMIT + TFX_PENDING_BOARDING_LIMIT
+#error "Continuous records must hold journey samples and pending boardings"
+#endif
+#define TFX_TRACKER_SLOTS (TFX_JOURNEY_SAMPLE_LIMIT + TFX_PENDING_BOARDING_LIMIT)
 #define TFX_FULL_JOURNEY_TRACKING (!TFX_CONTINUOUS && TFX_JOURNEY_SAMPLE_LIMIT == TFX_PASSENGER_LIMIT)
 /* Dispatch callbacks, not game seconds. Missing either replica at this deadline
  * stops new changes; it does not refund the attempt or attempt a rollback. */

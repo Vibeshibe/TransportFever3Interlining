@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
     build = args.build_dir.resolve()
     cases = [[name] for name in (
-        "continuous_tests", "query_performance_tests", "continuous_host_tests",
+        "pipeline_tests", "continuous_tests", "query_performance_tests", "continuous_host_tests",
         "discovery_tests", "candidate_tests", "pilot_tests", "pilot_reserve_tests",
         "pilot_sampled_tests", "bridge_tests", "query_tests", "host_batch_tests")]
     cases += [["host_batch_tests", "failure"], ["host_capacity_tests"],

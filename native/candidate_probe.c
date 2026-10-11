@@ -39,9 +39,10 @@ static struct {
     uint32_t peak_trackers, indexed_picks, fallback_picks, hint_station_mismatch;
     uint32_t priority_picks, lookahead_reads, pages_drained, ready_logged;
     uint32_t preferred_picks, tracking_callbacks, boarding_wait_callbacks, route_prefetches;
+    uint32_t peak_pending, capacity_holds, result_reads;
 } metrics;
-/* The consumer permits only one staged/unconfirmed boarding. Keep the route
- * copies until the host's deferred validator runs; no cache authorizes a write. */
+/* Only one request is staged per dispatch. Keep its route copy until the
+ * host validates it later in that same dispatch; no cache authorizes a write. */
 static it_candidate pending_candidate;
 static uint64_t passenger_count;
 static uint32_t record_count, pilot_done, summary_logged, tracking_blocked;
@@ -206,11 +207,25 @@ static void discover(tfx_context context, uint64_t sequence) {
         }
     }
 }
+/* Conservatively hold a seat for every unconfirmed change to this vehicle.
+ * Some may already appear in native reservations/occupancy: counting them again
+ * temporarily underuses seats, but does not overcommit copied free capacity. */
+static unsigned pending_for_vehicle(int32_t vehicle, int32_t except_person) {
+    unsigned count = 0;
+    if (TFX_PENDING_BOARDING_LIMIT == 1) return 0;
+    for (unsigned i = 0; i < TFX_TRACKER_SLOTS; ++i) {
+        const pilot_passenger *p = &passengers[i];
+        if (p->record && !p->record->canceled && p->record->person != except_person &&
+                p->vehicle == vehicle && p->record->onboard_worlds != 3u) ++count;
+    }
+    return count;
+}
 static tfx_status revalidate(tfx_context context, const tfx_waiting_leg_change *request) {
     it_candidate fresh;
     tfx_status status = it_validate_candidate(&platform_api, context, request->expected.person, request->candidate_vehicle, &fresh);
     if (status != TFX_OK) return status;
-    if (fresh.reason != IT_CANDIDATE) return TFX_POLICY_REJECTED;
+    if (fresh.reason != IT_CANDIDATE || fresh.observed_places_left <=
+            pending_for_vehicle(request->candidate_vehicle, request->expected.person)) return TFX_POLICY_REJECTED;
     if (pending_candidate.expected.person != request->expected.person ||
         memcmp(&fresh.route, &pending_candidate.route, sizeof(fresh.route)) ||
         memcmp(&fresh.expected, &request->expected, sizeof(fresh.expected)) ||
@@ -247,10 +262,11 @@ static int attempt_reserved(void) {
         if (records[i].lifecycle_resolved) return 0;
     return 1;
 }
-static int boarding_pending(void) {
+static unsigned boarding_pending(void) {
+    unsigned count = 0;
     for (unsigned i = 0; i < TFX_TRACKER_SLOTS; ++i)
-        if (passengers[i].record && (!passengers[i].record->result_logged || passengers[i].record->onboard_worlds != 3u)) return 1;
-    return 0;
+        if (passengers[i].record && (!passengers[i].record->result_logged || passengers[i].record->onboard_worlds != 3u)) ++count;
+    return count;
 }
 static unsigned active_trackers(void) {
     unsigned count = 0;
@@ -299,13 +315,13 @@ static void report_metrics(uint64_t sequence) {
         indexed_people += count; indexed_stations += count != 0;
     }
     char text[1024];
-    snprintf(text, sizeof(text), "pilot_totals sequence=%llu staged=%llu applied=%llu boarded=%llu sampled=%llu sampled_arrivals=%llu sampled_lifecycle=%llu unsampled_boardings=%llu active_trackers=%u active_samples=%u peak_trackers=%u pending_boarding=%u unresolved_tracked=%llu sampled_unresolved=%llu canceled=%llu continuous=%u\n",
+    snprintf(text, sizeof(text), "pilot_totals sequence=%llu staged=%llu applied=%llu boarded=%llu sampled=%llu sampled_arrivals=%llu sampled_lifecycle=%llu unsampled_boardings=%llu active_trackers=%u active_samples=%u peak_trackers=%u pending_boarding=%u unresolved_tracked=%llu sampled_unresolved=%llu canceled=%llu continuous=%u pending_limit=%u peak_pending=%u capacity_holds=%u result_reads=%u\n",
         (unsigned long long)sequence, (unsigned long long)passenger_count, (unsigned long long)applied,
         (unsigned long long)boarded, (unsigned long long)sampled, (unsigned long long)arrived,
         (unsigned long long)lifecycle, (unsigned long long)released,
         active_trackers(), active_samples(), metrics.peak_trackers, (unsigned)boarding_pending(),
         (unsigned long long)(passenger_count - arrived - lifecycle - released - canceled),
-        (unsigned long long)(sampled - arrived - lifecycle), (unsigned long long)canceled, TFX_CONTINUOUS);
+        (unsigned long long)(sampled - arrived - lifecycle), (unsigned long long)canceled, TFX_CONTINUOUS, (unsigned)TFX_PENDING_BOARDING_LIMIT, metrics.peak_pending, metrics.capacity_holds, metrics.result_reads);
     log_line(text);
     snprintf(text, sizeof(text), "pilot_discovery sequence=%llu callbacks=%u scans=%u waiting_reads=%u line_samples=%u vehicle_reads=%u passenger_screens=%u stale_waiting=%u same_line=%u assigned_vehicle=%u station_mismatch=%u selected_skips=%u validations=%u indexed_picks=%u fallback_picks=%u hint_station_mismatch=%u indexed_people=%u indexed_stations=%u priority_picks=%u lookahead_reads=%u pages_drained=%u page_pending=%u preferred_picks=%u tracking_callbacks=%u boarding_wait_callbacks=%u route_prefetches=%u\n",
         (unsigned long long)sequence, metrics.discovery_callbacks, metrics.scan_calls, metrics.waiting_reads,
@@ -368,15 +384,10 @@ static void lifecycle_event(pilot_passenger *p, unsigned bit, int removed, uint6
         resolve_lifecycle(p, sequence, outcome);
     }
 }
-static void track_change(tfx_context context, pilot_passenger *p, uint64_t sequence) {
+static void collect_result(tfx_context context, pilot_passenger *p) {
     char text[384];
-    if (p->record->onboard_worlds != 3u && (TFX_CONTINUOUS || sequence < TFX_OBSERVATION_LIMIT) &&
-        sequence - p->staged_sequence >= TFX_BOARDING_GRACE_CALLBACKS) {
-        snprintf(text, sizeof(text), "pilot_boarding_timeout person=%d sequence=%llu staged_sequence=%llu world_mask=%u arrival=unobserved\n",
-            p->record->person, (unsigned long long)sequence, (unsigned long long)p->staged_sequence, p->record->onboard_worlds);
-        log_line(text); stop("boarding_confirmation_timeout"); return;
-    }
     if (!p->record->result_logged) {
+        ++metrics.result_reads;
         tfx_change_result result = {.struct_size = sizeof(result)};
         tfx_status status = changes_api.read_change_result(context, p->record->ticket, &result);
         if (status != TFX_OK) { error("change_result", status); return; }
@@ -402,6 +413,22 @@ static void track_change(tfx_context context, pilot_passenger *p, uint64_t seque
             tfx_episode_begin(tfx_episode_get(&episodes, p->record->person, 0), &change);
         }
     }
+}
+static int boarding_deadline(pilot_passenger *p, uint64_t sequence) {
+    char text[384];
+    if (p->record->onboard_worlds != 3u && (TFX_CONTINUOUS || sequence < TFX_OBSERVATION_LIMIT) &&
+        sequence - p->staged_sequence >= TFX_BOARDING_GRACE_CALLBACKS) {
+        snprintf(text, sizeof(text), "pilot_boarding_timeout person=%d sequence=%llu staged_sequence=%llu world_mask=%u arrival=unobserved\n",
+            p->record->person, (unsigned long long)sequence, (unsigned long long)p->staged_sequence, p->record->onboard_worlds);
+        log_line(text); stop("boarding_confirmation_timeout"); return 1;
+    }
+    return 0;
+}
+static void track_change(tfx_context context, pilot_passenger *p, uint64_t sequence) {
+    char text[384];
+    if (boarding_deadline(p, sequence)) return;
+    collect_result(context, p);
+    if (!p->record || pilot_done || !p->record->result_logged) return;
     if (passenger_finished(p)) return;
     if (p->record->home_cleared_worlds && sequence - p->home_pending_since >= TFX_HOME_CLEAR_GRACE_CALLBACKS) {
         snprintf(text, sizeof(text), "pilot_home_timeout person=%d sequence=%llu first_sequence=%llu world_mask=%u removed_world_mask=%u outcome=unresolved\n",
@@ -571,6 +598,8 @@ static void evaluate(tfx_context context, uint64_t sequence) {
         if (status != TFX_OK) { error("vehicle", status); return; }
         if (!loading_ready(&v)) { last_ready_stop[vi] = -1; continue; }
         ready_remember(v.vehicle);
+        unsigned held_seats = pending_for_vehicle(v.vehicle, -1);
+        if (held_seats && v.passenger_places_left <= held_seats) { ++metrics.capacity_holds; continue; }
         tfx_station_search *search = &station_search[vi];
         if (search_line[vi] != v.line || search_stop[vi] != v.stop_index) {
             *search = (tfx_station_search){.line = -1, .boarding_stop = -1, .alighting_stop = -1, .alighting_group = -1};
@@ -692,6 +721,9 @@ static void evaluate(tfx_context context, uint64_t sequence) {
             if (status != TFX_OK) { error("validate", status); return; }
             ++attempts; ++reasons[proposal.reason];
             if (proposal.reason == IT_CANDIDATE) ++accepted;
+            if (proposal.reason == IT_CANDIDATE && proposal.observed_places_left <= pending_for_vehicle(v.vehicle, -1)) {
+                ++metrics.capacity_holds; return;
+            }
             if ((TFX_CONTINUOUS || passenger_count < TFX_PASSENGER_LIMIT) && proposal.reason == IT_CANDIDATE) {
                 tfx_waiting_leg_change request = {.struct_size = sizeof(request),
                     .dispatch_sequence = sequence, .expected = proposal.expected,
@@ -736,6 +768,8 @@ static void evaluate(tfx_context context, uint64_t sequence) {
                 p->line = request.line; p->vehicle = request.candidate_vehicle;
                 p->boarding_stop = request.boarding_stop; p->alighting_stop = request.alighting_stop;
                 ++passenger_count; staged = 1;
+                unsigned pending_now = boarding_pending();
+                if (pending_now > metrics.peak_pending) metrics.peak_pending = pending_now;
                 search->line = proposal.expected.line;
                 search->boarding_stop = proposal.expected.boarding_stop;
                 search->alighting_stop = proposal.expected.alighting_stop;
@@ -789,6 +823,42 @@ static void sample(tfx_context context, void *unused) {
         stop("observation_unavailable"); return;
     }
     uint64_t sequence = observation.dispatch_sequence;
+    if (TFX_CONTINUOUS && TFX_PENDING_BOARDING_LIMIT > 1) {
+        unsigned reads_before = metrics.result_reads;
+        for (unsigned i = 0; i < TFX_TRACKER_SLOTS && !pilot_done; ++i) {
+            pilot_passenger *p = &passengers[i];
+            if (!p->record) continue;
+            if (boarding_deadline(p, sequence)) break;
+            if (!p->record->result_logged) collect_result(context, p);
+        }
+        int unsettled = 0;
+        for (unsigned i = 0; i < TFX_TRACKER_SLOTS; ++i)
+            unsettled |= passengers[i].record && !passengers[i].record->result_logged;
+        unsigned pending_before = boarding_pending();
+        /* Paired tracking phases cover both replicas without mixing a full
+         * ledger scan with candidate validation. Failed writes are consumed
+         * above before any later request can be staged. */
+        if (!pilot_done && active_trackers() && (tracking_blocked || lifecycle_pending() ||
+                unsettled || (sequence / 2) % 2 == 0)) {
+            ++metrics.tracking_callbacks;
+            metrics.boarding_wait_callbacks += pending_before != 0;
+            for (unsigned i = 0; i < TFX_TRACKER_SLOTS && !pilot_done; ++i)
+                if (passengers[i].record) track_change(context, &passengers[i], sequence);
+            if (!pilot_done) settle_trackers(sequence);
+        } else if (!pilot_done && !tracking_blocked && !lifecycle_pending() && failures < 8 &&
+                pending_before < TFX_PENDING_BOARDING_LIMIT) {
+            /* Skip discovery while a result read or pending boarding uses its
+             * budget share. Existing vehicle/station hints remain usable. */
+            if (!pending_before && metrics.result_reads == reads_before) discover(context, sequence);
+            unsigned before = metrics.validation_calls, before_failures = failures;
+            if (failures < 8) evaluate(context, sequence);
+            if (failures == before_failures && failures < 8 && metrics.validation_calls == before)
+                lookahead(context);
+        }
+        if (!pilot_done && failures >= 8) stop("query_errors");
+        if (sequence % 600 == 0 || pilot_done) report_metrics(sequence);
+        return;
+    }
     /* Separate tracking and discovery budgets. Paired callback phases cover both
      * alternating worlds; a pending boarding is tracked on EVERY callback. */
     int pending_before = lifecycle_pending(), awaiting_boarding = boarding_pending();
@@ -846,8 +916,8 @@ tfx_status tfx_register_candidate_probe(void (*write_line)(const char *)) {
     memset(passengers, 0, sizeof(passengers)); memset(reasons, 0, sizeof(reasons));
     memset(last_reason, 0, sizeof(last_reason));
     char text[768];
-    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u record_slots=%u max_unconfirmed_boardings=1 lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=drained_pages station_buckets=64 station_people=128 vehicle_slots=128 line_slots=64 vehicle_lookahead=12 selection=reachable_endpoint_hints journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s continuous=%u platform_policy=native_same_station\n",
-        (unsigned)(TFX_CONTINUOUS ? 0 : TFX_PASSENGER_LIMIT), (unsigned)(TFX_CONTINUOUS ? 0 : TFX_OBSERVATION_LIMIT), (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS, (unsigned)IT_MAX_LEG_HOPS, (unsigned)TFX_JOURNEY_SAMPLE_LIMIT, TFX_BOARDING_GRACE_CALLBACKS,
+    snprintf(text, sizeof(text), "pilot_limits passenger_limit=%u callback_limit=%u record_slots=%u max_unconfirmed_boardings=%u lifecycle_policy=continue_after_confirmation reserve_last_for_lifecycle=%u home_clear_grace_callbacks=%u route_max_hops=%u discovery=drained_pages station_buckets=64 station_people=128 vehicle_slots=128 line_slots=64 vehicle_lookahead=12 selection=reachable_endpoint_hints journey_sample_limit=%u boarding_grace_callbacks=%u tracking=%s continuous=%u platform_policy=native_same_station\n",
+        (unsigned)(TFX_CONTINUOUS ? 0 : TFX_PASSENGER_LIMIT), (unsigned)(TFX_CONTINUOUS ? 0 : TFX_OBSERVATION_LIMIT), (unsigned)TFX_PASSENGER_LIMIT, (unsigned)TFX_PENDING_BOARDING_LIMIT, (unsigned)TFX_RESERVE_LAST_FOR_LIFECYCLE, TFX_HOME_CLEAR_GRACE_CALLBACKS, (unsigned)IT_MAX_LEG_HOPS, (unsigned)TFX_JOURNEY_SAMPLE_LIMIT, TFX_BOARDING_GRACE_CALLBACKS,
         TFX_FULL_JOURNEY_TRACKING ? "full" : "sampled", TFX_CONTINUOUS);
     log_line(text);
     tfx_status status = tfx_get_api(TFX_STOP_TERMINALS_ABI_VERSION, &api.v4.v3.v2.base);

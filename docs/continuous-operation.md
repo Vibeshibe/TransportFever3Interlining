@@ -1,5 +1,8 @@
 # Continuous operation — 0.13.0 release candidate
 
+The current candidate extends this design with [0.14.0 concurrent pending boardings](pending-boardings.md).
+The one-pending-slot descriptions below document 0.13.x.
+
 Status: implemented on `dev`; offline validation passed. Live validation and
 stable promotion remain pending. This is still explicitly loaded with the native
 loader, not an automatically installed mod. Only the pinned executable is supported

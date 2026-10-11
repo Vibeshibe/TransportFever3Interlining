@@ -10,6 +10,8 @@ static uint64_t sequence;
 #define FIXTURE_PEOPLE 97
 static unsigned world, staged, boarded[TFX_PASSENGER_LIMIT], arrived[TFX_PASSENGER_LIMIT], queries, max_queries;
 static unsigned no_capacity, wrong_vehicle, fail_result, pending_result, query_error, wrong_destination;
+static unsigned capacity_override, reported_places, shrink_on_revalidation;
+static tfx_status request_outcomes[TFX_PASSENGER_LIMIT];
 static int32_t source_line = 501, substitute_line = 902, leg_hops = 1, source_board = 1, substitute_board = 1;
 static int32_t waiting_sentinel, indexed_target, absent_waiter;
 static unsigned vehicles_not_ready, population;
@@ -58,6 +60,11 @@ static tfx_status vehicle(tfx_context c, int32_t id, tfx_vehicle *out) {
         .stop_index = substitute_board, .state = id == 99 && !vehicles_not_ready ? 2 : 1, .load_state = 3, .arrival_station_index = 0,
         .arrival_terminal = (int32_t)selected_terminal, .arrival_locked = 1, .passenger_capacity = TFX_PASSENGER_LIMIT + 5,
         .passengers_onboard = no_capacity ? TFX_PASSENGER_LIMIT + 5 : staged, .passenger_places_left = no_capacity ? 0 : TFX_PASSENGER_LIMIT + 5 - staged};
+    if (capacity_override) {
+        CHECK(reported_places <= out->passenger_capacity);
+        out->passenger_places_left = reported_places;
+        out->passengers_onboard = out->passenger_capacity - reported_places;
+    }
     return TFX_OK;
 }
 static tfx_status stop(tfx_context c, int32_t line, int32_t index, tfx_line_stop *out) {
@@ -111,21 +118,25 @@ static tfx_status presence(tfx_context c, int32_t id, tfx_entity_presence *out) 
 static tfx_status request(tfx_context c, const tfx_waiting_leg_change *q, uint64_t *ticket) {
     CHECK(c == 7 && staged < TFX_PASSENGER_LIMIT);
     for (unsigned i = 0; i < staged; ++i) {
-        CHECK(boarded[i] == 3 && requests[i].expected.person != q->expected.person);
+        if (TFX_PENDING_BOARDING_LIMIT == 1) CHECK(boarded[i] == 3);
+        if (request_outcomes[i] == TFX_OK) CHECK(requests[i].expected.person != q->expected.person);
     }
     /* Simulate staging reads + fresh full validation + backend pre/post queries.
      * Host timing and tokens themselves are exercised by host/query tests. */
     queries += 2;
-    CHECK(q->revalidate(c, q) == TFX_OK);
-    queries += 5;
+    if (shrink_on_revalidation) { capacity_override = 1; reported_places = shrink_on_revalidation - 1; shrink_on_revalidation = 0; }
+    tfx_status fresh = q->revalidate(c, q);
+    CHECK(fresh == TFX_OK || (TFX_PENDING_BOARDING_LIMIT > 1 && fresh == TFX_POLICY_REJECTED));
+    request_outcomes[staged] = fresh;
+    if (fresh == TFX_OK) queries += 5;
     requests[staged++] = *q; *ticket = staged;
     return TFX_OK;
 }
 static tfx_status result(tfx_context c, uint64_t ticket, tfx_change_result *out) {
     BEGIN(out); CHECK(ticket && ticket <= staged);
     *out = (tfx_change_result){.struct_size = sizeof(*out), .ticket = ticket,
-        .person = requests[ticket - 1].expected.person, .engine_attempted = 1,
-        .status = pending_result ? TFX_PENDING : fail_result ? TFX_INVALID_STATE : TFX_OK}; return TFX_OK;
+        .person = requests[ticket - 1].expected.person, .engine_attempted = request_outcomes[ticket - 1] == TFX_OK,
+        .status = pending_result ? TFX_PENDING : fail_result ? TFX_INVALID_STATE : request_outcomes[ticket - 1]}; return TFX_OK;
 }
 static tfx_status journey(tfx_context c, int32_t id, tfx_person_journey *out) {
     BEGIN(out); ++journey_calls[id - 100]; if (query_error) return TFX_NOT_FOUND;
@@ -155,25 +166,31 @@ static tfx_status lifecycle(tfx_context c, int32_t id, tfx_person_lifecycle *out
     if (cleared_home_worlds[id - 100] & bit) out->destinations[0] = -1;
     return TFX_OK;
 }
+static tfx_status scan_lines(tfx_context c, int32_t first, tfx_line_page *out) {
+    BEGIN(out); (void)first; *out = (tfx_line_page){.struct_size = sizeof(*out), .next_entity = -1}; return TFX_OK;
+}
 tfx_status tfx_get_api(uint32_t version, tfx_api *base) {
-    CHECK(version == 8 || version == 7);
-    base->abi_version = version; base->capabilities = version == 8 ? 511 : 255;
+    CHECK(version == 9 || version == 8 || version == 7);
+    base->abi_version = version; base->capabilities = version == 9 ? 1023 : version == 8 ? 511 : 255;
     base->register_client = registration; base->read_observation = observation;
     tfx_api_v5 *api = (tfx_api_v5 *)base;
     api->v4.v3.v2.read_waiting_leg = waiting; api->v4.v3.v2.scan_waiting_people = scan;
     api->v4.v3.v2.read_line_stop = stop; api->v4.v3.read_vehicle = vehicle;
     api->v4.v3.read_stop_vehicles = loading; api->v4.read_person_platforms = platforms;
     api->read_terminal = terminal; api->read_entity_presence = presence;
-    if (version == 8) ((tfx_api_v8 *)base)->read_stop_terminals = stop_terminals;
+    if (version >= 8) ((tfx_api_v8 *)base)->read_stop_terminals = stop_terminals;
     if (version >= 7) {
         ((tfx_api_v7 *)base)->read_person_lifecycle = lifecycle;
         tfx_api_v6 *changes = (tfx_api_v6 *)base;
         changes->request_waiting_leg_change = request; changes->read_change_result = result;
         changes->read_person_journey = journey;
     }
+    if (version == 9) ((tfx_api_v9 *)base)->scan_lines = scan_lines;
     return TFX_OK;
 }
 static void reset(void) {
+    capacity_override = reported_places = shrink_on_revalidation = 0;
+    memset(request_outcomes, 0, sizeof(request_outcomes));
     boarding_terminal = selected_terminal = alighting_terminal = 1; alternatives_enabled = 0;
     sequence = staged = no_capacity = wrong_vehicle = fail_result = pending_result = query_error = wrong_destination = 0;
     changed_home = reassigned = bad_identity = baseline_unassigned = home_target = 0;

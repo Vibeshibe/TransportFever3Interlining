@@ -4,8 +4,9 @@ Research and development for passengers using overlapping Transport Fever 3
 services, including boarding the next suitable vehicle and varied preferences.
 An experimental native bridge switches eligible passengers between overlapping
 services; live trials have confirmed boarding and sampled destination arrivals.
-[Version 0.13.1](docs/continuous-operation.md) adds continuous operation and
-prioritizes reachable destinations across source queues. It is a release candidate awaiting live validation,
+[Version 0.14.0](docs/pending-boardings.md) lets up to four passengers await
+boarding concurrently, with conservative capacity accounting. It retains continuous
+operation and reachable-destination selection. It is a release candidate awaiting live validation,
 not an automatically installed or stable release.
 
 ## Layout

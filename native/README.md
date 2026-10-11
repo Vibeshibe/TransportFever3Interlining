@@ -1,10 +1,15 @@
 # Shared native bridge — continuous interlining candidate
 
+Version 0.14.0 allows four pending boardings in continuous mode, with per-vehicle
+capacity holds, immediate mutation-result checks and paired tracking phases.
+It retains one new request per dispatch and four full journey samples. See
+[implementation and validation](../docs/pending-boardings.md). Build-v14a is
+separate from the running 0.13.1 build-v13b; restart before replacing the DLL.
+
 Version 0.13.1 prepares reachable endpoint hints before the first switch in a
-mixed-direction queue. The new short-window regression reproduces a0.13.0 miss
-and serves compatible passengers in all16 timing phases with the fix. See the
-[implementation and live gap](../docs/continuous-operation.md#0131--rank-reachable-endpoints-before-the-first-switch).
-Build-v13b is separate; build-v13a remains the running0.13.0 capture.
+mixed-direction queue. Live trials served both S2 and S3 return queues but left
+passengers waiting; the first boarding took twelve callbacks during which no
+other passenger could switch. This motivated the concurrent boarding work.
 
 Version 0.13.0 adds [continuous operation](../docs/continuous-operation.md),
 cross-source endpoint selection and ABI9 paged line discovery. Lifetime passenger
@@ -96,7 +101,7 @@ Outputs: `tpf_shared_bridge.dll`, `bridge_loader.exe`, `bridge_tests.exe`, `quer
 `candidate_tests.exe`, `host_batch_tests.exe`, `host_capacity_tests.exe`,
 `pilot_tests.exe`, `pilot_reserve_tests.exe`, `pilot_sampled_tests.exe`,
 `discovery_tests.exe`, `continuous_tests.exe`, `continuous_host_tests.exe`,
-`query_performance_tests.exe`,
+`query_performance_tests.exe`, `pipeline_tests.exe`,
 `journey_probe_tests.exe`, `journey_snapshot.exe`,
 `boarding_snapshot.exe`, and `bridge_fixture.exe`. The fixture runs for 60 seconds and prints its Windows PID.
 Loading the production DLL there must return status `9` (unsupported build).
@@ -160,13 +165,14 @@ Without a full validation, up to twelve extra vehicle reads
 can seed that queue for later evaluation. Every hint is re-read before use.
 See [discovery coverage and limits](../docs/discovery-coverage.md). At most one
 full validation plus fresh host revalidation precedes a write. Tracking uses
-separate callbacks; worst-case regression budget remains 63/64 queries.
+separate callbacks; worst-case regression budget remains 64/64 queries.
 
 Eligibility covers one to four forward intervals with original and substitute
 station order preserved; express skips are allowed. Same physical boarding/alighting stations and all capacity/load checks still
 apply; configured cross-platform behavior follows version 0.10.0.
-The next passenger is considered only after the previous passenger boarded the
-expected train, line and leg in both worlds. Selected IDs never re-enter discovery.
+Bounded builds consider the next passenger after the previous boarding is confirmed
+in both worlds. Continuous builds allow four pending boardings with conservative
+per-vehicle capacity holds; later journeys require fresh waiting-episode identity.
 Each journey retains its original destination. Full tracking remains the default
 with up to five attempts; larger runs track only the configured concurrent sample
 after boarding. Unsampled journeys close as `boarding_confirmed`, never arrival.
@@ -202,9 +208,9 @@ Also run `pilot_sampled_tests.exe`, `host_capacity_tests.exe`, and its `failure`
 and `history` modes for32-person capacity, tracker release/reuse, deadlines,
 aggregate counts and result-ring wraparound. The reserve suite remains separate.
 
-Vehicle discovery samples lines learned from waiting passengers and advances
-each line's stop cursor independently. Empty-demand services may be missed; this
-is bounded sampling, not full-network enumeration. Cached IDs are always re-read
+Vehicle discovery samples lines learned from waiting passengers and, in continuous
+mode, ABI9 line-entity pages, advancing each line's stop cursor independently.
+Coverage is incremental; a finite boarding window can still be missed. Cached IDs are always re-read
 in the current callback. Copied leg records must still match at deferred validation. Result comparisons
 suppress logs only; they never authorize mutations or reuse engine pointers.
 The separate [native policy](../src/interlining/README.md) returns proposals and

@@ -211,7 +211,7 @@ __declspec(dllexport) DWORD WINAPI tfx_start(void *unused) {
 #endif
     char banner[192];
     QueryPerformanceFrequency(&perf_frequency);
-    snprintf(banner, sizeof(banner), "TPF shared bridge 0.13.1; %s; limit=%u; ABI=1,2,3,4,5,6,7,8,9\n",
+    snprintf(banner, sizeof(banner), "TPF shared bridge 0.14.0; %s; limit=%u; ABI=1,2,3,4,5,6,7,8,9\n",
         mode, TFX_CONTINUOUS ? 0u : (unsigned)TFX_OBSERVATION_LIMIT);
     log_line(banner);
     tfx_status status = TFX_UNSUPPORTED_BUILD;
