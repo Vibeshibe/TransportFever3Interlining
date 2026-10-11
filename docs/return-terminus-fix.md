@@ -97,3 +97,35 @@ accepted loading states. Preserve the current loading and revalidation guards.
 Ignored evidence: `build-v10b/live-checkpoint.json`,
 `wimborne-s2-opportunity-01.log` and its JSON metadata. Capture remains active;
 this checkpoint is not a completed-trial result.
+
+## Paused discovery inspection — 2026-10-11, 10:19 UTC
+
+After a second reported S2 miss, the user paused without reloading. The bridge
+is active but paused; do not load another DLL into this process. At callback
+3,000, seven boardings are confirmed, two original destinations reached (115753
+and cross-platform 105864), two lifecycle outcomes resolved and three samples
+remain active. Return-leg passenger 118180 exited at the intended Faringdon
+index 0 and continued by bus toward the same destination; final arrival pending.
+
+Read-only inspection of this build's own symbols reveals a concrete coverage
+gap. The usable paused world contains twelve S3 6→0 passengers at Wimborne;
+only one (119648) is in its station-hint bucket. The bucket's selection cursor
+is zero. The global vehicle cache is full at sixteen IDs across eleven known
+lines. S1 vehicle 98594 is at Wimborne stop 5 with 34 free places and loading
+state 4, but absent from that cache. Three of four known S2 vehicles are absent;
+98389 is present and now travelling toward Faringdon stop 0. Do not claim the
+just-departed S2 was necessarily absent during boarding.
+
+These snapshots establish incomplete discovery, not the precise historical
+cache contents or loading state at either missed departure. Station buckets can
+be evicted wholesale as other stations are discovered; passenger learning reads
+one person per scanned page per sweep. Small global vehicle retention competes
+across bus and rail services. The next implementation should improve retention
+and timely station/vehicle matching within bounded work, with coverage tests
+that include many stations and vehicles. This requires no further diagnostic
+save replay before implementation.
+
+Ignored evidence: `paused-discovery-cache-01.json`, `paused-wimborne-s2-02.*`,
+`paused-s2-vehicle-states.json` and `discovery-gap-audit.json` in build-v10b.
+The native queue helper could read only world 2; cache and vehicle component
+reads agreed on repetition. No engine calls or memory writes were used.

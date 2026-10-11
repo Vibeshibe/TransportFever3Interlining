@@ -1,6 +1,27 @@
 # Session handoff — 2026-10-11
 
-## Current — 0.10.1 live after confirmed unpause
+## Current — 0.10.1 paused for discovery fix
+
+User paused the existing process after a second missed S2 departure; do not
+request another diagnostic reload or inject a second DLL. Capture remains
+active while paused. At callback 3000: seven boardings, two original arrivals
+(115753/105864), two lifecycle invalidations, three active samples. Wrapped
+S3→S1 passenger 118180 exited at Faringdon index0 and continues by bus; final
+arrival pending. No logged errors.
+
+Paused read-only audit confirms only one of twelve S3 return-leg waiters is in
+Wimborne's station cache; bucket cursor=0. Sixteen global vehicle slots are full
+across eleven lines; S1 98594 at Wimborne is absent. S2 98389 is cached and now
+travelling toward Faringdon: do not assert its earlier absence caused the miss.
+Prior loading-window/cache history remains unknown. Improve bounded discovery
+coverage/retention next, especially competing bus/rail stations and vehicles.
+Evidence and limits: [paused inspection](../../docs/return-terminus-fix.md).
+Ignored build-v10b `discovery-gap-audit.json`, `paused-discovery-cache-01.json`,
+`paused-wimborne-s2-02.*`, `paused-s2-vehicle-states.json` preserve the raw data.
+No game writes or engine calls during inspection. Keep current game paused
+until subsequent work or explicit resumption; no new build prepared yet.
+
+## Previous — 0.10.1 live after confirmed unpause
 
 Checkpoint 10:13 UTC / callback 1800: six both-world boardings, including
 S1 5→0 → S3 6→0 (30574) and S3 6→0 → S1 5→0 (118180). Three cross-platform

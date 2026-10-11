@@ -1234,3 +1234,16 @@ one-world observational snapshot showing six S3 return-leg waiters, 33 free
 places on S2, but loading state already outside the accepted window. Discovery
 or scheduling may explain the miss; exact cause remains unproven. See
 [checkpoint and limitations](return-terminus-fix.md).
+
+### Paused discovery coverage gap confirmed
+
+After another user-reported S2 miss, inspected the existing paused process using
+read-only snapshots. Only one of twelve current S3 return-leg waiters appears in
+Wimborne hints; the sixteen-vehicle global cache is full across eleven lines.
+The S1 train at Wimborne is absent, while S2 98389 is retained and already
+travelling toward Faringdon. This establishes coverage gaps, not the precise
+cause of the historical S2 miss. Preserve loading guards; improve bounded
+discovery next. No further diagnostic replay needed. Current totals: seven
+boardings, two original arrivals, two lifecycle outcomes, three active samples.
+Return-leg passenger 118180 alighted correctly at Faringdon and continues by bus.
+[Details and evidence limitations](return-terminus-fix.md). Game remains paused.
