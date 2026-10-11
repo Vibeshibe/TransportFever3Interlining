@@ -1212,3 +1212,14 @@ verification. Do not claim installation or gameplay validation without running i
   Log SHA `e1734ecf1643806831f0bad76e58fb8c18db3cfb8bfda141e69c5a95a9f1f1e3`.
 - No current game process found. Await fresh disposable baseline readiness;
   old PIDs/world pointers/watcher details are invalid for the next trial.
+
+
+## 2026-10-11 — 0.10.1 live trial started
+
+Verified the fresh paused pre-trial baseline, game fingerprint and prepared
+artifacts. Loaded commit `4cc0d71` successfully (`tfx_start=0`); user confirmed
+normal-speed unpause. Both worlds now deliver successful updates. No switching
+or arrival result claimed at startup. Capture and process identity are preserved
+in ignored `analysis/native-bridge/build-v10b/live-run.json`; next check is
+return-to-first-terminus eligibility, actual boarding and sampled destinations.
+Package ZIP checksum: `2c1ad23b592264f564aa383322757440883f4ac6b9f4ec1e5b7e12afe31b547b`.

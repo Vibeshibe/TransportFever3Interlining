@@ -1,6 +1,22 @@
 # Session handoff — 2026-10-11
 
-## Current — 0.10.1 verified and packaged; game not running
+## Current — 0.10.1 live after confirmed unpause
+
+Implementation `4cc0d71` is pushed to `origin/dev`. Fresh verified baseline loaded
+on 2026-10-11; Linux PID 33707/start 502346, Windows PID 308. No old bridge
+was mapped. Executable, save and artifact hashes match the prepared package.
+Loader returned `tfx_start=0` at 10:06:23Z. User confirmed normal-speed unpause;
+initial observations report status=0/rejected=0 in both worlds. No boarding
+claimed at startup. Log: `analysis/native-bridge/build-v10b/tpf-bridge-308-5427028.log`.
+Watcher session 34585; thread 592; worlds 1/2 at 0x2dbf6db0/0x2dbf60f0.
+Fresh `live-run.json`, `preflight-process.json` and `loader-result.json` preserve
+evidence. Monitor last-to-first route switching, both-world boarding and sampled
+original destinations. Do not inject another DLL into this process.
+
+Verified ZIP SHA256: `2c1ad23b592264f564aa383322757440883f4ac6b9f4ec1e5b7e12afe31b547b`.
+Limits: 32 attempts, four detailed journey samples, 18,000 callbacks.
+
+## Previous — 0.10.1 verified and packaged; game not running
 
 Recovered interrupted five-file0.10.1 fix and build-v10b. All13 test invocations
 completed on2026-10-09; hashes verified against current executables and CMake
