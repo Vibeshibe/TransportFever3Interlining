@@ -1247,3 +1247,25 @@ discovery next. No further diagnostic replay needed. Current totals: seven
 boardings, two original arrivals, two lifecycle outcomes, three active samples.
 Return-leg passenger 118180 alighted correctly at Faringdon and continues by bus.
 [Details and evidence limitations](return-terminus-fix.md). Game remains paused.
+
+
+## 2026-10-11 — 0.11.0 discovery implementation
+
+Fixed the page-skipping discovery behavior: consume every returned ID over
+successive callbacks. Expanded bounded station/vehicle retention and added a
+sixteen-ID ready priority queue, with up to twelve extra vehicle queries only
+when no full validation ran. Fresh eligibility, ABI 8 and native mutation guards
+remain. Added ready-opportunity logging and page/priority counters.
+
+All fourteen final native invocations pass. New fixture exercises 241 people,
+forty bus stations competing with an eighty-person rail queue, 81 vehicles,
+sparse pages, sixteen loading-window phases, repeated switches and stale/deleted
+priority hints. Peak 44/64 queries; existing worst case remains 63/64. An early
+fixture caught non-ready index entries crowding the priority queue; the final
+queue admits only vehicles actually observed in the accepted loading state.
+Updated an obsolete scans-equal-callbacks assertion for page draining.
+
+Prepared build-v11a with 32 attempts, four detailed samples and 18,000 callbacks;
+no game changes or injection during implementation. Existing 0.10.1 remains
+paused pending one restart for the integrated trial. Details, hashes and limits:
+[discovery coverage](discovery-coverage.md).

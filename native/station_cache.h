@@ -4,8 +4,8 @@
 #include <string.h>
 
 /* Discovery hints only. Fresh copied queries must authorize every proposal. */
-#define TFX_STATION_BUCKETS 16u
-#define TFX_STATION_PEOPLE 32u
+#define TFX_STATION_BUCKETS 64u
+#define TFX_STATION_PEOPLE 128u
 typedef struct tfx_station_hint { int32_t person, line; } tfx_station_hint;
 typedef struct tfx_station_bucket {
     int32_t station_group;

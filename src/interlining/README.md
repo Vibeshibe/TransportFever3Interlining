@@ -1,6 +1,9 @@
 # Candidate policy prototype
 
-Latest native version0.10.1 supports bounded forward travel across the end of
+Version 0.11.0 improves [bounded discovery coverage](../../docs/discovery-coverage.md)
+without changing the candidate policy or the shared SDK.
+
+Native version0.10.1 supports bounded forward travel across the end of
 each line stop list. See [return-terminus fix](../../docs/return-terminus-fix.md).
 Earlier version-specific exclusions below are historical; repeated-station legs
 and complete circuits remain excluded.

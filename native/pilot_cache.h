@@ -2,6 +2,9 @@
 #define TFX_PILOT_CACHE_H
 #include <stdint.h>
 #define TFX_PILOT_PEOPLE 32u
+#define TFX_PILOT_VEHICLES 128u
+#define TFX_PILOT_LINES 64u
+#define TFX_READY_HINTS 16u
 /* Bounded discovery IDs, not a route/eligibility cache. Return the
  * replaced/inserted slot, or -1 when the ID is already remembered/invalid. */
 static inline int32_t tfx_pilot_remember_bounded(int32_t *ids, uint32_t *count,

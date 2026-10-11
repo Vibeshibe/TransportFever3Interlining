@@ -1,6 +1,6 @@
 # 006 — Implement and validate alternative boarding
 
-- Status: In progress — 0.9.1 station-focused discovery implemented; offline validation complete, integrated live trial running
+- Status: In progress — 0.11.0 discovery coverage implemented; fourteen offline checks passed, live trial pending
 - Owner: Assistant implements; user tests in-game
 - Dependencies: 002 baseline and 003 capability decision; 004–005 if required
 
@@ -263,3 +263,13 @@ All13 native invocations pass,63/64 worst query budget; report/binary hashes
 verified on recovery. Build-v10b/package prepared, not loaded. Next integrated
 trial targets Wimborne→Faringdon; no extra diagnostics-only replay needed.
 See [return-terminus fix](../../docs/return-terminus-fix.md).
+
+
+### Discovery coverage after the Wimborne S2 misses — 2026-10-11
+
+Version 0.11.0 drains scan pages, expands bounded station/vehicle retention and
+prioritizes freshly observed loading vehicles. Additional vehicle polling runs
+only without full validation; route/mutation/ABI and four-sample limits remain.
+New mixed-network regression covers 241 people, forty competing bus stations,
+81 vehicles, short boarding windows and stale priority hints. See
+[implementation and trial](../../docs/discovery-coverage.md).

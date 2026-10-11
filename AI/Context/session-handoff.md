@@ -1,6 +1,39 @@
 # Session handoff — 2026-10-11
 
-## Current — 0.10.1 paused for discovery fix
+
+## Current — 0.11.0 built and tested; awaiting one restart for live trial
+
+The user asked to continue implementation after the paused discovery audit.
+Version 0.11.0 now drains every returned scan page, one waiting leg per callback;
+retains 64 stations × 128 people, 64 lines and 128 vehicles; prioritizes sixteen
+freshly observed loading vehicles; and polls up to twelve additional vehicles
+only when no full candidate validation ran. Ready hints are re-read before use.
+ABI 8, route/mutation/loading guards, 32 attempts, four samples and 18,000
+callbacks are unchanged. New `pilot_ready` output and discovery counters record
+coverage. No save/line IDs are hard-coded in the implementation.
+
+All fourteen native test invocations passed at 10:32:07Z on 2026-10-11. New mixed
+network fixture: 241 people, eighty-person rail queue, forty bus stations, 81
+vehicles, 100 empty pages, sixteen short-window phases, repeated switches and
+stale/deleted hints. Peak 44/64 there; existing worst case remains 63/64. Report
+executable hashes verified. No further unchanged-suite rerun needed.
+[Scope and live trial](../../docs/discovery-coverage.md).
+
+Build/package: ignored `analysis/native-bridge/build-v11a`,
+`TPF3Interlining-0.11.0-trial.zip`. DLL SHA256: 4e8cf8b356e9cfef465064c31838a67ba78d2a812acd199367087f910d9c8952.
+Report SHA256: 88dcc3774f6861f747647cdb05807aedb87bf894c8eba9116d49c8c9871dbb4f.
+Package includes only mutable DLL, loader, report, docs and manifest; the optional
+observer remains test-only. No automatic installation or stable release.
+
+0.11.0 has NOT been loaded. The existing process last held paused 0.10.1; do not
+inject another DLL into it. Next request one restart into a disposable
+`TPF3Interlining_before_multi_passenger_01`, paused; verify fresh process/save/
+exe/DLL fingerprints, load build-v11a, then request normal-speed unpause. Monitor
+S2→Faringdon at Wimborne, ready opportunities, hint coverage and both-world
+boarding, plus sampled original destinations. No diagnostic replay required.
+
+
+## Previous — 0.10.1 paused for discovery fix
 
 User paused the existing process after a second missed S2 departure; do not
 request another diagnostic reload or inject a second DLL. Capture remains

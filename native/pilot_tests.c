@@ -624,7 +624,11 @@ int main(void) {
             strstr(output, "pilot_waiting_excluded") && !strstr(output, "candidate_query_error"));
     }
     reset(); no_capacity = 1; ticks(600);
-    CHECK(strstr(output, "pilot_discovery sequence=600 callbacks=600 scans=600") &&
+    const char *discovery = strstr(output, "pilot_discovery sequence=600 callbacks=600 scans=");
+    unsigned reported_scans = 0;
+    CHECK(discovery && sscanf(discovery, "pilot_discovery sequence=600 callbacks=600 scans=%u", &reported_scans) == 1);
+    CHECK(reported_scans > 0 && reported_scans < 600);
+    CHECK(discovery &&
         strstr(output, "pilot_totals sequence=600 staged=0 applied=0 boarded=0 sampled=0"));
     printf("PASS: 32 unique attempts, four sampled journeys plus one pending, sample reuse, no reads or duplicate changes after release, exact deadlines, final counts and metrics; peak=%u/64 queries.\n", max_queries);
     return 0;

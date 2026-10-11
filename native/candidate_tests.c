@@ -175,17 +175,30 @@ static void station_cache_tests(void) {
     CHECK(tfx_station_next(&cache, 20, 1, NULL, 0) == -1);
     memset(&cache, 0, sizeof(cache));
     for (int32_t id = 0; id < 80; ++id) tfx_station_remember(&cache, id, 10, 2);
-    CHECK(cache.count == 1 && tfx_station_bucket_size(&cache.buckets[0]) == 32);
-    int32_t seen[32];
-    for (unsigned i = 0; i < 32; ++i) {
+    CHECK(cache.count == 1 && tfx_station_bucket_size(&cache.buckets[0]) == 80);
+    /* Forty competing bus stations must not evict the populated rail queue. */
+    for (int32_t id = 1000; id < 1040; ++id) tfx_station_remember(&cache, id, id, 2);
+    int32_t seen[TFX_STATION_PEOPLE];
+    for (unsigned i = 0; i < 80; ++i) {
         seen[i] = tfx_station_next(&cache, 10, 1, seen, i);
-        CHECK(seen[i] >= 48 && seen[i] < 80);
+        CHECK(seen[i] >= 0 && seen[i] < 80);
     }
-    CHECK(tfx_station_next(&cache, 10, 1, seen, 32) == -1);
-    for (int32_t id = 100; id < 120; ++id) tfx_station_remember(&cache, id, id, 2);
-    CHECK(cache.count == 16);
+    CHECK(tfx_station_next(&cache, 10, 1, seen, 80) == -1);
+    /* Larger queues still rotate/evict within explicit, finite limits. */
+    memset(&cache, 0, sizeof(cache));
+    for (int32_t id = 0; id < (int32_t)TFX_STATION_PEOPLE + 20; ++id)
+        tfx_station_remember(&cache, id, 10, 2);
+    CHECK(tfx_station_bucket_size(&cache.buckets[0]) == TFX_STATION_PEOPLE);
+    for (unsigned i = 0; i < TFX_STATION_PEOPLE; ++i) {
+        seen[i] = tfx_station_next(&cache, 10, 1, seen, i);
+        CHECK(seen[i] >= 20 && seen[i] < (int32_t)TFX_STATION_PEOPLE + 20);
+    }
+    CHECK(tfx_station_next(&cache, 10, 1, seen, TFX_STATION_PEOPLE) == -1);
+    for (int32_t id = 1000; id < 1000 + (int32_t)TFX_STATION_BUCKETS + 4; ++id)
+        tfx_station_remember(&cache, id, id, 2);
+    CHECK(cache.count == TFX_STATION_BUCKETS);
     CHECK(tfx_station_next(&cache, 10, 1, NULL, 0) == -1);
-    CHECK(tfx_station_next(&cache, 119, 1, NULL, 0) == 119);
+    CHECK(tfx_station_next(&cache, 1000 + TFX_STATION_BUCKETS + 3, 1, NULL, 0) >= 1000);
     puts("PASS: bounded station hints, deduplication, refresh, migration, exclusions and eviction.");
 }
 static void wrap_route_tests(void) {

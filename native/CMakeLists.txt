@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(tpf_shared_bridge VERSION 0.10.1 LANGUAGES C ASM)
+project(tpf_shared_bridge VERSION 0.11.0 LANGUAGES C ASM)
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Use a Windows x64 toolchain")
 endif()
@@ -79,3 +79,6 @@ add_executable(pilot_sampled_tests pilot_tests.c candidate_probe.c ../src/interl
 target_compile_definitions(pilot_sampled_tests PRIVATE TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4 TFX_TEST_SAMPLED=1)
 add_executable(host_capacity_tests host_batch_tests.c host.c)
 target_compile_definitions(host_capacity_tests PRIVATE TFX_PASSENGER_LIMIT=32)
+
+add_executable(discovery_tests discovery_tests.c candidate_probe.c ../src/interlining/native_candidate.c)
+target_compile_definitions(discovery_tests PRIVATE TFX_PASSENGER_LIMIT=32 TFX_JOURNEY_SAMPLE_LIMIT=4)
