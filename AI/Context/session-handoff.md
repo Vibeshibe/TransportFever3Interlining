@@ -1,5 +1,23 @@
 # Session handoff — 2026-10-11
 
+## Active — 0.14.0 loaded; user unpaused, conserve remaining usage
+
+Fresh LinuxPID88445/start1435269, WindowsPID308; original baseline ready13:01:35Z.
+Loader13:02:53Z returned0. Startup verifies four pending boardings and continuous
+operation. User confirmed unpause, requests conservative checks with2% remaining.
+Read build-v14a/live-run.json for exact log and process; watch_live.py collects
+read-only checkpoints for ten minutes, expiry does not stop the DLL. Review log
+later for overlapping pending boardings, confirmations, destinations and costs.
+Do not reinject, rebuild loaded DLL, or ask another restart without a concrete need.
+No live throughput claim yet. Main unchanged.
+
+Package metadata had an inherited wrong executable hash; corrected document and
+manifest to actual/native pin5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efaebd8a35.
+Tested DLL unchanged. Updated ZIP202628bytes, SHA256
+`ec1cbf6988d9fda2d0ba6d0887a12ebab5fa615d33e73aa788a74c52479a3434`.
+Earlier restart/preparation sections are superseded. Next review can use existing
+logs; preserve user usage by avoiding repeated polling.
+
 ## Next live action — user restarting for packaged 0.14.0
 
 Implementation **9906589** pushed todev. Package verified202559bytes under

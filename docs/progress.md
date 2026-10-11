@@ -1557,3 +1557,20 @@ Manifest pins source, compatibility, tests and packaged artifacts. No game asset
 or saves included. User agreed to restart and leave the disposable original
 baseline paused; actual readiness and fresh-process verification remain pending.
 No0.14.0 injection yet. Preserved old log asbuild-v13b/before-v14a-restart.json/.log.
+
+### 0.14.0 loaded and unpaused; conservative monitoring
+
+Verified fresh LinuxPID88445/start1435269, WindowsPID308, original baseline and
+absent old bridge. Save ready13:01:35Z; loader13:02:53Z returnedtfx_start0.
+Startup confirms0.14.0, four pending boardings, continuous mode and no lifetime
+cutoffs. User confirmed normal-speed unpause and requested conservative checking
+with2% usage remaining. A read-only ten-minute collector records periodic totals
+and performance; its expiry does not stop the bridge. No outcome claim at startup.
+
+Preflight exposed an inherited incorrect executable fingerprint in the package
+metadata and continuous-operation document. Corrected to the actual verified hash
+`5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efaebd8a35`;
+the DLL's built-in pin and tested binaries were already correct and unchanged.
+Updated package202628bytes, SHA256
+`ec1cbf6988d9fda2d0ba6d0887a12ebab5fa615d33e73aa788a74c52479a3434`.
+This supersedes the previous package fingerprint. Evidence underbuild-v14a.

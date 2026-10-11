@@ -6,7 +6,7 @@ The one-pending-slot descriptions below document 0.13.x.
 Status: implemented on `dev`; offline validation passed. Live validation and
 stable promotion remain pending. This is still explicitly loaded with the native
 loader, not an automatically installed mod. Only the pinned executable is supported
-(SHA-256 `5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efa93fef34146b1`).
+(SHA-256 `5e720cd7fefd688a1675b61c6eecaadfd25c171da9e9e938af85e5efaebd8a35`).
 
 ## Behavior
 
