@@ -1613,3 +1613,19 @@ Prepared and installed a five-file Lua-only capability mod, tested unavailable
 globals/one-time logging/no loader invocation. User agreed to launch native Linux
 and enable it. No injection, engine mutation or mod.io upload. See
 [loading feasibility](mod-loading-feasibility.md) for hashes and evidence.
+
+### Native Linux runtime loading checks completed
+
+Build40420/Schoenbau: package.loadlib and cpath absent in all observed startup
+phases. Module searcher table remained, so tested its native entries with an inert
+Linux library (only prints, no Lua API calls/hooks/threads/engine access).
+After user reload, both native searchers3/4 are nil and handshake unavailable;
+the library never loaded. resolve() returns virtual resources, not an OS path.
+Evidence underanalysis/runtime-loading. Normal dependency packaging does not
+make the current engine hook loadable. No interlining release uploaded.
+
+Corrected the diagnostic once flag after observing resource-module recreation:
+private GameScriptState latch prevents repeated update logging; recreation test
+passes. Prepared an unsent precise [API request](passenger-hook-request.md).
+Current no-external-software release requirement cannot be met by repackaging
+0.14.0; supported native loading or passenger mutation scripting remains missing.

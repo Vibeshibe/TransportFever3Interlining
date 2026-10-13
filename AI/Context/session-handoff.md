@@ -1,5 +1,22 @@
 # Session handoff — 2026-10-13
 
+## Latest — Linux normal-mod loading fails; release architecture unresolved
+
+User reloaded nativeLinux build40420/Schoenbau. Both standard native searchers3/4
+are nil, package.loadlib/cpath nil; inert library NOT loaded. Evidence
+analysis/runtime-loading/linux-capabilities-02.log andlinux-loading-result.json.
+Normal mod dependency cannot initialize current native backend using these paths.
+No interlining mod.io release uploaded; do not claim ordinary-mod readiness.
+No external software remains user requirement. No Linux backend implemented.
+
+Probe revision2 tests remaining native searchers with a harmless .so; installed
+only underour Linux diagnostic mod. Module recreation caused repeated logs;
+fixed using private GameScriptState revision latch, standalone regression passes.
+User can disable probe; no restart to remove engine hooks needed, none loaded.
+Prepared unsent docs/passenger-hook-request.md and updated loading evidence.
+Further Lua mutation research or an engine-exposed API is needed; no supported
+waiting-leg replacement command currently found. Original goal still unfulfilled.
+
 ## Current — normal mod loading requirement; native Linux probe pending
 
 Oct13 user goal: usable mod.io release, faster discovery, prioritize implementing

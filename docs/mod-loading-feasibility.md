@@ -75,3 +75,42 @@ The [official API index](https://wiki.transportfever3.com/script-doc/) identifie
 engine access as reading state and separates commands. Publishing/guideline pages
 returned HTTP429 during this check; native-binary acceptance on mod.io has not
 been established. Do not infer rejection or acceptance from that fetch failure.
+
+## First Linux runtime result
+
+Build40420, user-loaded saveSchoenbau: all four phases report package.loadlib=nil,
+package.cpath=nil, package.searchers=table, require=function and ffi=nil.
+The update context exposes copied-read/command API wrappers as tables (callable
+wrappers, not evidence those APIs are missing). Raw evidence is retained in
+`analysis/runtime-loading/linux-capabilities-01.log`.
+
+The remaining searchers mean a blanket statement that native loading is impossible
+would be premature. Revision2 adds an inert Linux C module whose initializer only
+prints a marker, with no Lua API calls or engine access. It tries searchers3/4,
+restoring cpath after success/failure. The standalone Lua check loads it, checks
+single execution and contains searcher errors. Updated installed diagnostic mod;
+in-game revision2 evidence remains pending. Local install-path success would not
+by itself establish mod.io compatibility or a supported shared hook.
+
+## Second Linux runtime result: native searchers removed
+
+User reloaded Schoenbau, ready09:40:23Z. Revision2 reports both
+`package.searchers[3]` and `[4]` as nil, `native_handshake=unavailable`, and no
+native initializer execution. `resolve` returns a virtual mod resource reference
+(`tpf3_interlining_runtime_probe_1::/native/?.so`), not an OS filesystem path.
+Both tested native-loading entry points are unavailable in the normal Lua mod
+context. Raw log and structured result are retained aslinux-capabilities-02.log
+andlinux-loading-result.json underanalysis/runtime-loading.
+
+The game recreates script modules, causing the module-local once flag to reset.
+Corrected the installed probe to use its private GameScriptState revision latch;
+offline recreation regression passes. This changes only diagnostic mod state.
+The user can disable the probe after the check. No engine hook was installed.
+
+A normal dependency declaration does not solve native initialization. Under the
+agreed no-external-software requirement, the current native interlining backend
+has no demonstrated release path. A supported passenger replacement command or
+an official native-plugin entry point is needed for this implementation. The
+Lua-only alternatives have not been exhaustively disproven, but none currently
+implements the required atomic waiting-line change. Do not upload a nonfunctional
+wrapper or label a Windows/Proton DLL as native Linux support.

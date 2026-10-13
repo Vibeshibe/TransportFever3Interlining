@@ -1,8 +1,15 @@
 {
-    "authors": [{"name": "TPF3Interlining contributors", "role": "CREATOR"}],
+    "authors": [
+        {
+            "name": "TPF3Interlining contributors",
+            "role": "CREATOR"
+        }
+    ],
     "name": "TPF3 Interlining — Runtime Capabilities",
     "summary": "Read-only Lua capability inventory for native Linux and Windows.",
-    "description": "Logs available module-loading and script API types once per startup phase. Does not load native code, issue commands, or change passengers. This is a diagnostic mod, not the interlining fix.",
-    "tags": ["Script Mod"],
+    "description": "Checks Lua capabilities and whether a remaining module searcher can load an inert Linux library. The library only prints a marker; no hooks, commands or passenger changes. This is a diagnostic mod, not the interlining fix.",
+    "tags": [
+        "Script Mod"
+    ],
     "url": ""
 }
