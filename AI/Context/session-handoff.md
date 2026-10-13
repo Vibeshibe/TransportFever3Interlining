@@ -1,4 +1,26 @@
-# Session handoff — 2026-10-11
+# Session handoff — 2026-10-13
+
+## Current — normal mod loading requirement; native Linux probe pending
+
+Oct13 user goal: usable mod.io release, faster discovery, prioritize implementing
+with targeted checks. Clarified **no externally launched bridge_loader or other
+external software**; normal shared script-hook dependency acceptable. Native Linux
+build at `/home/vibeshibe/.local/share/Steam/steamapps/common/Transport Fever 3/`.
+Current Windows0.14.0 cannot be called a normal mod. No new native build started.
+
+Compared Linux public APIs (same as Windows); static code in both builds removes
+package.loadlib/cpath. Other entry points/runtime availability not proven absent.
+See docs/mod-loading-feasibility.md. Prepared `probes/runtime`, installed five
+runtime files in Linux installation/mods/tpf3_interlining_runtime_probe_1.
+User answered “I’ll launch Linux and enable the probe.” Wait for actual readiness,
+then read native Steam userdata27060078/3493540/local/crash_dump/stdout.txt for
+[TPF3RuntimeProbe]. Probe logs startup/update types, invokes no loaders or writes.
+No DLL injection needed. Do not confuse Linux logs with old Proton capture.
+
+Discovery diagnosis retained: only one fresh waiter per discovery callback,
+pending boardings halt discovery;647/781screens fallback atcallback3000 despite
+station caches. Batch discovery and direct Lua queue queries are possible next
+implementation work once release architecture is viable. Main unchanged.
 
 ## Latest — 0.14.0 partial throughput; pause investigation to conserve usage
 

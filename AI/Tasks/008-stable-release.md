@@ -1,6 +1,6 @@
 # 008 — Validate and promote a stable milestone
 
-- Status: In progress — 0.14.0 concurrent boarding candidate, live gate pending
+- Status: In progress — normal-mod loading and native Linux feasibility first
 - Owner: Assistant prepares; user provides gameplay testing
 - Dependencies: 006 validated; 007 if preference variation is included
 
@@ -11,6 +11,10 @@ compatibility and release scope. Research completion alone is not a stable
 gameplay release.
 
 ## Acceptance criteria
+
+- [ ] Install and enable through the normal mod/dependency workflow, without a
+      separately launched loader or external software (user requirement, Oct 13).
+- [ ] Establish native Linux support independently of Windows/Proton support.
 
 - [ ] Declare included features, supported game builds, and unresolved limitations.
 - [ ] Review code, dependency/tool versions, installation, and rollback instructions.

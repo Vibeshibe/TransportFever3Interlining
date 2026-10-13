@@ -1597,3 +1597,19 @@ Next session: correlate these windows with ready vehicles, candidate selections,
 tracking/discovery phases and queue coverage before another implementation.
 0.14.0 is not stable; preserve current log even if game is closed. User may pause
 or quit after this checkpoint. Main unchanged.
+
+## 2026-10-13 — normal mod release and native Linux requirement
+
+User wants a usable mod.io release and faster discovery, with targeted tests.
+Clarified that external software/bridge_loader is unacceptable; a normally loaded
+shared hook dependency could be acceptable. Current0.14.0 does not meet that
+installation requirement. Prioritized establishing native loading over more
+Windows-only throughput implementation. No source changes to the native consumer.
+
+Inspected supplied native Linux build; relevant public API declarations match
+Windows byte-for-byte. Both executables remove package.loadlib/cpath during Lua
+state setup; actual runtime contexts and other loading paths remain unverified.
+Prepared and installed a five-file Lua-only capability mod, tested unavailable
+globals/one-time logging/no loader invocation. User agreed to launch native Linux
+and enable it. No injection, engine mutation or mod.io upload. See
+[loading feasibility](mod-loading-feasibility.md) for hashes and evidence.

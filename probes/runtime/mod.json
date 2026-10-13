@@ -1,0 +1,13 @@
+{
+    "dependencies": null,
+    "incompatibilities": null,
+    "modId": "tpf3_interlining_runtime_probe_1",
+    "options": null,
+    "params": null,
+    "preRunScript": {"fileName": "tpf3_interlining_runtime_probe_1::/runtime_probe.script@preRun"},
+    "runScript": {"fileName": "tpf3_interlining_runtime_probe_1::/runtime_probe.script@run"},
+    "postRunScript": {"fileName": "tpf3_interlining_runtime_probe_1::/runtime_probe.script@postRun"},
+    "revision": 1,
+    "severityAdd": "None",
+    "severityRemove": "None"
+}

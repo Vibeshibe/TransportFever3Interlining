@@ -46,3 +46,17 @@ Current authorization: the user asked to resume implementation at the assistant'
 discretion, covering diagnostics and continued native boarding investigation. On 2026-10-07 the user asked to resume
 and agreed to test the prepared probe. Task 002 has a first user-observed example and runtime logs; exact boarding
 eligibility remains unresolved. No native behavior patch has been implemented or validated.
+
+## Release experience — clarified 2026-10-13
+
+Target a usable mod.io release with faster discovery and fewer delayed/missed
+switches. Prefer implementation and targeted regression checks over repeated
+long diagnostic trials. The user requires no separately launched loader or other
+external software. A shared script-hook dependency enabled alongside the mod is
+acceptable if the game can load it normally. Native Linux support matters; Proton
+support is not native Linux support. The native Linux installation is
+`/home/vibeshibe/.local/share/Steam/steamapps/common/Transport Fever 3/`.
+
+The current0.14.0 research DLL/loader does not meet that release requirement.
+A manifest dependency alone cannot supply the missing native loading mechanism.
+Resolve this before presenting another native ZIP as a normal mod.io release.
