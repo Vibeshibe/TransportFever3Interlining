@@ -1,5 +1,11 @@
 # Shared native bridge — continuous interlining candidate
 
+**Release installation gap (2026-10-13):** this Windows/Proton research build
+requires an external development loader. It does not meet the user's normal-mod
+release requirement. Native Linux build40420 also removes Lua native loaders;
+see [runtime evidence](../docs/mod-loading-feasibility.md). No native Linux
+interlining backend or automatic shared-hook installation is implemented.
+
 Version 0.14.0 allows four pending boardings in continuous mode, with per-vehicle
 capacity holds, immediate mutation-result checks and paired tracking phases.
 It retains one new request per dispatch and four full journey samples. See

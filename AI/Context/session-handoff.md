@@ -9,6 +9,11 @@ Normal mod dependency cannot initialize current native backend using these paths
 No interlining mod.io release uploaded; do not claim ordinary-mod readiness.
 No external software remains user requirement. No Linux backend implemented.
 
+Pending clarification: would a one-time shared-hook installation that loads with
+the game (potential Linux launch option, no separate executable) be acceptable,
+or strictly in-game mod browser only? Do not assume acceptance. Until answered,
+retain the stricter normal-mod requirement. No automatic hook has been installed.
+
 Probe revision2 tests remaining native searchers with a harmless .so; installed
 only underour Linux diagnostic mod. Module recreation caused repeated logs;
 fixed using private GameScriptState revision latch, standalone regression passes.

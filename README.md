@@ -9,6 +9,14 @@ boarding concurrently, with conservative capacity accounting. It retains continu
 operation and reachable-destination selection. It is a release candidate awaiting live validation,
 not an automatically installed or stable release.
 
+## Release installation requirement
+
+The target is normal mod activation, potentially with a shared hook dependency,
+without launching an external loader. The current native prototype does not yet
+meet that requirement. [Linux runtime checks](docs/mod-loading-feasibility.md)
+confirm the standard Lua native loaders are unavailable. No working interlining
+package has been published to mod.io; native Linux support remains unimplemented.
+
 ## Layout
 
 - `AGENTS.md`: game contributor guide with project-specific branch instructions.
